@@ -483,98 +483,136 @@
   }
   .hero-meta-dot { color: var(--text-3); }
 
-  /* --- Photo essay: each town a magazine spread --- */
+  /* --- Photo essay: each town as a magazine spread --- */
   .route-essay {
     display: flex; flex-direction: column;
-    gap: 96px;
-    margin-bottom: 80px;
+    gap: 48px;
+    margin-bottom: 64px;
   }
   .spread {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 56px;
-    align-items: center;
+    grid-template-columns: 56px 1fr;
+    gap: 0;
+    align-items: stretch;
     position: relative;
   }
-  /* Alternate: odd spreads have image on the right, text on left */
-  .spread:nth-child(even) .spread-img-frame { order: -1; }
 
+  /* Vertical spine on the left with the town name */
+  .spread-spine {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 8px 0;
+    border-right: 1px solid var(--border);
+  }
+  .spine-name {
+    writing-mode: vertical-rl;
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 1.625rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text);
+    white-space: nowrap;
+    margin: 0;
+  }
+  .spine-tagline {
+    writing-mode: vertical-rl;
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    color: var(--text-3);
+    margin-top: 14px;
+    white-space: nowrap;
+    max-height: 100%;
+    overflow: hidden;
+  }
+
+  /* Wide image frame */
   .spread-img-frame {
     position: relative;
-    aspect-ratio: 4 / 5;
+    aspect-ratio: 5 / 2;
     overflow: hidden;
-    border-radius: 4px;
-    background: var(--surface-2);
+    background: linear-gradient(135deg, var(--surface-2) 0%, var(--accent-bg) 100%);
+    margin-left: 16px;
   }
   .spread-img {
     width: 100%; height: 100%;
     object-fit: cover;
+    object-position: center;
     display: block;
-    transition: transform 800ms var(--ease-out);
+    opacity: 0;
+    transition: opacity 600ms var(--ease-out), transform 1200ms var(--ease-out);
   }
-  .spread:hover .spread-img { transform: scale(1.03); }
+  .spread-img.loaded { opacity: 1; }
+  .spread:hover .spread-img.loaded { transform: scale(1.04); }
+
   .spread-img-fallback {
     position: absolute; inset: 0;
     display: flex; align-items: center; justify-content: center;
     font-family: var(--font-display);
     font-style: italic;
     color: var(--text-3);
-    font-size: 2rem;
-    background: linear-gradient(135deg, var(--surface-2) 0%, var(--accent-bg) 100%);
+    font-size: 1.75rem;
+    pointer-events: none;
+    text-align: center;
+    padding: 16px;
   }
-  .spread-credit {
-    position: absolute; bottom: 8px; right: 10px;
-    font-size: 0.625rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: rgba(255,255,255,0.75);
-    text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+
+  /* Chapter badge — top right of image */
+  .spread-chapter-badge {
+    position: absolute;
+    top: 14px;
+    left: 18px;
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 0.8125rem;
+    color: rgba(255,255,255,0.92);
+    letter-spacing: 0.08em;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.45);
+    z-index: 2;
     pointer-events: none;
   }
 
-  .spread-text { padding: 0 8px; }
-  .spread-chapter {
+  /* Caption overlay — bottom of image */
+  .spread-caption-overlay {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    padding: 36px 24px 16px;
+    background: linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 100%);
+    color: #FFFFFF;
     font-family: var(--font-display);
     font-style: italic;
-    font-size: 0.9375rem;
-    color: var(--accent);
-    margin-bottom: 16px;
-    letter-spacing: 0.04em;
+    font-size: 1.0625rem;
+    line-height: 1.35;
+    text-shadow: 0 1px 8px rgba(0,0,0,0.5);
+    pointer-events: none;
+    z-index: 2;
   }
-  .spread-chapter::before {
-    content: "—";
-    margin-right: 10px;
+
+  /* Meta row below the spread */
+  .spread-meta {
+    grid-column: 2;
+    margin-left: 16px;
+    padding: 10px 4px 0;
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--text-2);
+  }
+  .spread-dates-sep {
     color: var(--text-3);
+    margin: 0 8px;
     font-style: normal;
   }
-  .spread-name {
-    font-family: var(--font-display);
-    font-size: clamp(2.25rem, 4.5vw, 3.5rem);
-    line-height: 1;
-    letter-spacing: -0.025em;
-    margin-bottom: 20px;
-    font-weight: 400;
-  }
-  .spread-dates {
-    font-size: 0.8125rem;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    color: var(--text-2);
-    margin-bottom: 24px;
-  }
-  .spread-dates-sep { color: var(--text-3); margin: 0 8px; }
-  .spread-caption {
-    font-family: var(--font-display);
-    font-style: italic;
-    font-size: 1.125rem;
-    line-height: 1.45;
-    color: var(--text);
-    max-width: 32ch;
-  }
   .spread-nights {
-    margin-top: 24px;
-    font-size: 0.8125rem;
     color: var(--text-3);
+    text-transform: none;
+    letter-spacing: 0.04em;
+    font-style: italic;
+    font-family: var(--font-display);
+    font-size: 0.8125rem;
   }
 
   /* --- Quiet stats footer band --- */
@@ -685,17 +723,17 @@
     .hero { padding: 16px 0 40px; margin-bottom: 40px; }
     .hero-title { font-size: clamp(3.5rem, 22vw, 6rem); }
     .hero-rule { margin: 24px auto 20px; }
-    .route-essay { gap: 56px; margin-bottom: 56px; }
-    .spread {
-      grid-template-columns: 1fr;
-      gap: 24px;
-    }
-    /* On mobile, image always comes first */
-    .spread:nth-child(even) .spread-img-frame { order: 0; }
-    .spread-img-frame { aspect-ratio: 16 / 11; }
-    .spread-text { padding: 0; }
-    .spread-name { font-size: 2.25rem; }
-    .spread-caption { font-size: 1.0625rem; }
+    .route-essay { gap: 36px; margin-bottom: 48px; }
+
+    /* Spine stays vertical but narrower on mobile */
+    .spread { grid-template-columns: 40px 1fr; }
+    .spine-name { font-size: 1.125rem; letter-spacing: 0.14em; }
+    .spine-tagline { font-size: 0.6875rem; margin-top: 10px; }
+    .spread-img-frame { aspect-ratio: 16 / 10; margin-left: 12px; }
+    .spread-caption-overlay { font-size: 0.9375rem; padding: 28px 16px 12px; }
+    .spread-chapter-badge { font-size: 0.6875rem; top: 10px; left: 14px; }
+    .spread-meta { margin-left: 12px; font-size: 0.6875rem; letter-spacing: 0.1em; }
+    .spread-nights { font-size: 0.75rem; }
 
     .stats-band { flex-wrap: wrap; padding: 20px 0; }
     .stat-cell { flex: 1 1 45%; padding: 12px 8px; }
@@ -984,41 +1022,41 @@ const TOWN_SEEDS = [
     id: "paris", name: "Paris", country: "France",
     arrivalDate: "2026-05-28", departureDate: "2026-06-01",
     lat: 48.8566, lng: 2.3522, order: 1,
+    tagline: "France · The City of Light",
     caption: "Boulevards, bistros, an iron lattice on the skyline.",
-    image: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=1600&auto=format&fit=crop&q=80",
-    imageCredit: "Anthony DELANOIX"
+    wikipediaArticle: "Eiffel_Tower"
   },
   {
     id: "annecy", name: "Annecy", country: "France",
     arrivalDate: "2026-06-01", departureDate: "2026-06-04",
     lat: 45.8992, lng: 6.1294, order: 2,
-    caption: "Alpine water, pastel facades, a town threaded by canals.",
-    image: "https://images.unsplash.com/photo-1610016302534-6f67f1c968d8?w=1600&auto=format&fit=crop&q=80",
-    imageCredit: "Unsplash"
+    tagline: "Savoie · The Venice of the Alps",
+    caption: "Turquoise alpine water with mountains keeping watch.",
+    wikipediaArticle: "Lake_Annecy"
   },
   {
     id: "nice", name: "Nice", country: "France",
     arrivalDate: "2026-06-04", departureDate: "2026-06-07",
     lat: 43.7102, lng: 7.2620, order: 3,
-    caption: "Mediterranean blue, ochre rooftops, the long curve of the Promenade.",
-    image: "https://images.unsplash.com/photo-1491166617655-0723a0a1a6c6?w=1600&auto=format&fit=crop&q=80",
-    imageCredit: "Unsplash"
+    tagline: "Côte d'Azur · The Pearl of the Riviera",
+    caption: "Mediterranean blue and the long curve of the Promenade.",
+    wikipediaArticle: "Promenade_des_Anglais"
   },
   {
     id: "aix-en-provence", name: "Aix-en-Provence", country: "France",
     arrivalDate: "2026-06-07", departureDate: "2026-06-11",
     lat: 43.5297, lng: 5.4474, order: 4,
-    caption: "Plane trees, fountains, the slow light of Provence.",
-    image: "https://images.unsplash.com/photo-1499678329028-101435549a4e?w=1600&auto=format&fit=crop&q=80",
-    imageCredit: "Unsplash"
+    tagline: "Provence · A Thousand Fountains",
+    caption: "Lavender rows under the slow light of Provence.",
+    wikipediaArticle: "Plateau_de_Valensole"
   },
   {
     id: "fontainebleau", name: "Fontainebleau", country: "France",
     arrivalDate: "2026-06-11", departureDate: "2026-06-14",
     lat: 48.4022, lng: 2.7000, order: 5,
+    tagline: "Île-de-France · The Royal Forest",
     caption: "A royal château hemmed by one of France's oldest forests.",
-    image: "https://images.unsplash.com/photo-1551982504-3334a4e3e23a?w=1600&auto=format&fit=crop&q=80",
-    imageCredit: "Unsplash"
+    wikipediaArticle: "Palace_of_Fontainebleau"
   },
 ];
 
@@ -1223,8 +1261,9 @@ async function seedTripIfNeeded() {
     await batch.commit();
     console.log("Seeded trip with 5 towns.");
   } else {
-    // Backfill: existing trip — make sure each town has image/caption fields.
-    // Only fills missing fields; never overwrites user edits.
+    // Backfill for existing trip — add new fields, refresh editorial copy.
+    // Never overwrites user customisations (we only set what's not already set,
+    // except for editorial fields managed by the seed: caption, tagline, wikipediaArticle).
     const batch = writeBatch(db);
     let backfilled = 0;
     for (const seed of TOWN_SEEDS) {
@@ -1233,21 +1272,22 @@ async function seedTripIfNeeded() {
       if (!townSnap.exists()) {
         batch.set(townRef, { ...seed, createdAt: serverTimestamp() });
         backfilled++;
-      } else {
-        const data = townSnap.data();
-        const patch = {};
-        if (!data.image && seed.image) patch.image = seed.image;
-        if (!data.caption && seed.caption) patch.caption = seed.caption;
-        if (!data.imageCredit && seed.imageCredit) patch.imageCredit = seed.imageCredit;
-        if (Object.keys(patch).length) {
-          batch.update(townRef, patch);
-          backfilled++;
-        }
+        continue;
+      }
+      const data = townSnap.data();
+      const patch = {};
+      // Always refresh seed-managed editorial fields if they differ
+      if (data.wikipediaArticle !== seed.wikipediaArticle) patch.wikipediaArticle = seed.wikipediaArticle;
+      if (data.caption !== seed.caption) patch.caption = seed.caption;
+      if (data.tagline !== seed.tagline) patch.tagline = seed.tagline;
+      if (Object.keys(patch).length) {
+        batch.update(townRef, patch);
+        backfilled++;
       }
     }
     if (backfilled) {
       await batch.commit();
-      console.log(`Backfilled ${backfilled} town(s) with new fields.`);
+      console.log(`Backfilled ${backfilled} town(s).`);
     }
   }
 }
@@ -1311,32 +1351,116 @@ function renderSidebarTowns() {
   `).join("");
 }
 
+/* ─────────────────────────────────────────────────────────────
+   IMAGE FETCHING — Wikipedia REST API + localStorage cache
+   ───────────────────────────────────────────────────────────── */
+const IMG_CACHE_KEY = "trip-wiki-img-cache";
+function loadImgCache() {
+  try { return JSON.parse(localStorage.getItem(IMG_CACHE_KEY) || "{}"); }
+  catch { return {}; }
+}
+function saveImgCache(cache) {
+  try { localStorage.setItem(IMG_CACHE_KEY, JSON.stringify(cache)); } catch {}
+}
+const imgCache = loadImgCache();
+const inflightFetches = new Map(); // de-dupe concurrent fetches
+
+async function fetchWikipediaImage(article) {
+  if (!article) return null;
+  if (imgCache[article]) return imgCache[article];
+  if (inflightFetches.has(article)) return inflightFetches.get(article);
+
+  const promise = (async () => {
+    try {
+      const resp = await fetch(
+        `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(article)}`,
+        { headers: { "Accept": "application/json" } }
+      );
+      if (!resp.ok) return null;
+      const data = await resp.json();
+      // Prefer original (high-res); fall back to thumbnail
+      const url = (data.originalimage && data.originalimage.source)
+                || (data.thumbnail && data.thumbnail.source)
+                || null;
+      if (url) {
+        imgCache[article] = url;
+        saveImgCache(imgCache);
+      }
+      return url;
+    } catch (e) {
+      console.warn("Wikipedia image fetch failed for", article, e);
+      return null;
+    }
+  })();
+  inflightFetches.set(article, promise);
+  return promise;
+}
+
 function renderDashboardTowns() {
   const container = document.getElementById("dashboard-towns");
   container.innerHTML = state.towns.map((t, i) => {
     const nights = nightsBetween(t.arrivalDate, t.departureDate);
     const chapter = String(i + 1).padStart(2, "0");
     const name = escapeHtml(t.name);
+    const nameUpper = escapeHtml(t.name.toUpperCase());
+    const tagline = escapeHtml(t.tagline || "");
     const caption = escapeHtml(t.caption || "");
-    const img = t.image
-      ? `<img class="spread-img" src="${escapeHtml(t.image)}" alt="${name}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-         <div class="spread-img-fallback" style="display:none">${name}</div>`
-      : `<div class="spread-img-fallback" style="display:flex">${name}</div>`;
+    // Resolved URL strategy: if wikipediaArticle is set, ALWAYS use Wikipedia
+    // (showing fallback briefly until fetch completes). This bypasses any
+    // stale t.image stored in Firestore from earlier versions.
+    let cachedUrl = "";
+    if (t.wikipediaArticle) {
+      cachedUrl = imgCache[t.wikipediaArticle] || "";
+    } else if (t.image) {
+      cachedUrl = t.image;
+    }
+
     return `
-      <article class="spread">
-        <div class="spread-img-frame">
-          ${img}
+      <article class="spread" data-town-id="${escapeHtml(t.id)}">
+        <div class="spread-spine">
+          <h2 class="spine-name">${nameUpper}</h2>
+          ${tagline ? `<div class="spine-tagline">${tagline}</div>` : ""}
         </div>
-        <div class="spread-text">
-          <div class="spread-chapter">Chapter ${chapter}</div>
-          <h2 class="spread-name">${name}</h2>
-          <div class="spread-dates">${fmtSpreadDates(t.arrivalDate, t.departureDate)}</div>
-          ${caption ? `<p class="spread-caption">${caption}</p>` : ""}
-          <div class="spread-nights">${nights} night${nights === 1 ? "" : "s"}</div>
+        <div class="spread-img-frame">
+          <div class="spread-img-fallback">${name}</div>
+          ${cachedUrl
+            ? `<img class="spread-img" src="${escapeHtml(cachedUrl)}" alt="${name}" loading="lazy"
+                  onload="this.classList.add('loaded')"
+                  onerror="this.remove()">`
+            : ""}
+          <div class="spread-chapter-badge">Chapter ${chapter}</div>
+          ${caption ? `<div class="spread-caption-overlay">${caption}</div>` : ""}
+        </div>
+        <div class="spread-meta">
+          <span>${fmtSpreadDates(t.arrivalDate, t.departureDate)}</span>
+          <span class="spread-nights">${nights} night${nights === 1 ? "" : "s"}</span>
         </div>
       </article>
     `;
   }).join("");
+
+  // Async: for any town without a cached image, fetch from Wikipedia
+  state.towns.forEach(async (t) => {
+    if (t.wikipediaArticle && !imgCache[t.wikipediaArticle]) {
+      const url = await fetchWikipediaImage(t.wikipediaArticle);
+      if (!url) return;
+      // Inject the image into the existing spread without a full re-render
+      const article = container.querySelector(`[data-town-id="${CSS.escape(t.id)}"]`);
+      if (!article) return;
+      const frame = article.querySelector(".spread-img-frame");
+      if (!frame || frame.querySelector(".spread-img")) return; // already there
+      const img = document.createElement("img");
+      img.className = "spread-img";
+      img.src = url;
+      img.alt = t.name;
+      img.loading = "lazy";
+      img.onload = () => img.classList.add("loaded");
+      img.onerror = () => img.remove();
+      // Insert image just after the fallback so chapter badge and caption stay on top
+      const fallback = frame.querySelector(".spread-img-fallback");
+      fallback.after(img);
+    }
+  });
 }
 
 function renderDashboardMeta() {
