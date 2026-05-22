@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#FBFBFA" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#0F0F10" media="(prefers-color-scheme: dark)" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<title>France · May–June 2026</title>
+
+<!--
+================================================================================
+  TRIP COMPANION — Phase 1 Scaffold
+  France: Paris · Annecy · Nice · Aix-en-Provence · Fontainebleau
+================================================================================
+
+  HOW THIS APP WORKS
+  ------------------
+  This is a single-file HTML app backed by Firebase (Auth + Firestore + Storage).
+  Hosted on GitHub Pages, accessible from any device with HTTPS.
+  Both travelers sign in with Google; data syncs in real time and works offline.
+
+  FIREBASE SETUP — REQUIRED BEFORE THIS WILL RUN
+  ----------------------------------------------
+  Full walkthrough is in SETUP.md (alongside this file). Quick version:
+
+  1. Go to https://console.firebase.google.com → "Add project" → name it
+     anything (e.g. "trip-companion"). Disable Google Analytics (not needed).
+
+  2. In the project, enable these three services:
+       a. Authentication → "Get started" → Sign-in method → enable "Google"
+       b. Firestore Database → "Create database" → Start in production mode →
+          pick a region close to you (e.g. eur3 for Europe)
+       c. Storage → "Get started" → Start in production mode → same region
+
+  3. Project Settings (gear icon) → scroll to "Your apps" → click the </> icon
+     to register a web app. Copy the firebaseConfig object.
+
+  4. Paste your firebaseConfig values into the FIREBASE_CONFIG block below.
+
+  5. Add the two Google account emails of the trip travelers to the
+     ALLOWED_EMAILS array below.
+
+  6. Paste the Firestore security rules from SETUP.md into Firestore →
+     Rules tab. Do the same for Storage → Rules tab. These rules ensure
+     only allowlisted users can read/write trip data.
+
+  7. Authentication → Settings → Authorized domains → add your GitHub Pages
+     domain (e.g. yourname.github.io). localhost is already authorized
+     for testing.
+
+  HOSTING ON GITHUB PAGES
+  -----------------------
+  1. Create a private GitHub repo, upload this file as index.html
+  2. Repo Settings → Pages → Source: deploy from main branch, root folder
+  3. Wait ~1 minute, visit https://<your-username>.github.io/<repo-name>/
+  4. On your phone, open that URL in Safari/Chrome → Share → Add to Home Screen
+
+  PHASE 1 SCOPE (this file)
+  -------------------------
+  ✓ Firebase init and Google sign-in
+  ✓ Email allowlist gate
+  ✓ Light/dark theme with system detection and manual override
+  ✓ Responsive app shell (sidebar on desktop, bottom nav on mobile)
+  ✓ Empty view containers ready for Phase 2 content
+  ✓ Seeded trip data (France itinerary, towns) created on first sign-in
+  ✓ Connection status indicator
+  ✓ Reactive state store with Firestore listeners
+
+  COMING IN LATER PHASES
+  ----------------------
+  Phase 2: Add/edit spots, draggable itinerary cards, detail drawer
+  Phase 3: Map view (Leaflet), food view, dashboard
+  Phase 4: Attachments (Firebase Storage), budget tracker with charts
+  Phase 5: Service worker, offline polish, map tile pre-caching
+================================================================================
+-->
+
+<style>
+  /* ============================================================
+     DESIGN TOKENS
+     ============================================================ */
+  :root {
+    /* Light mode — warm, restrained, editorial */
+    --bg: #FBFBFA;
+    --surface: #FFFFFF;
+    --surface-2: #F5F4F1;
+    --border: #E8E6E1;
+    --border-strong: #D6D3CC;
+    --text: #1A1A1A;
+    --text-2: #6B6B6B;
+    --text-3: #9A968F;
+
+    /* Accent — muted terracotta (works both modes) */
+    --accent: #C2553D;
+    --accent-soft: #E8B8AC;
+    --accent-bg: rgba(194, 85, 61, 0.08);
+
+    /* Semantic */
+    --success: #6F8B68;
+    --warning: #C99744;
+    --danger: #B85342;
+
+    /* Type-specific tints */
+    --tint-sight: #5B7A99;
+    --tint-food: #C99744;
+    --tint-experience: #6F8B68;
+
+    /* Effects */
+    --shadow-sm: 0 1px 2px rgba(20, 18, 14, 0.04), 0 1px 1px rgba(20, 18, 14, 0.03);
+    --shadow-md: 0 4px 12px rgba(20, 18, 14, 0.06), 0 2px 4px rgba(20, 18, 14, 0.04);
+    --shadow-lg: 0 20px 40px rgba(20, 18, 14, 0.12), 0 8px 16px rgba(20, 18, 14, 0.06);
+
+    --radius-sm: 6px;
+    --radius: 10px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+
+    --ease: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+    --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+  }
+
+  [data-theme="dark"] {
+    --bg: #0F0F10;
+    --surface: #18181A;
+    --surface-2: #1F1F22;
+    --border: #2A2A2D;
+    --border-strong: #3A3A3E;
+    --text: #F2F2F0;
+    --text-2: #9A9A99;
+    --text-3: #6B6B6A;
+
+    --accent: #E67E4D;
+    --accent-soft: #6B3A26;
+    --accent-bg: rgba(230, 126, 77, 0.12);
+
+    --success: #8AA582;
+    --warning: #D9A85C;
+    --danger: #D06B5B;
+
+    --tint-sight: #7892B0;
+    --tint-food: #D9A85C;
+    --tint-experience: #8AA582;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
+    --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.45);
+  }
+
+  /* ============================================================
+     RESET & BASE
+     ============================================================ */
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body {
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--text);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background 240ms var(--ease), color 240ms var(--ease);
+    overscroll-behavior-y: none;
+  }
+  button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+  h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; letter-spacing: -0.02em; margin: 0; }
+  h1 { font-size: 2rem; }
+  h2 { font-size: 1.5rem; }
+  h3 { font-size: 1.125rem; font-weight: 600; }
+  ::selection { background: var(--accent-bg); color: var(--accent); }
+
+  /* ============================================================
+     LOADING SCREEN
+     ============================================================ */
+  #boot-screen {
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--bg);
+    z-index: 100;
+    transition: opacity 300ms var(--ease);
+  }
+  #boot-screen.hidden { opacity: 0; pointer-events: none; }
+  .boot-mark {
+    display: flex; flex-direction: column; align-items: center; gap: 16px;
+    color: var(--text-2);
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 1.25rem;
+  }
+  .boot-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.4); opacity: 0.5; }
+  }
+
+  /* ============================================================
+     AUTH SCREEN
+     ============================================================ */
+  #auth-screen {
+    position: fixed; inset: 0;
+    display: none;
+    align-items: center; justify-content: center;
+    padding: 24px;
+    background:
+      radial-gradient(ellipse at top left, var(--accent-bg) 0%, transparent 60%),
+      radial-gradient(ellipse at bottom right, var(--accent-bg) 0%, transparent 60%),
+      var(--bg);
+  }
+  #auth-screen.visible { display: flex; }
+
+  .auth-card {
+    width: 100%; max-width: 420px;
+    text-align: center;
+    padding: 48px 32px;
+  }
+  .auth-eyebrow {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 0.95rem;
+    color: var(--accent);
+    margin-bottom: 12px;
+    letter-spacing: 0.01em;
+  }
+  .auth-title {
+    font-family: var(--font-display);
+    font-size: 2.5rem;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    margin-bottom: 20px;
+  }
+  .auth-title em { font-style: italic; font-weight: 400; }
+  .auth-dates {
+    font-size: 0.875rem;
+    color: var(--text-2);
+    margin-bottom: 40px;
+    letter-spacing: 0.02em;
+  }
+  .auth-dates::before, .auth-dates::after {
+    content: "·"; margin: 0 10px; color: var(--text-3);
+  }
+  .google-btn {
+    display: inline-flex; align-items: center; gap: 12px;
+    padding: 13px 24px;
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    font-size: 0.95rem; font-weight: 500;
+    box-shadow: var(--shadow-sm);
+    transition: all 180ms var(--ease);
+  }
+  .google-btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); border-color: var(--text-3); }
+  .google-btn:active { transform: translateY(0); }
+  .google-btn svg { width: 18px; height: 18px; }
+  .auth-foot {
+    margin-top: 32px;
+    font-size: 0.8125rem;
+    color: var(--text-3);
+    line-height: 1.6;
+  }
+  .auth-error {
+    margin-top: 24px;
+    padding: 12px 16px;
+    background: rgba(184, 83, 66, 0.08);
+    border: 1px solid rgba(184, 83, 66, 0.2);
+    color: var(--danger);
+    border-radius: var(--radius);
+    font-size: 0.875rem;
+    display: none;
+  }
+  .auth-error.visible { display: block; }
+
+  /* ============================================================
+     APP SHELL
+     ============================================================ */
+  #app {
+    display: none;
+    height: 100vh; height: 100dvh;
+    grid-template-columns: 240px 1fr;
+  }
+  #app.visible { display: grid; }
+
+  /* --- Sidebar (desktop) --- */
+  .sidebar {
+    background: var(--surface-2);
+    border-right: 1px solid var(--border);
+    padding: 24px 16px;
+    display: flex; flex-direction: column;
+    gap: 4px;
+    overflow-y: auto;
+  }
+  .sidebar-brand {
+    padding: 4px 12px 24px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+  .sidebar-brand-trip {
+    font-family: var(--font-display);
+    font-size: 1.125rem;
+    font-style: italic;
+    line-height: 1.2;
+  }
+  .sidebar-brand-dates {
+    font-size: 0.75rem;
+    color: var(--text-2);
+    margin-top: 4px;
+    letter-spacing: 0.02em;
+  }
+  .nav-section {
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-3);
+    padding: 16px 12px 8px;
+    font-weight: 500;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 9px 12px;
+    border-radius: var(--radius-sm);
+    color: var(--text-2);
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-align: left;
+    width: 100%;
+    transition: all 140ms var(--ease);
+  }
+  .nav-item:hover { background: var(--surface); color: var(--text); }
+  .nav-item.active {
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: var(--shadow-sm);
+  }
+  .nav-item svg { width: 16px; height: 16px; stroke-width: 1.75; flex-shrink: 0; }
+  .nav-item .town-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent); flex-shrink: 0;
+  }
+
+  .sidebar-foot {
+    margin-top: auto;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .user-chip {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px;
+    font-size: 0.8125rem;
+    color: var(--text-2);
+  }
+  .user-avatar {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--accent-bg); color: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem; font-weight: 600;
+    flex-shrink: 0;
+  }
+  .user-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+  .user-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+
+  /* --- Main content area --- */
+  .main {
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  .topbar {
+    position: sticky; top: 0;
+    background: rgba(251, 251, 250, 0.85);
+    backdrop-filter: saturate(180%) blur(12px);
+    -webkit-backdrop-filter: saturate(180%) blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 32px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px;
+    z-index: 10;
+  }
+  [data-theme="dark"] .topbar { background: rgba(15, 15, 16, 0.85); }
+  .topbar-title {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    letter-spacing: -0.02em;
+  }
+  .topbar-actions { display: flex; align-items: center; gap: 4px; }
+  .icon-btn {
+    width: 36px; height: 36px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: var(--radius-sm);
+    color: var(--text-2);
+    transition: all 140ms var(--ease);
+  }
+  .icon-btn:hover { background: var(--surface-2); color: var(--text); }
+  .icon-btn svg { width: 18px; height: 18px; stroke-width: 1.75; }
+
+  .content {
+    padding: 32px;
+    max-width: 1200px;
+  }
+
+  /* --- Bottom nav (mobile) --- */
+  .bottom-nav { display: none; }
+
+  /* --- Placeholder views --- */
+  .placeholder {
+    padding: 48px 24px;
+    text-align: center;
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--radius-lg);
+    color: var(--text-2);
+    background: var(--surface);
+  }
+  .placeholder-eyebrow {
+    font-family: var(--font-display);
+    font-style: italic;
+    color: var(--accent);
+    font-size: 0.875rem;
+    margin-bottom: 8px;
+  }
+  .placeholder h2 {
+    color: var(--text);
+    margin-bottom: 12px;
+  }
+  .placeholder p { max-width: 420px; margin: 0 auto; font-size: 0.9375rem; }
+
+  .view { display: none; animation: fadeIn 240ms var(--ease-out); }
+  .view.active { display: block; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* --- Dashboard preview (real content for Phase 1) --- */
+  .hero {
+    padding: 8px 0 32px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 32px;
+  }
+  .hero-eyebrow {
+    font-family: var(--font-display);
+    font-style: italic;
+    color: var(--accent);
+    font-size: 1rem;
+    margin-bottom: 8px;
+  }
+  .hero-title {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 5vw, 3.25rem);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    margin-bottom: 16px;
+  }
+  .hero-title em { font-style: italic; color: var(--accent); }
+  .hero-meta {
+    display: flex; flex-wrap: wrap; gap: 24px;
+    color: var(--text-2);
+    font-size: 0.9375rem;
+  }
+  .hero-meta-item { display: flex; align-items: center; gap: 8px; }
+  .hero-meta-item svg { width: 16px; height: 16px; stroke-width: 1.75; color: var(--text-3); }
+
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+  .stat {
+    padding: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    transition: all 200ms var(--ease);
+  }
+  .stat:hover { border-color: var(--border-strong); }
+  .stat-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-3);
+    margin-bottom: 8px;
+  }
+  .stat-value {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .stat-suffix {
+    font-size: 0.875rem;
+    color: var(--text-2);
+    margin-left: 6px;
+    font-family: var(--font-body);
+  }
+
+  .section-title {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .section-title h2 { font-family: var(--font-display); font-style: italic; font-weight: 400; }
+  .section-title-meta { font-size: 0.8125rem; color: var(--text-3); }
+
+  .town-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+  }
+  .town-card {
+    padding: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    transition: all 200ms var(--ease);
+    position: relative;
+    overflow: hidden;
+  }
+  .town-card::before {
+    content: "";
+    position: absolute; left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--accent);
+    opacity: 0;
+    transition: opacity 200ms var(--ease);
+  }
+  .town-card:hover {
+    border-color: var(--border-strong);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+  .town-card:hover::before { opacity: 1; }
+  .town-name {
+    font-family: var(--font-display);
+    font-size: 1.375rem;
+    margin-bottom: 4px;
+    letter-spacing: -0.02em;
+  }
+  .town-dates {
+    font-size: 0.8125rem;
+    color: var(--text-2);
+    margin-bottom: 12px;
+  }
+  .town-nights {
+    display: inline-block;
+    font-size: 0.75rem;
+    color: var(--text-3);
+    padding: 2px 8px;
+    background: var(--surface-2);
+    border-radius: 100px;
+  }
+
+  /* --- Status indicator --- */
+  .status-dot {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 0.75rem;
+    color: var(--text-2);
+    padding: 0 8px;
+  }
+  .status-dot::before {
+    content: "";
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--success);
+  }
+  .status-dot.offline::before { background: var(--text-3); }
+  .status-dot.syncing::before { background: var(--warning); animation: pulse 1.4s ease-in-out infinite; }
+
+  /* ============================================================
+     RESPONSIVE — MOBILE
+     ============================================================ */
+  @media (max-width: 768px) {
+    #app.visible {
+      grid-template-columns: 1fr;
+      grid-template-rows: 1fr auto;
+    }
+    .sidebar { display: none; }
+
+    .topbar {
+      padding: 14px 20px;
+      padding-top: max(14px, env(safe-area-inset-top));
+    }
+    .topbar-title { font-size: 1.25rem; }
+
+    .content { padding: 20px; padding-bottom: 100px; }
+
+    .bottom-nav {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      background: rgba(251, 251, 250, 0.95);
+      backdrop-filter: saturate(180%) blur(16px);
+      -webkit-backdrop-filter: saturate(180%) blur(16px);
+      border-top: 1px solid var(--border);
+      padding: 8px 0;
+      padding-bottom: max(8px, env(safe-area-inset-bottom));
+      position: sticky;
+      bottom: 0;
+      z-index: 10;
+    }
+    [data-theme="dark"] .bottom-nav { background: rgba(15, 15, 16, 0.95); }
+    .bottom-nav-item {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      padding: 6px 4px;
+      color: var(--text-3);
+      font-size: 0.6875rem;
+      font-weight: 500;
+      transition: color 140ms var(--ease);
+    }
+    .bottom-nav-item.active { color: var(--accent); }
+    .bottom-nav-item svg { width: 20px; height: 20px; stroke-width: 1.75; }
+
+    .hero-title { font-size: 2rem; }
+    .stat-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .stat { padding: 14px; }
+    .stat-value { font-size: 1.5rem; }
+    .town-list { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body data-theme="light">
+
+<!-- ============================================================
+     BOOT SCREEN — shown until Firebase init completes
+     ============================================================ -->
+<div id="boot-screen">
+  <div class="boot-mark">
+    <div class="boot-dot"></div>
+    <div>en route</div>
+  </div>
+</div>
+
+<!-- ============================================================
+     AUTH SCREEN — sign in with Google
+     ============================================================ -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-eyebrow">un voyage en</div>
+    <h1 class="auth-title">France, <em>printemps</em></h1>
+    <div class="auth-dates">28 May — 14 June 2026</div>
+
+    <button id="google-signin" class="google-btn">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+      </svg>
+      Continue with Google
+    </button>
+
+    <div id="auth-error" class="auth-error"></div>
+
+    <div class="auth-foot">
+      A private trip planner for two travelers.<br>
+      Sign in with your invited Google account.
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     APP SHELL
+     ============================================================ -->
+<div id="app">
+
+  <!-- Sidebar (desktop) -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-brand-trip">France, <em>printemps</em></div>
+      <div class="sidebar-brand-dates">28 May — 14 Jun 2026</div>
+    </div>
+
+    <div class="nav-section">Views</div>
+    <button class="nav-item active" data-view="dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Dashboard
+    </button>
+    <button class="nav-item" data-view="itinerary">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 2v4M16 2v4M3 10h18M5 6h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/></svg>
+      Itinerary
+    </button>
+    <button class="nav-item" data-view="food">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 11h18l-1.5 9a2 2 0 0 1-2 1.7H6.5a2 2 0 0 1-2-1.7L3 11z"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      Food
+    </button>
+    <button class="nav-item" data-view="map">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      Map
+    </button>
+    <button class="nav-item" data-view="budget">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      Budget
+    </button>
+    <button class="nav-item" data-view="documents">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Documents
+    </button>
+
+    <div class="nav-section" id="towns-section-label">Towns</div>
+    <div id="sidebar-towns"></div>
+
+    <div class="sidebar-foot">
+      <div id="status-indicator" class="status-dot">Synced</div>
+      <div class="user-chip">
+        <div class="user-avatar" id="user-avatar">·</div>
+        <div class="user-name" id="user-name">Loading…</div>
+        <button class="icon-btn" id="signout-btn" title="Sign out" aria-label="Sign out">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <main class="main">
+    <header class="topbar">
+      <div class="topbar-title" id="topbar-title">Dashboard</div>
+      <div class="topbar-actions">
+        <button class="icon-btn" id="theme-toggle" title="Toggle theme" aria-label="Toggle theme">
+          <svg id="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+          <svg id="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="display:none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- DASHBOARD VIEW (Phase 1 shows real content here) -->
+      <section class="view active" id="view-dashboard">
+        <div class="hero">
+          <div class="hero-eyebrow">a journey through</div>
+          <h1 class="hero-title">Paris, <em>Annecy</em>, Nice,<br>Aix &amp; <em>Fontainebleau</em></h1>
+          <div class="hero-meta">
+            <div class="hero-meta-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <span id="trip-dates">28 May — 14 Jun 2026</span>
+            </div>
+            <div class="hero-meta-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/></svg>
+              <span>5 towns</span>
+            </div>
+            <div class="hero-meta-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <span id="countdown">…</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="stat-grid">
+          <div class="stat">
+            <div class="stat-label">Duration</div>
+            <div class="stat-value">17<span class="stat-suffix">days</span></div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Towns</div>
+            <div class="stat-value">5</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Spots planned</div>
+            <div class="stat-value" id="stat-spots">0</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Budget · EUR</div>
+            <div class="stat-value">—</div>
+          </div>
+        </div>
+
+        <div class="section-title">
+          <h2>The route</h2>
+          <span class="section-title-meta">5 stops · 17 nights</span>
+        </div>
+        <div class="town-list" id="dashboard-towns"></div>
+      </section>
+
+      <!-- Placeholder views for Phase 2+ -->
+      <section class="view" id="view-itinerary">
+        <div class="placeholder">
+          <div class="placeholder-eyebrow">coming next</div>
+          <h2>Itinerary</h2>
+          <p>Day-by-day timeline with draggable cards. Tap any spot to open its detail panel with notes, photos, tickets, and confirmations.</p>
+        </div>
+      </section>
+
+      <section class="view" id="view-food">
+        <div class="placeholder">
+          <div class="placeholder-eyebrow">coming next</div>
+          <h2>Food</h2>
+          <p>Restaurants, cafés, markets, and patisseries by town and neighborhood. Wishlist and scheduled meals in one place.</p>
+        </div>
+      </section>
+
+      <section class="view" id="view-map">
+        <div class="placeholder">
+          <div class="placeholder-eyebrow">coming next</div>
+          <h2>Map</h2>
+          <p>Every spot on an interactive map. Filter by town, type, or tag. Pre-cache tiles before you leave wifi.</p>
+        </div>
+      </section>
+
+      <section class="view" id="view-budget">
+        <div class="placeholder">
+          <div class="placeholder-eyebrow">coming next</div>
+          <h2>Budget</h2>
+          <p>Planned vs. actual spending by category and payment method. Charts, totals, and per-town breakdowns — all in euros.</p>
+        </div>
+      </section>
+
+      <section class="view" id="view-documents">
+        <div class="placeholder">
+          <div class="placeholder-eyebrow">coming next</div>
+          <h2>Documents</h2>
+          <p>All your tickets, QR codes, and confirmations in one place. Pin the ones you need at the airport.</p>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- Mobile bottom nav -->
+    <nav class="bottom-nav">
+      <button class="bottom-nav-item active" data-view="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        <span>Home</span>
+      </button>
+      <button class="bottom-nav-item" data-view="itinerary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 2v4M16 2v4M3 10h18M5 6h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/></svg>
+        <span>Plan</span>
+      </button>
+      <button class="bottom-nav-item" data-view="map">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        <span>Map</span>
+      </button>
+      <button class="bottom-nav-item" data-view="budget">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        <span>Budget</span>
+      </button>
+      <button class="bottom-nav-item" data-view="more">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+        <span>More</span>
+      </button>
+    </nav>
+  </main>
+</div>
+
+<!-- ============================================================
+     FONTS
+     ============================================================ -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- ============================================================
+     APPLICATION SCRIPT
+     ============================================================ -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+import {
+  getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  getFirestore, doc, getDoc, setDoc, collection, getDocs,
+  enableIndexedDbPersistence, onSnapshot, writeBatch, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+/* ─────────────────────────────────────────────────────────────
+   FIREBASE CONFIG — REPLACE WITH YOUR VALUES (see SETUP.md)
+   ───────────────────────────────────────────────────────────── */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyA5zjXweiXgFakCYMQCE0tEkUrhI4UqwiM",
+  authDomain: "weyage-ed0cb.firebaseapp.com",
+  projectId: "weyage-ed0cb",
+  storageBucket: "weyage-ed0cb.firebasestorage.app",
+  messagingSenderId: "1002189778782",
+  appId: "1:1002189778782:web:81493906785a07658b69cf"
+};
+
+/* ─────────────────────────────────────────────────────────────
+   ALLOWED USERS — add the Google email of each traveler
+   ───────────────────────────────────────────────────────────── */
+const ALLOWED_EMAILS = [
+   "jacobjohn28@gmail.com",
+   "ssusan.koruthu@gmail.com",
+];
+
+/* ─────────────────────────────────────────────────────────────
+   TRIP CONSTANTS — pre-populated from initial planning
+   ───────────────────────────────────────────────────────────── */
+const TRIP_ID = "france-spring-2026";
+const TRIP_SEED = {
+  name: "France, printemps",
+  startDate: "2026-05-28",
+  endDate: "2026-06-14",
+  currency: "EUR",
+  tags: ["Must-Try", "UNESCO", "Hidden Gem", "Local Favorite", "Splurge", "Reservation"],
+  paymentMethods: ["Card", "Cash", "Revolut"],
+  categories: ["Food", "Sights", "Transport", "Lodging", "Shopping", "Other"],
+};
+const TOWN_SEEDS = [
+  { id: "paris",          name: "Paris",            country: "France", arrivalDate: "2026-05-28", departureDate: "2026-06-01", lat: 48.8566, lng:  2.3522, order: 1 },
+  { id: "annecy",         name: "Annecy",           country: "France", arrivalDate: "2026-06-01", departureDate: "2026-06-04", lat: 45.8992, lng:  6.1294, order: 2 },
+  { id: "nice",           name: "Nice",             country: "France", arrivalDate: "2026-06-04", departureDate: "2026-06-07", lat: 43.7102, lng:  7.2620, order: 3 },
+  { id: "aix-en-provence",name: "Aix-en-Provence",  country: "France", arrivalDate: "2026-06-07", departureDate: "2026-06-11", lat: 43.5297, lng:  5.4474, order: 4 },
+  { id: "fontainebleau",  name: "Fontainebleau",    country: "France", arrivalDate: "2026-06-11", departureDate: "2026-06-14", lat: 48.4022, lng:  2.7000, order: 5 },
+];
+
+/* ─────────────────────────────────────────────────────────────
+   STATE STORE — tiny reactive object
+   ───────────────────────────────────────────────────────────── */
+const state = {
+  user: null,
+  trip: null,
+  towns: [],
+  spots: [],
+  currentView: "dashboard",
+  theme: "light",
+  online: navigator.onLine,
+};
+const listeners = new Set();
+const subscribe = (fn) => { listeners.add(fn); return () => listeners.delete(fn); };
+const notify = () => listeners.forEach(fn => fn(state));
+const setState = (patch) => { Object.assign(state, patch); notify(); };
+
+/* ─────────────────────────────────────────────────────────────
+   THEME — system preference + manual override
+   ───────────────────────────────────────────────────────────── */
+function applyTheme(theme) {
+  document.body.setAttribute("data-theme", theme);
+  state.theme = theme;
+  const sun = document.getElementById("theme-icon-sun");
+  const moon = document.getElementById("theme-icon-moon");
+  sun.style.display = theme === "light" ? "none" : "";
+  moon.style.display = theme === "light" ? "" : "none";
+  // Update PWA theme-color
+  const meta = document.querySelector('meta[name="theme-color"]:not([media])');
+  if (meta) meta.setAttribute("content", theme === "dark" ? "#0F0F10" : "#FBFBFA");
+}
+function initTheme() {
+  const stored = localStorage.getItem("trip-theme");
+  if (stored === "light" || stored === "dark") {
+    applyTheme(stored);
+  } else {
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    applyTheme(prefersDark ? "dark" : "light");
+  }
+  // Listen for OS theme changes if user hasn't manually chosen
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
+    if (!localStorage.getItem("trip-theme")) {
+      applyTheme(e.matches ? "dark" : "light");
+    }
+  });
+}
+document.getElementById("theme-toggle").addEventListener("click", () => {
+  const next = state.theme === "light" ? "dark" : "light";
+  localStorage.setItem("trip-theme", next);
+  applyTheme(next);
+});
+
+/* ─────────────────────────────────────────────────────────────
+   ONLINE / OFFLINE STATUS
+   ───────────────────────────────────────────────────────────── */
+function updateStatusIndicator() {
+  const el = document.getElementById("status-indicator");
+  if (!el) return;
+  if (!state.online) {
+    el.className = "status-dot offline";
+    el.textContent = "Offline";
+  } else {
+    el.className = "status-dot";
+    el.textContent = "Synced";
+  }
+}
+window.addEventListener("online", () => { state.online = true; updateStatusIndicator(); });
+window.addEventListener("offline", () => { state.online = false; updateStatusIndicator(); });
+
+/* ─────────────────────────────────────────────────────────────
+   VIEW ROUTING
+   ───────────────────────────────────────────────────────────── */
+function setView(viewName) {
+  if (viewName === "more") return; // Phase 1: ignore the "More" mobile tab
+  state.currentView = viewName;
+  document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+  const el = document.getElementById("view-" + viewName);
+  if (el) el.classList.add("active");
+  document.querySelectorAll(".nav-item, .bottom-nav-item").forEach(b => {
+    b.classList.toggle("active", b.dataset.view === viewName);
+  });
+  const titles = { dashboard: "Dashboard", itinerary: "Itinerary", food: "Food", map: "Map", budget: "Budget", documents: "Documents" };
+  document.getElementById("topbar-title").textContent = titles[viewName] || "Dashboard";
+}
+document.querySelectorAll(".nav-item, .bottom-nav-item").forEach(btn => {
+  btn.addEventListener("click", () => setView(btn.dataset.view));
+});
+
+/* ─────────────────────────────────────────────────────────────
+   FIREBASE INIT
+   ───────────────────────────────────────────────────────────── */
+let app, auth, db;
+function isConfigured() {
+  return FIREBASE_CONFIG.apiKey && !FIREBASE_CONFIG.apiKey.startsWith("REPLACE_ME");
+}
+
+async function initFirebase() {
+  app = initializeApp(FIREBASE_CONFIG);
+  auth = getAuth(app);
+  db = getFirestore(app);
+  // Enable offline persistence for Firestore (must be called before any other Firestore use)
+  try {
+    await enableIndexedDbPersistence(db);
+  } catch (err) {
+    if (err.code === "failed-precondition") {
+      console.warn("Offline persistence: multiple tabs open, only one will be persistent.");
+    } else if (err.code === "unimplemented") {
+      console.warn("Offline persistence: browser does not support this feature.");
+    }
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   AUTH FLOW
+   ───────────────────────────────────────────────────────────── */
+function showAuthScreen(errorMessage) {
+  document.getElementById("boot-screen").classList.add("hidden");
+  document.getElementById("auth-screen").classList.add("visible");
+  document.getElementById("app").classList.remove("visible");
+  const err = document.getElementById("auth-error");
+  if (errorMessage) {
+    err.textContent = errorMessage;
+    err.classList.add("visible");
+  } else {
+    err.classList.remove("visible");
+  }
+}
+function showApp() {
+  document.getElementById("boot-screen").classList.add("hidden");
+  document.getElementById("auth-screen").classList.remove("visible");
+  document.getElementById("app").classList.add("visible");
+}
+
+document.getElementById("google-signin").addEventListener("click", async () => {
+  if (!isConfigured()) {
+    showAuthScreen("Firebase isn't configured yet. Open this file in an editor and follow the SETUP.md instructions, then add your Firebase config and your two Google emails.");
+    return;
+  }
+  try {
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: "select_account" });
+    await signInWithPopup(auth, provider);
+  } catch (err) {
+    console.error(err);
+    showAuthScreen("Sign-in failed: " + (err.message || err.code));
+  }
+});
+
+document.getElementById("signout-btn").addEventListener("click", () => signOut(auth));
+
+function isAllowed(email) {
+  if (!email) return false;
+  if (ALLOWED_EMAILS.length === 0) return false;
+  return ALLOWED_EMAILS.map(e => e.toLowerCase()).includes(email.toLowerCase());
+}
+
+function setupUserChip(user) {
+  const avatar = document.getElementById("user-avatar");
+  const name = document.getElementById("user-name");
+  if (user.photoURL) {
+    avatar.innerHTML = `<img src="${user.photoURL}" alt="">`;
+  } else {
+    avatar.textContent = (user.displayName || user.email || "?").charAt(0).toUpperCase();
+  }
+  name.textContent = user.displayName || user.email;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   FIRESTORE: SEED + LISTEN
+   ───────────────────────────────────────────────────────────── */
+async function seedTripIfNeeded() {
+  const tripRef = doc(db, "trips", TRIP_ID);
+  const tripSnap = await getDoc(tripRef);
+  if (!tripSnap.exists()) {
+    const batch = writeBatch(db);
+    batch.set(tripRef, {
+      ...TRIP_SEED,
+      allowedUsers: ALLOWED_EMAILS.map(e => e.toLowerCase()),
+      createdAt: serverTimestamp(),
+    });
+    for (const town of TOWN_SEEDS) {
+      const townRef = doc(db, "trips", TRIP_ID, "towns", town.id);
+      batch.set(townRef, { ...town, createdAt: serverTimestamp() });
+    }
+    await batch.commit();
+    console.log("Seeded trip with 5 towns.");
+  }
+}
+
+function listenToTrip() {
+  // Trip document
+  onSnapshot(doc(db, "trips", TRIP_ID), (snap) => {
+    if (snap.exists()) setState({ trip: { id: snap.id, ...snap.data() } });
+  });
+  // Towns subcollection
+  onSnapshot(collection(db, "trips", TRIP_ID, "towns"), (snap) => {
+    const towns = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    towns.sort((a, b) => (a.order || 0) - (b.order || 0));
+    setState({ towns });
+  });
+  // Spots subcollection (Phase 1: just count them)
+  onSnapshot(collection(db, "trips", TRIP_ID, "spots"), (snap) => {
+    const spots = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    setState({ spots });
+  });
+}
+
+/* ─────────────────────────────────────────────────────────────
+   RENDERERS
+   ───────────────────────────────────────────────────────────── */
+function fmtDateRange(startISO, endISO) {
+  const start = new Date(startISO + "T00:00:00");
+  const end = new Date(endISO + "T00:00:00");
+  const sm = start.toLocaleDateString("en-GB", { month: "short", day: "numeric" });
+  const em = end.toLocaleDateString("en-GB", { month: "short", day: "numeric", year: "numeric" });
+  return `${sm} — ${em}`;
+}
+function nightsBetween(a, b) {
+  return Math.round((new Date(b) - new Date(a)) / 86400000);
+}
+function daysUntil(dateStr) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const target = new Date(dateStr + "T00:00:00");
+  return Math.round((target - today) / 86400000);
+}
+
+function renderSidebarTowns() {
+  const container = document.getElementById("sidebar-towns");
+  container.innerHTML = state.towns.map(t => `
+    <button class="nav-item" data-town="${t.id}">
+      <span class="town-dot"></span>
+      ${t.name}
+    </button>
+  `).join("");
+}
+
+function renderDashboardTowns() {
+  const container = document.getElementById("dashboard-towns");
+  container.innerHTML = state.towns.map(t => {
+    const nights = nightsBetween(t.arrivalDate, t.departureDate);
+    return `
+      <div class="town-card">
+        <div class="town-name">${t.name}</div>
+        <div class="town-dates">${fmtDateRange(t.arrivalDate, t.departureDate)}</div>
+        <span class="town-nights">${nights} night${nights === 1 ? "" : "s"}</span>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderDashboardMeta() {
+  if (state.trip) {
+    document.getElementById("trip-dates").textContent =
+      fmtDateRange(state.trip.startDate, state.trip.endDate);
+    const days = daysUntil(state.trip.startDate);
+    const cd = document.getElementById("countdown");
+    if (days > 0) cd.textContent = `${days} days to go`;
+    else if (days === 0) cd.textContent = `Bon voyage`;
+    else cd.textContent = `In progress`;
+  }
+  document.getElementById("stat-spots").textContent = state.spots.length;
+}
+
+subscribe(() => {
+  if (state.towns.length) {
+    renderSidebarTowns();
+    renderDashboardTowns();
+  }
+  renderDashboardMeta();
+});
+
+/* ─────────────────────────────────────────────────────────────
+   APP INIT
+   ───────────────────────────────────────────────────────────── */
+async function init() {
+  initTheme();
+  updateStatusIndicator();
+
+  if (!isConfigured() || ALLOWED_EMAILS.length === 0) {
+    showAuthScreen(
+      !isConfigured()
+        ? "Setup required: open this file and fill in FIREBASE_CONFIG. See SETUP.md for the full walkthrough."
+        : "Setup required: add your Google emails to the ALLOWED_EMAILS array. See SETUP.md."
+    );
+    return;
+  }
+
+  await initFirebase();
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      showAuthScreen();
+      return;
+    }
+    if (!isAllowed(user.email)) {
+      await signOut(auth);
+      showAuthScreen(`This trip is private. ${user.email} is not on the guest list.`);
+      return;
+    }
+    setState({ user });
+    setupUserChip(user);
+    try {
+      await seedTripIfNeeded();
+      listenToTrip();
+      showApp();
+    } catch (err) {
+      console.error("Init error:", err);
+      showAuthScreen("Couldn't load trip data: " + (err.message || err.code));
+    }
+  });
+}
+
+init();
+</script>
+</body>
+</html>
