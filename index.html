@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#FBFBFA" media="(prefers-color-scheme: light)" />
 <meta name="theme-color" content="#0F0F10" media="(prefers-color-scheme: dark)" />
+<meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <title>France · May–June 2026</title>
@@ -857,14 +858,16 @@
      APPLICATION SCRIPT
      ============================================================ -->
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
-import {
-  getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import {
-  getFirestore, doc, getDoc, setDoc, collection, getDocs,
-  enableIndexedDbPersistence, onSnapshot, writeBatch, serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+// Firebase SDK is loaded via dynamic import inside initFirebase() rather than
+// static imports. This ensures each module is fully registered before we use
+// its exports, avoiding "Component auth has not been registered yet" errors
+// that can occur with parallel static imports on some networks/browsers.
+const FIREBASE_VERSION = "10.13.2";
+const FIREBASE_BASE = `https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}`;
+
+let initializeApp, getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged;
+let getFirestore, doc, getDoc, setDoc, collection, getDocs;
+let enableIndexedDbPersistence, onSnapshot, writeBatch, serverTimestamp;
 
 /* ─────────────────────────────────────────────────────────────
    FIREBASE CONFIG — REPLACE WITH YOUR VALUES (see SETUP.md)
@@ -1004,10 +1007,23 @@ function isConfigured() {
 }
 
 async function initFirebase() {
+  // Dynamic imports — load each Firebase module sequentially so each module's
+  // internal component registration completes before the next runs.
+  const appMod = await import(`${FIREBASE_BASE}/firebase-app.js`);
+  initializeApp = appMod.initializeApp;
+
+  const authMod = await import(`${FIREBASE_BASE}/firebase-auth.js`);
+  ({ getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } = authMod);
+
+  const fsMod = await import(`${FIREBASE_BASE}/firebase-firestore.js`);
+  ({ getFirestore, doc, getDoc, setDoc, collection, getDocs,
+     enableIndexedDbPersistence, onSnapshot, writeBatch, serverTimestamp } = fsMod);
+
   app = initializeApp(FIREBASE_CONFIG);
   auth = getAuth(app);
   db = getFirestore(app);
-  // Enable offline persistence for Firestore (must be called before any other Firestore use)
+
+  // Enable offline persistence for Firestore (best effort — safe to fail)
   try {
     await enableIndexedDbPersistence(db);
   } catch (err) {
@@ -1219,7 +1235,10 @@ async function init() {
   });
 }
 
-init();
+init().catch((err) => {
+  console.error("Boot error:", err);
+  showAuthScreen("Couldn't start the app: " + (err.message || err.code || err));
+});
 </script>
 </body>
 </html>
