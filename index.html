@@ -234,10 +234,11 @@
   }
   .auth-title {
     font-family: var(--font-display);
-    font-size: 2.5rem;
-    line-height: 1.05;
-    letter-spacing: -0.03em;
-    margin-bottom: 20px;
+    font-size: clamp(4.5rem, 18vw, 7rem);
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+    margin-bottom: 28px;
+    font-weight: 400;
   }
   .auth-title em { font-style: italic; font-weight: 400; }
   .auth-dates {
@@ -440,122 +441,186 @@
     to { opacity: 1; transform: translateY(0); }
   }
 
-  /* --- Dashboard preview (real content for Phase 1) --- */
+  /* --- Dashboard: editorial photo essay --- */
   .hero {
-    padding: 8px 0 32px;
+    text-align: center;
+    padding: 24px 0 56px;
     border-bottom: 1px solid var(--border);
-    margin-bottom: 32px;
+    margin-bottom: 64px;
   }
   .hero-eyebrow {
     font-family: var(--font-display);
     font-style: italic;
     color: var(--accent);
-    font-size: 1rem;
-    margin-bottom: 8px;
+    font-size: 1.0625rem;
+    letter-spacing: 0.02em;
+    margin-bottom: 12px;
   }
   .hero-title {
     font-family: var(--font-display);
-    font-size: clamp(2rem, 5vw, 3.25rem);
-    line-height: 1.05;
-    letter-spacing: -0.03em;
-    margin-bottom: 16px;
+    font-size: clamp(4rem, 14vw, 9rem);
+    font-weight: 400;
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+    margin: 0;
   }
-  .hero-title em { font-style: italic; color: var(--accent); }
+  .hero-title em {
+    font-style: italic;
+    color: var(--text);
+  }
+  .hero-rule {
+    width: 56px;
+    height: 1px;
+    background: var(--border-strong);
+    margin: 32px auto 24px;
+  }
   .hero-meta {
-    display: flex; flex-wrap: wrap; gap: 24px;
+    display: flex; justify-content: center; flex-wrap: wrap;
+    gap: 12px;
     color: var(--text-2);
-    font-size: 0.9375rem;
+    font-size: 0.875rem;
+    letter-spacing: 0.03em;
   }
-  .hero-meta-item { display: flex; align-items: center; gap: 8px; }
-  .hero-meta-item svg { width: 16px; height: 16px; stroke-width: 1.75; color: var(--text-3); }
+  .hero-meta-dot { color: var(--text-3); }
 
-  .stat-grid {
+  /* --- Photo essay: each town a magazine spread --- */
+  .route-essay {
+    display: flex; flex-direction: column;
+    gap: 96px;
+    margin-bottom: 80px;
+  }
+  .spread {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 16px;
-    margin-bottom: 40px;
+    grid-template-columns: 1fr 1fr;
+    gap: 56px;
+    align-items: center;
+    position: relative;
   }
-  .stat {
-    padding: 20px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    transition: all 200ms var(--ease);
+  /* Alternate: odd spreads have image on the right, text on left */
+  .spread:nth-child(even) .spread-img-frame { order: -1; }
+
+  .spread-img-frame {
+    position: relative;
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+    border-radius: 4px;
+    background: var(--surface-2);
   }
-  .stat:hover { border-color: var(--border-strong); }
-  .stat-label {
-    font-size: 0.75rem;
+  .spread-img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 800ms var(--ease-out);
+  }
+  .spread:hover .spread-img { transform: scale(1.03); }
+  .spread-img-fallback {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display);
+    font-style: italic;
+    color: var(--text-3);
+    font-size: 2rem;
+    background: linear-gradient(135deg, var(--surface-2) 0%, var(--accent-bg) 100%);
+  }
+  .spread-credit {
+    position: absolute; bottom: 8px; right: 10px;
+    font-size: 0.625rem;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.1em;
+    color: rgba(255,255,255,0.75);
+    text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+    pointer-events: none;
+  }
+
+  .spread-text { padding: 0 8px; }
+  .spread-chapter {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 0.9375rem;
+    color: var(--accent);
+    margin-bottom: 16px;
+    letter-spacing: 0.04em;
+  }
+  .spread-chapter::before {
+    content: "—";
+    margin-right: 10px;
+    color: var(--text-3);
+    font-style: normal;
+  }
+  .spread-name {
+    font-family: var(--font-display);
+    font-size: clamp(2.25rem, 4.5vw, 3.5rem);
+    line-height: 1;
+    letter-spacing: -0.025em;
+    margin-bottom: 20px;
+    font-weight: 400;
+  }
+  .spread-dates {
+    font-size: 0.8125rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-2);
+    margin-bottom: 24px;
+  }
+  .spread-dates-sep { color: var(--text-3); margin: 0 8px; }
+  .spread-caption {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 1.125rem;
+    line-height: 1.45;
+    color: var(--text);
+    max-width: 32ch;
+  }
+  .spread-nights {
+    margin-top: 24px;
+    font-size: 0.8125rem;
+    color: var(--text-3);
+  }
+
+  /* --- Quiet stats footer band --- */
+  .stats-band {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr) auto repeat(0, 0);
+    grid-auto-flow: column;
+    align-items: center;
+    padding: 32px 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    margin-top: 24px;
+  }
+  .stats-band {
+    display: flex;
+    align-items: stretch;
+    padding: 28px 0;
+  }
+  .stat-cell {
+    flex: 1;
+    text-align: center;
+    padding: 0 16px;
+  }
+  .stat-divider {
+    width: 1px;
+    background: var(--border);
+  }
+  .stat-label {
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
     color: var(--text-3);
     margin-bottom: 8px;
   }
   .stat-value {
     font-family: var(--font-display);
-    font-size: 2rem;
+    font-size: 1.875rem;
     line-height: 1;
     letter-spacing: -0.02em;
   }
   .stat-suffix {
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     color: var(--text-2);
     margin-left: 6px;
     font-family: var(--font-body);
-  }
-
-  .section-title {
-    display: flex; align-items: baseline; justify-content: space-between;
-    margin-bottom: 20px;
-  }
-  .section-title h2 { font-family: var(--font-display); font-style: italic; font-weight: 400; }
-  .section-title-meta { font-size: 0.8125rem; color: var(--text-3); }
-
-  .town-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 12px;
-  }
-  .town-card {
-    padding: 20px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    transition: all 200ms var(--ease);
-    position: relative;
-    overflow: hidden;
-  }
-  .town-card::before {
-    content: "";
-    position: absolute; left: 0; top: 0; bottom: 0;
-    width: 3px;
-    background: var(--accent);
-    opacity: 0;
-    transition: opacity 200ms var(--ease);
-  }
-  .town-card:hover {
-    border-color: var(--border-strong);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
-  }
-  .town-card:hover::before { opacity: 1; }
-  .town-name {
-    font-family: var(--font-display);
-    font-size: 1.375rem;
-    margin-bottom: 4px;
-    letter-spacing: -0.02em;
-  }
-  .town-dates {
-    font-size: 0.8125rem;
-    color: var(--text-2);
-    margin-bottom: 12px;
-  }
-  .town-nights {
-    display: inline-block;
-    font-size: 0.75rem;
-    color: var(--text-3);
-    padding: 2px 8px;
-    background: var(--surface-2);
-    border-radius: 100px;
+    letter-spacing: 0.02em;
   }
 
   /* --- Status indicator --- */
@@ -616,11 +681,26 @@
     .bottom-nav-item.active { color: var(--accent); }
     .bottom-nav-item svg { width: 20px; height: 20px; stroke-width: 1.75; }
 
-    .hero-title { font-size: 2rem; }
-    .stat-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-    .stat { padding: 14px; }
+    /* Dashboard mobile adjustments */
+    .hero { padding: 16px 0 40px; margin-bottom: 40px; }
+    .hero-title { font-size: clamp(3.5rem, 22vw, 6rem); }
+    .hero-rule { margin: 24px auto 20px; }
+    .route-essay { gap: 56px; margin-bottom: 56px; }
+    .spread {
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+    /* On mobile, image always comes first */
+    .spread:nth-child(even) .spread-img-frame { order: 0; }
+    .spread-img-frame { aspect-ratio: 16 / 11; }
+    .spread-text { padding: 0; }
+    .spread-name { font-size: 2.25rem; }
+    .spread-caption { font-size: 1.0625rem; }
+
+    .stats-band { flex-wrap: wrap; padding: 20px 0; }
+    .stat-cell { flex: 1 1 45%; padding: 12px 8px; }
+    .stat-divider { display: none; }
     .stat-value { font-size: 1.5rem; }
-    .town-list { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -641,8 +721,8 @@
      ============================================================ -->
 <div id="auth-screen">
   <div class="auth-card">
-    <div class="auth-eyebrow">un voyage en</div>
-    <h1 class="auth-title">France, <em>printemps</em></h1>
+    <div class="auth-eyebrow">bon voyage en</div>
+    <h1 class="auth-title"><em>France</em></h1>
     <div class="auth-dates">28 May — 14 June 2026</div>
 
     <button id="google-signin" class="google-btn">
@@ -731,51 +811,48 @@
 
     <div class="content">
 
-      <!-- DASHBOARD VIEW (Phase 1 shows real content here) -->
+      <!-- DASHBOARD VIEW — editorial photo essay style -->
       <section class="view active" id="view-dashboard">
+
+        <!-- Title block: minimal, like a magazine cover -->
         <div class="hero">
-          <div class="hero-eyebrow">a journey through</div>
-          <h1 class="hero-title">Paris, <em>Annecy</em>, Nice,<br>Aix &amp; <em>Fontainebleau</em></h1>
+          <div class="hero-eyebrow">bon voyage en</div>
+          <h1 class="hero-title"><em>France</em></h1>
+          <div class="hero-rule"></div>
           <div class="hero-meta">
-            <div class="hero-meta-item">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              <span id="trip-dates">28 May — 14 Jun 2026</span>
-            </div>
-            <div class="hero-meta-item">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/></svg>
-              <span>5 towns</span>
-            </div>
-            <div class="hero-meta-item">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              <span id="countdown">…</span>
-            </div>
+            <span id="trip-dates">28 May — 14 Jun 2026</span>
+            <span class="hero-meta-dot">·</span>
+            <span>5 towns</span>
+            <span class="hero-meta-dot">·</span>
+            <span id="countdown">…</span>
           </div>
         </div>
 
-        <div class="stat-grid">
-          <div class="stat">
+        <!-- Photo essay: each town as a magazine spread -->
+        <div class="route-essay" id="dashboard-towns"></div>
+
+        <!-- Quiet stats footer band -->
+        <div class="stats-band">
+          <div class="stat-cell">
             <div class="stat-label">Duration</div>
             <div class="stat-value">17<span class="stat-suffix">days</span></div>
           </div>
-          <div class="stat">
+          <div class="stat-divider"></div>
+          <div class="stat-cell">
             <div class="stat-label">Towns</div>
             <div class="stat-value">5</div>
           </div>
-          <div class="stat">
+          <div class="stat-divider"></div>
+          <div class="stat-cell">
             <div class="stat-label">Spots planned</div>
             <div class="stat-value" id="stat-spots">0</div>
           </div>
-          <div class="stat">
-            <div class="stat-label">Budget · EUR</div>
+          <div class="stat-divider"></div>
+          <div class="stat-cell">
+            <div class="stat-label">Budget · €</div>
             <div class="stat-value">—</div>
           </div>
         </div>
-
-        <div class="section-title">
-          <h2>The route</h2>
-          <span class="section-title-meta">5 stops · 17 nights</span>
-        </div>
-        <div class="town-list" id="dashboard-towns"></div>
       </section>
 
       <!-- Placeholder views for Phase 2+ -->
@@ -903,11 +980,46 @@ const TRIP_SEED = {
   categories: ["Food", "Sights", "Transport", "Lodging", "Shopping", "Other"],
 };
 const TOWN_SEEDS = [
-  { id: "paris",          name: "Paris",            country: "France", arrivalDate: "2026-05-28", departureDate: "2026-06-01", lat: 48.8566, lng:  2.3522, order: 1 },
-  { id: "annecy",         name: "Annecy",           country: "France", arrivalDate: "2026-06-01", departureDate: "2026-06-04", lat: 45.8992, lng:  6.1294, order: 2 },
-  { id: "nice",           name: "Nice",             country: "France", arrivalDate: "2026-06-04", departureDate: "2026-06-07", lat: 43.7102, lng:  7.2620, order: 3 },
-  { id: "aix-en-provence",name: "Aix-en-Provence",  country: "France", arrivalDate: "2026-06-07", departureDate: "2026-06-11", lat: 43.5297, lng:  5.4474, order: 4 },
-  { id: "fontainebleau",  name: "Fontainebleau",    country: "France", arrivalDate: "2026-06-11", departureDate: "2026-06-14", lat: 48.4022, lng:  2.7000, order: 5 },
+  {
+    id: "paris", name: "Paris", country: "France",
+    arrivalDate: "2026-05-28", departureDate: "2026-06-01",
+    lat: 48.8566, lng: 2.3522, order: 1,
+    caption: "Boulevards, bistros, an iron lattice on the skyline.",
+    image: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=1600&auto=format&fit=crop&q=80",
+    imageCredit: "Anthony DELANOIX"
+  },
+  {
+    id: "annecy", name: "Annecy", country: "France",
+    arrivalDate: "2026-06-01", departureDate: "2026-06-04",
+    lat: 45.8992, lng: 6.1294, order: 2,
+    caption: "Alpine water, pastel facades, a town threaded by canals.",
+    image: "https://images.unsplash.com/photo-1610016302534-6f67f1c968d8?w=1600&auto=format&fit=crop&q=80",
+    imageCredit: "Unsplash"
+  },
+  {
+    id: "nice", name: "Nice", country: "France",
+    arrivalDate: "2026-06-04", departureDate: "2026-06-07",
+    lat: 43.7102, lng: 7.2620, order: 3,
+    caption: "Mediterranean blue, ochre rooftops, the long curve of the Promenade.",
+    image: "https://images.unsplash.com/photo-1491166617655-0723a0a1a6c6?w=1600&auto=format&fit=crop&q=80",
+    imageCredit: "Unsplash"
+  },
+  {
+    id: "aix-en-provence", name: "Aix-en-Provence", country: "France",
+    arrivalDate: "2026-06-07", departureDate: "2026-06-11",
+    lat: 43.5297, lng: 5.4474, order: 4,
+    caption: "Plane trees, fountains, the slow light of Provence.",
+    image: "https://images.unsplash.com/photo-1499678329028-101435549a4e?w=1600&auto=format&fit=crop&q=80",
+    imageCredit: "Unsplash"
+  },
+  {
+    id: "fontainebleau", name: "Fontainebleau", country: "France",
+    arrivalDate: "2026-06-11", departureDate: "2026-06-14",
+    lat: 48.4022, lng: 2.7000, order: 5,
+    caption: "A royal château hemmed by one of France's oldest forests.",
+    image: "https://images.unsplash.com/photo-1551982504-3334a4e3e23a?w=1600&auto=format&fit=crop&q=80",
+    imageCredit: "Unsplash"
+  },
 ];
 
 /* ─────────────────────────────────────────────────────────────
@@ -1097,6 +1209,7 @@ async function seedTripIfNeeded() {
   const tripRef = doc(db, "trips", TRIP_ID);
   const tripSnap = await getDoc(tripRef);
   if (!tripSnap.exists()) {
+    // First-time seed
     const batch = writeBatch(db);
     batch.set(tripRef, {
       ...TRIP_SEED,
@@ -1109,6 +1222,33 @@ async function seedTripIfNeeded() {
     }
     await batch.commit();
     console.log("Seeded trip with 5 towns.");
+  } else {
+    // Backfill: existing trip — make sure each town has image/caption fields.
+    // Only fills missing fields; never overwrites user edits.
+    const batch = writeBatch(db);
+    let backfilled = 0;
+    for (const seed of TOWN_SEEDS) {
+      const townRef = doc(db, "trips", TRIP_ID, "towns", seed.id);
+      const townSnap = await getDoc(townRef);
+      if (!townSnap.exists()) {
+        batch.set(townRef, { ...seed, createdAt: serverTimestamp() });
+        backfilled++;
+      } else {
+        const data = townSnap.data();
+        const patch = {};
+        if (!data.image && seed.image) patch.image = seed.image;
+        if (!data.caption && seed.caption) patch.caption = seed.caption;
+        if (!data.imageCredit && seed.imageCredit) patch.imageCredit = seed.imageCredit;
+        if (Object.keys(patch).length) {
+          batch.update(townRef, patch);
+          backfilled++;
+        }
+      }
+    }
+    if (backfilled) {
+      await batch.commit();
+      console.log(`Backfilled ${backfilled} town(s) with new fields.`);
+    }
   }
 }
 
@@ -1140,6 +1280,13 @@ function fmtDateRange(startISO, endISO) {
   const em = end.toLocaleDateString("en-GB", { month: "short", day: "numeric", year: "numeric" });
   return `${sm} — ${em}`;
 }
+function fmtSpreadDates(startISO, endISO) {
+  // Compact form for spread: "28 May → 1 Jun"
+  const start = new Date(startISO + "T00:00:00");
+  const end = new Date(endISO + "T00:00:00");
+  const opts = { month: "short", day: "numeric" };
+  return `${start.toLocaleDateString("en-GB", opts)}<span class="spread-dates-sep">→</span>${end.toLocaleDateString("en-GB", opts)}`;
+}
 function nightsBetween(a, b) {
   return Math.round((new Date(b) - new Date(a)) / 86400000);
 }
@@ -1148,27 +1295,46 @@ function daysUntil(dateStr) {
   const target = new Date(dateStr + "T00:00:00");
   return Math.round((target - today) / 86400000);
 }
+function escapeHtml(s) {
+  return String(s || "").replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  })[c]);
+}
 
 function renderSidebarTowns() {
   const container = document.getElementById("sidebar-towns");
   container.innerHTML = state.towns.map(t => `
     <button class="nav-item" data-town="${t.id}">
       <span class="town-dot"></span>
-      ${t.name}
+      ${escapeHtml(t.name)}
     </button>
   `).join("");
 }
 
 function renderDashboardTowns() {
   const container = document.getElementById("dashboard-towns");
-  container.innerHTML = state.towns.map(t => {
+  container.innerHTML = state.towns.map((t, i) => {
     const nights = nightsBetween(t.arrivalDate, t.departureDate);
+    const chapter = String(i + 1).padStart(2, "0");
+    const name = escapeHtml(t.name);
+    const caption = escapeHtml(t.caption || "");
+    const img = t.image
+      ? `<img class="spread-img" src="${escapeHtml(t.image)}" alt="${name}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+         <div class="spread-img-fallback" style="display:none">${name}</div>`
+      : `<div class="spread-img-fallback" style="display:flex">${name}</div>`;
     return `
-      <div class="town-card">
-        <div class="town-name">${t.name}</div>
-        <div class="town-dates">${fmtDateRange(t.arrivalDate, t.departureDate)}</div>
-        <span class="town-nights">${nights} night${nights === 1 ? "" : "s"}</span>
-      </div>
+      <article class="spread">
+        <div class="spread-img-frame">
+          ${img}
+        </div>
+        <div class="spread-text">
+          <div class="spread-chapter">Chapter ${chapter}</div>
+          <h2 class="spread-name">${name}</h2>
+          <div class="spread-dates">${fmtSpreadDates(t.arrivalDate, t.departureDate)}</div>
+          ${caption ? `<p class="spread-caption">${caption}</p>` : ""}
+          <div class="spread-nights">${nights} night${nights === 1 ? "" : "s"}</div>
+        </div>
+      </article>
     `;
   }).join("");
 }
