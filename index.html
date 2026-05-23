@@ -4470,21 +4470,17 @@ async function openRecommendationsPanel(townId, date) {
   const title = document.getElementById("ai-panel-title");
   const body = document.getElementById("ai-panel-body");
   const contextEl = document.getElementById("ai-panel-context");
-  const loading = document.getElementById("ai-panel-loading");
 
   const dateLabel = new Date(date + "T00:00:00")
     .toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
   title.textContent = `${town.name} · ${dateLabel}`;
   contextEl.style.display = "none";
   contextEl.textContent = "";
-  body.innerHTML = "";
-  body.appendChild(loading);
-  loading.style.display = "flex";
+  body.innerHTML = `<div class="ai-panel-loading"><div class="ai-spinner"></div><span>Thinking about your day…</span></div>`;
 
   overlay.classList.add("visible");
 
   if (GEMINI_CONFIG.apiKey === "REPLACE_ME_GEMINI_KEY") {
-    loading.style.display = "none";
     body.innerHTML = `<div class="ai-panel-error"><strong>API key not set</strong>Add your Gemini API key to GEMINI_CONFIG in the source to use AI recommendations.</div>`;
     return;
   }
@@ -4492,10 +4488,8 @@ async function openRecommendationsPanel(townId, date) {
   try {
     const ctx = buildRecommendationContext(townId, date);
     const result = await callGeminiRecommendations(ctx);
-    loading.style.display = "none";
     renderRecommendationCards(result, townId, date);
   } catch (err) {
-    loading.style.display = "none";
     body.innerHTML = `<div class="ai-panel-error"><strong>Couldn't get suggestions</strong>${escapeHtml(err.message)}</div>`;
     console.error("Gemini error:", err);
   }
