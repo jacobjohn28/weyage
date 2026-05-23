@@ -1833,6 +1833,10 @@
 
     <div class="sidebar-foot">
       <div id="status-indicator" class="status-dot">Synced</div>
+      <button class="nav-item" id="sidebar-add-city-btn" style="margin:6px 0 0;font-size:0.8125rem;opacity:0.7">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        New city
+      </button>
       <button class="nav-item share-link-btn" id="sidebar-share-btn" style="margin:6px 0 0;font-size:0.8125rem;opacity:0.7">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="16" height="16"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
         Share itinerary
@@ -2337,7 +2341,7 @@
 <div class="modal-overlay" id="town-edit-overlay">
   <div class="modal" id="town-edit-modal" style="max-width:400px">
     <div class="modal-header">
-      <div class="modal-title">Edit city</div>
+      <div class="modal-title" id="town-edit-modal-title">Edit city</div>
       <button class="icon-btn" id="town-edit-close-btn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
@@ -3448,16 +3452,11 @@ function openDrawer(spot) {
         <div class="drawer-notes">${escapeHtml(spot.notes)}</div>
       </div>`);
   }
-  // Price / booking section
-  if (spot.price || spot.bookingRef || spot.booked) {
-    const priceStr = spot.price ? `€${Number(spot.price).toLocaleString()}${spot.priceEstimated ? " (est.)" : ""}` : "";
+  // Booking section (price intentionally omitted — see Budget tab)
+  if (spot.bookingRef || spot.booked) {
     rows.push(`
       <div class="drawer-section">
-        <div class="drawer-section-label">Price &amp; Booking</div>
-        ${priceStr ? `<div class="drawer-meta-row">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-          ${escapeHtml(priceStr)}
-        </div>` : ""}
+        <div class="drawer-section-label">Booking</div>
         ${spot.booked ? `<div class="drawer-meta-row" style="color:var(--success)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
           Booked${spot.bookingRef ? ` · Ref: ${escapeHtml(spot.bookingRef)}` : ""}
@@ -4238,11 +4237,12 @@ function renderDocuments() {
    ───────────────────────────────────────────────────────────── */
 let editingTownId = null;
 
-function openTownEditModal(town) {
-  editingTownId = town.id;
-  document.getElementById("town-edit-name").value     = town.name || "";
-  document.getElementById("town-edit-arrival").value  = town.arrivalDate || "";
-  document.getElementById("town-edit-departure").value = town.departureDate || "";
+function openTownEditModal(town = null) {
+  editingTownId = town ? town.id : null;
+  document.getElementById("town-edit-modal-title").textContent = town ? "Edit city" : "New city";
+  document.getElementById("town-edit-name").value      = town?.name || "";
+  document.getElementById("town-edit-arrival").value   = town?.arrivalDate || "";
+  document.getElementById("town-edit-departure").value = town?.departureDate || "";
   document.getElementById("town-edit-overlay").classList.add("visible");
   document.getElementById("town-edit-name").focus();
 }
@@ -4253,18 +4253,26 @@ function closeTownEditModal() {
 }
 
 async function saveTownEdit() {
-  if (!editingTownId) return;
-  const name         = document.getElementById("town-edit-name").value.trim();
-  const arrivalDate  = document.getElementById("town-edit-arrival").value;
+  const name          = document.getElementById("town-edit-name").value.trim();
+  const arrivalDate   = document.getElementById("town-edit-arrival").value;
   const departureDate = document.getElementById("town-edit-departure").value;
   if (!name || !arrivalDate || !departureDate) return;
   const saveBtn = document.getElementById("town-edit-save-btn");
   saveBtn.disabled = true;
   try {
-    await updateDoc(doc(db, "trips", TRIP_ID, "towns", editingTownId), { name, arrivalDate, departureDate });
+    if (editingTownId) {
+      await updateDoc(doc(db, "trips", TRIP_ID, "towns", editingTownId), { name, arrivalDate, departureDate });
+    } else {
+      const newId = name.toLowerCase().replace(/[^a-z0-9]/g, "-");
+      const order = Math.max(0, ...state.towns.map(t => t.order ?? 0)) + 1;
+      await setDoc(doc(db, "trips", TRIP_ID, "towns", newId), {
+        id: newId, name, arrivalDate, departureDate,
+        country: "France", order,
+      });
+    }
     closeTownEditModal();
   } catch (err) {
-    console.error("Town edit error:", err);
+    console.error("Town save error:", err);
   } finally {
     saveBtn.disabled = false;
   }
@@ -4276,6 +4284,7 @@ document.getElementById("town-edit-save-btn").addEventListener("click", saveTown
 document.getElementById("town-edit-overlay").addEventListener("click", e => {
   if (e.target === document.getElementById("town-edit-overlay")) closeTownEditModal();
 });
+document.getElementById("sidebar-add-city-btn").addEventListener("click", () => openTownEditModal());
 
 /* ─────────────────────────────────────────────────────────────
    LINKED SPOTS (4c)
