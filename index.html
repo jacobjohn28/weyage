@@ -1071,6 +1071,28 @@
     width: 6px; height: 6px; border-radius: 50%;
     background: var(--success); flex-shrink: 0;
   }
+  .spot-booked-pill {
+    font-size: 0.625rem; font-weight: 700;
+    padding: 2px 6px; border-radius: 100px;
+    background: rgba(76, 165, 100, 0.15);
+    color: var(--success);
+    letter-spacing: 0.03em;
+    flex-shrink: 0;
+  }
+  /* Spot counts on dashboard city images */
+  .spread-spot-counts {
+    position: absolute; bottom: 10px; right: 10px;
+    display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end;
+    max-width: 80%;
+  }
+  .spread-count-pill {
+    font-size: 0.625rem; font-weight: 600;
+    padding: 2px 7px; border-radius: 100px;
+    background: rgba(0,0,0,0.52); color: #fff;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    white-space: nowrap;
+  }
 
   /* Linked spots */
   .spot-group-indicator {
@@ -1556,14 +1578,14 @@
   <!-- Sidebar (desktop) -->
   <aside class="sidebar">
     <div class="sidebar-brand">
-      <div class="sidebar-brand-trip">France, <em>printemps</em></div>
+      <div class="sidebar-brand-trip">Weyage <em>— Explore Endlessly</em></div>
       <div class="sidebar-brand-dates">28 May — 14 Jun 2026</div>
     </div>
 
     <div class="nav-section">Views</div>
     <button class="nav-item active" data-view="dashboard">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-      Dashboard
+      Home
     </button>
     <button class="nav-item" data-view="itinerary">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 2v4M16 2v4M3 10h18M5 6h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/></svg>
@@ -1604,7 +1626,7 @@
   <!-- Main content -->
   <main class="main">
     <header class="topbar">
-      <div class="topbar-title" id="topbar-title">Dashboard</div>
+      <div class="topbar-title" id="topbar-title">Home</div>
       <div class="topbar-actions">
         <button class="icon-btn" id="theme-toggle" title="Toggle theme" aria-label="Toggle theme">
           <svg id="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
@@ -2233,7 +2255,7 @@ function setView(viewName) {
   document.querySelectorAll(".nav-item, .bottom-nav-item").forEach(b => {
     b.classList.toggle("active", b.dataset.view === viewName);
   });
-  const titles = { dashboard: "Dashboard", itinerary: "Itinerary", food: "Food", map: "Map", budget: "Budget", documents: "Documents" };
+  const titles = { dashboard: "Home", itinerary: "Itinerary", food: "Food", map: "Map", budget: "Budget", documents: "Documents" };
   document.getElementById("topbar-title").textContent = titles[viewName] || "Dashboard";
   if (viewName === "itinerary") renderItinerary();
   if (viewName === "food") renderFood();
@@ -2506,12 +2528,24 @@ async function fetchWikipediaImage(article) {
 
 function renderDashboardTowns() {
   const container = document.getElementById("dashboard-towns");
+  const typeLabel = { sight: "Sights", restaurant: "Restaurants", cafe: "Cafés", experience: "Experiences", transport: "Transport" };
+  const typeOrder = ["sight", "restaurant", "cafe", "experience", "transport"];
+
   container.innerHTML = state.towns.map((t, i) => {
     const nights = nightsBetween(t.arrivalDate, t.departureDate);
     const name = escapeHtml(t.name);
     const nameUpper = escapeHtml(t.name.toUpperCase());
     const caption = escapeHtml(t.caption || "");
-    const isRight = i % 2 !== 0; // alternate: 0=left, 1=right, 2=left, etc.
+    const isRight = i % 2 !== 0;
+
+    // Spot counts by category for this town
+    const townSpots = state.spots.filter(s => s.townId === t.id && s.type !== "transport");
+    const counts = {};
+    townSpots.forEach(s => { const ty = s.type || "sight"; counts[ty] = (counts[ty] || 0) + 1; });
+    const countPills = typeOrder
+      .filter(ty => counts[ty])
+      .map(ty => `<span class="spread-count-pill">${counts[ty]} ${typeLabel[ty]}</span>`)
+      .join("");
 
     // Image URL priority: customImage > Wikipedia cache > nothing (async fills later)
     let cachedUrl = "";
@@ -2539,6 +2573,7 @@ function renderDashboardTowns() {
             <div class="spread-img-fallback">${name}</div>
             ${imgTag}
             ${caption ? `<div class="spread-caption-overlay">${caption}</div>` : ""}
+            ${countPills ? `<div class="spread-spot-counts">${countPills}</div>` : ""}
           </div>
           <div class="spread-meta">
             <span>${fmtSpreadDates(t.arrivalDate, t.departureDate)}</span>
@@ -2552,7 +2587,7 @@ function renderDashboardTowns() {
   // 3c — clicking a town spread navigates to that town in the itinerary
   container.querySelectorAll(".spread[data-town-id]").forEach(card => {
     card.addEventListener("click", () => {
-      setState({ focusTownId: card.dataset.townId });
+      pendingScrollTownId = card.dataset.townId;
       setView("itinerary");
     });
   });
@@ -2749,6 +2784,9 @@ function spotCardHTML(spot) {
   const priceBadge = spot.price
     ? `<span class="spot-price-badge ${spot.priceEstimated ? 'estimated' : 'actual'}">€${Number(spot.price).toLocaleString()}</span>`
     : "";
+  const bookedBadge = spot.booked && !spot.visited
+    ? `<span class="spot-booked-pill">Booked</span>`
+    : "";
   const chainIcon = spot.groupId
     ? `<svg class="spot-chain-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`
     : "";
@@ -2768,7 +2806,7 @@ function spotCardHTML(spot) {
           <span class="spot-name">${escapeHtml(spot.name)}</span>
           ${chainIcon}
           ${spot.visited ? `<svg class="spot-visited-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>` : ""}
-          ${priceBadge}
+          ${bookedBadge}${priceBadge}
         </div>
         ${(row2Parts.length || tags) ? `<div class="spot-card-row2">${row2Parts.join("")}${tags}</div>` : ""}
       </div>
@@ -2951,16 +2989,18 @@ function renderItinerary() {
   }
 
   // Scroll to focused town (navigated from dashboard)
-  if (state.focusTownId) {
-    const target = document.getElementById(`itinerary-town-${state.focusTownId}`);
-    if (target) {
-      setTimeout(() => {
-        const main = document.querySelector(".main");
-        const targetTop = target.getBoundingClientRect().top - main.getBoundingClientRect().top + main.scrollTop - 24;
-        main.scrollTo({ top: targetTop, behavior: "smooth" });
-      }, 80);
-    }
-    setState({ focusTownId: null });
+  if (pendingScrollTownId) {
+    const townId = pendingScrollTownId;
+    pendingScrollTownId = null; // clear before any re-render can fire
+    // Double rAF: first frame commits DOM, second frame has final layout metrics
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const target = document.getElementById(`itinerary-town-${townId}`);
+      const main = document.querySelector(".main");
+      if (target && main) {
+        const top = target.getBoundingClientRect().top - main.getBoundingClientRect().top + main.scrollTop - 24;
+        main.scrollTo({ top, behavior: "smooth" });
+      }
+    }));
   }
 }
 
@@ -3159,6 +3199,7 @@ document.getElementById("drawer-visited-btn").addEventListener("click", async ()
 /* ─────────────────────────────────────────────────────────────
    ADD / EDIT MODAL
    ───────────────────────────────────────────────────────────── */
+let pendingScrollTownId = null;
 let modalEditId = null;
 let selectedType = "sight";
 let selectedTags = new Set();
