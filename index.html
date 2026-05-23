@@ -3507,7 +3507,7 @@ function openDrawer(spot) {
     </div>`;
   }).join("");
 
-  // Link / unlink section — adjacent spots only
+  // Link / unlink section — adjacent spots on the same day
   const sameDaySorted = state.spots
     .filter(s => s.townId === spot.townId && s.scheduledDate === spot.scheduledDate && s.type !== "transport")
     .sort((a, b) => (a.scheduledTime || "").localeCompare(b.scheduledTime || "") || (a.order ?? 9999) - (b.order ?? 9999));
@@ -3518,6 +3518,9 @@ function openDrawer(spot) {
     ? state.spots.filter(s => s.groupId === spot.groupId && s.id !== spot.id).map(s => escapeHtml(s.name)).join(", ")
     : "";
 
+  // Already in same group = don't offer to re-link; otherwise always show the button
+  const alreadyLinked = (s) => spot.groupId && s.groupId === spot.groupId;
+
   let linkBody = "";
   if (spot.groupId) {
     linkBody = `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px">
@@ -3527,11 +3530,11 @@ function openDrawer(spot) {
     </div>`;
   } else {
     const btns = [];
-    if (prevSpot && prevSpot.groupId !== spot.groupId) btns.push(`<button class="btn-ghost drawer-link-adj-btn" data-link-id="${prevSpot.id}" style="padding:5px 10px;font-size:0.8125rem;text-align:left">↑ Add ${escapeHtml(prevSpot.name)}</button>`);
-    if (nextSpot && nextSpot.groupId !== spot.groupId) btns.push(`<button class="btn-ghost drawer-link-adj-btn" data-link-id="${nextSpot.id}" style="padding:5px 10px;font-size:0.8125rem;text-align:left">↓ Add ${escapeHtml(nextSpot.name)}</button>`);
+    if (prevSpot && !alreadyLinked(prevSpot)) btns.push(`<button class="btn-ghost drawer-link-adj-btn" data-link-id="${prevSpot.id}" style="padding:5px 10px;font-size:0.8125rem;text-align:left">↑ Add ${escapeHtml(prevSpot.name)}</button>`);
+    if (nextSpot && !alreadyLinked(nextSpot)) btns.push(`<button class="btn-ghost drawer-link-adj-btn" data-link-id="${nextSpot.id}" style="padding:5px 10px;font-size:0.8125rem;text-align:left">↓ Add ${escapeHtml(nextSpot.name)}</button>`);
     linkBody = btns.length
       ? `<div style="display:flex;flex-direction:column;gap:4px;margin-top:6px">${btns.join("")}</div>`
-      : `<p style="font-size:0.8125rem;color:var(--text-3);margin-top:6px">No adjacent unlinked spots on this day.</p>`;
+      : `<p style="font-size:0.8125rem;color:var(--text-3);margin-top:6px">No adjacent spots on this day to link.</p>`;
   }
   const linkSection = `
     <div class="drawer-link-section">
