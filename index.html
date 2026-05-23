@@ -107,6 +107,7 @@
     --tint-sight: #5B7A99;
     --tint-food: #C99744;
     --tint-experience: #6F8B68;
+    --tint-transport: #6B7DB3;
 
     /* Effects */
     --shadow-sm: 0 1px 2px rgba(20, 18, 14, 0.04), 0 1px 1px rgba(20, 18, 14, 0.03);
@@ -147,6 +148,7 @@
     --tint-sight: #7892B0;
     --tint-food: #D9A85C;
     --tint-experience: #8AA582;
+    --tint-transport: #8999C9;
 
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
@@ -734,6 +736,119 @@
   }
 
   /* ============================================================
+     PHASE 3 — DAY PLACEHOLDERS, CONTEXTUAL ADDS, DASHBOARD WIDGETS, FOOD
+     ============================================================ */
+
+  /* Spread cards navigate to itinerary */
+  .spread { cursor: pointer; transition: transform 220ms var(--ease-out); }
+  .spread:hover { transform: translateY(-3px); }
+
+  /* Day empty placeholder */
+  .day-empty {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px;
+    border: 1.5px dashed var(--border-strong);
+    border-radius: var(--radius);
+    color: var(--text-3); font-size: 0.875rem;
+    min-height: 38px;
+  }
+
+  /* Contextual inline add buttons */
+  .add-spot-inline {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 0.8125rem; color: var(--text-2);
+    background: transparent;
+    transition: all 140ms var(--ease);
+  }
+  .add-spot-inline:hover { background: var(--accent-bg); color: var(--accent); border-color: var(--accent-soft); }
+
+  /* Town header "+" */
+  .town-add-btn {
+    margin-left: auto; flex-shrink: 0;
+    padding: 2px 9px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem; color: var(--text-2);
+    transition: all 140ms var(--ease);
+  }
+  .town-add-btn:hover { background: var(--accent-bg); color: var(--accent); border-color: var(--accent-soft); }
+
+  /* Dashboard widgets */
+  .dash-widgets-row {
+    display: grid;
+    grid-template-columns: auto 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 40px;
+  }
+  .dash-widget {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px 18px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .dash-widget-label {
+    font-size: 0.6875rem;
+    text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--text-3); font-weight: 500; margin-bottom: 2px;
+  }
+  .dash-widget-value {
+    font-family: var(--font-display);
+    font-size: 2.25rem; line-height: 1; letter-spacing: -0.03em;
+  }
+  .dash-widget-sub { font-size: 0.8125rem; color: var(--text-2); }
+  .dash-countdown-num {
+    font-family: var(--font-display);
+    font-size: 3rem; line-height: 1; letter-spacing: -0.04em; color: var(--accent);
+  }
+  .is-next-up .dash-widget-value {
+    font-size: 1rem; line-height: 1.4; letter-spacing: -0.01em;
+    font-family: var(--font-body); font-weight: 500;
+  }
+  .dash-progress-bar {
+    height: 3px; background: var(--surface-2);
+    border-radius: 100px; overflow: hidden; margin-top: 8px;
+  }
+  .dash-progress-fill {
+    height: 100%; background: var(--success);
+    border-radius: 100px; transition: width 600ms var(--ease-out);
+  }
+
+  /* Food view */
+  .food-toolbar { display: flex; justify-content: flex-end; margin-bottom: 28px; }
+  .food-section { margin-bottom: 40px; }
+  .food-section-header {
+    display: flex; align-items: baseline; gap: 12px;
+    margin-bottom: 16px; padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .food-section-title {
+    font-family: var(--font-display);
+    font-size: 1.125rem; font-weight: 500; letter-spacing: -0.01em;
+  }
+  .food-section-count { font-size: 0.8125rem; color: var(--text-3); margin-left: auto; }
+  .food-town-group { margin-bottom: 20px; }
+  .food-town-label {
+    font-size: 0.6875rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--text-3); margin-bottom: 8px; padding-left: 2px;
+  }
+  .food-hood-group { margin-bottom: 10px; }
+  .food-hood-label {
+    font-size: 0.8125rem; color: var(--text-3);
+    font-style: italic; font-family: var(--font-display);
+    margin-bottom: 5px; padding-left: 2px;
+  }
+
+  @media (max-width: 768px) {
+    .dash-widgets-row { grid-template-columns: 1fr 1fr; }
+    .dash-widgets-row .dash-widget:first-child { grid-column: 1 / -1; }
+  }
+
+  /* ============================================================
      PHASE 2 — ITINERARY, SPOT CARDS, MODAL, DRAWER
      ============================================================ */
 
@@ -1290,6 +1405,9 @@
           </div>
         </div>
 
+        <!-- Live widgets: countdown, progress, next up -->
+        <div class="dash-widgets-row" id="dash-widgets"></div>
+
         <!-- Photo essay: each town as a magazine spread -->
         <div class="route-essay" id="dashboard-towns"></div>
 
@@ -1317,23 +1435,20 @@
         </div>
       </section>
 
-      <!-- ITINERARY VIEW — Phase 2 -->
+      <!-- ITINERARY VIEW — Phase 3 (day placeholders + contextual add) -->
       <section class="view" id="view-itinerary">
-        <div class="itinerary-toolbar">
-          <button class="btn-primary" id="add-spot-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Add spot
-          </button>
-        </div>
         <div id="itinerary-content"></div>
       </section>
 
+      <!-- FOOD VIEW — Phase 3 -->
       <section class="view" id="view-food">
-        <div class="placeholder">
-          <div class="placeholder-eyebrow">coming next</div>
-          <h2>Food</h2>
-          <p>Restaurants, cafés, markets, and patisseries by town and neighborhood. Wishlist and scheduled meals in one place.</p>
+        <div class="food-toolbar">
+          <button class="btn-primary" id="add-food-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add restaurant
+          </button>
         </div>
+        <div id="food-content"></div>
       </section>
 
       <section class="view" id="view-map">
@@ -1635,6 +1750,7 @@ const state = {
   towns: [],
   spots: [],
   currentView: "dashboard",
+  focusTownId: null,
   theme: "light",
   online: navigator.onLine,
 };
@@ -1710,6 +1826,7 @@ function setView(viewName) {
   const titles = { dashboard: "Dashboard", itinerary: "Itinerary", food: "Food", map: "Map", budget: "Budget", documents: "Documents" };
   document.getElementById("topbar-title").textContent = titles[viewName] || "Dashboard";
   if (viewName === "itinerary") renderItinerary();
+  if (viewName === "food") renderFood();
 }
 document.querySelectorAll(".nav-item, .bottom-nav-item").forEach(btn => {
   btn.addEventListener("click", () => setView(btn.dataset.view));
@@ -2010,6 +2127,14 @@ function renderDashboardTowns() {
     `;
   }).join("");
 
+  // 3c — clicking a town spread navigates to that town in the itinerary
+  container.querySelectorAll(".spread[data-town-id]").forEach(card => {
+    card.addEventListener("click", () => {
+      setState({ focusTownId: card.dataset.townId });
+      setView("itinerary");
+    });
+  });
+
   // Async: fetch missing Wikipedia images
   state.towns.forEach(async (t) => {
     if (t.customImage) return; // custom image always wins, no Wikipedia needed
@@ -2051,7 +2176,9 @@ subscribe(() => {
     renderDashboardTowns();
   }
   renderDashboardMeta();
+  renderDashboardWidgets();
   if (state.currentView === "itinerary") renderItinerary();
+  if (state.currentView === "food") renderFood();
   // Keep drawer in sync if it's open and the spot was updated
   if (currentDrawerSpot) {
     const updated = state.spots.find(s => s.id === currentDrawerSpot.id);
@@ -2097,6 +2224,21 @@ async function toggleSpotVisited(spot) {
 /* ─────────────────────────────────────────────────────────────
    ITINERARY RENDERER
    ───────────────────────────────────────────────────────────── */
+function getDaysForTown(town) {
+  const days = [];
+  const start = new Date(town.arrivalDate + "T00:00:00");
+  const end   = new Date(town.departureDate + "T00:00:00");
+  for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
+    days.push(d.toISOString().slice(0, 10));
+  }
+  return days;
+}
+
+function getSpotsForTown(townId) {
+  // Phase 3d will also include: s.type === 'transport' && s.arrivalTownId === townId
+  return state.spots.filter(s => s.townId === townId);
+}
+
 const sortableInstances = [];
 
 function fmtTime12(timeStr) {
@@ -2162,20 +2304,18 @@ function renderItinerary() {
   sortableInstances.forEach(s => s.destroy());
   sortableInstances.length = 0;
 
-  if (state.spots.length === 0) {
-    container.innerHTML = `
-      <div class="itinerary-empty">
-        <p style="font-family:var(--font-display);font-style:italic;font-size:1.75rem;color:var(--text-3);margin-bottom:12px">Rien encore.</p>
-        <p>Add your first sight, restaurant, café, or experience using the button above.</p>
-      </div>`;
+  if (state.towns.length === 0) {
+    container.innerHTML = `<div class="itinerary-empty"><p>Loading…</p></div>`;
     return;
   }
 
   const html = [];
   for (const town of state.towns) {
-    const townSpots = state.spots.filter(s => s.townId === town.id);
-    if (townSpots.length === 0) continue;
+    const townSpots = getSpotsForTown(town.id);
+    const days = getDaysForTown(town);
+    const nights = nightsBetween(town.arrivalDate, town.departureDate);
 
+    // Group spots by date
     const byDate = {};
     for (const spot of townSpots) {
       const key = spot.scheduledDate || "unscheduled";
@@ -2188,39 +2328,61 @@ function renderItinerary() {
         return (a.order ?? 9999) - (b.order ?? 9999);
       });
     }
-    const dateKeys = Object.keys(byDate).sort((a, b) => {
-      if (a === "unscheduled") return 1;
-      if (b === "unscheduled") return -1;
-      return a.localeCompare(b);
-    });
+    const unscheduled = byDate["unscheduled"] || [];
 
-    const nights = nightsBetween(town.arrivalDate, town.departureDate);
     html.push(`
-      <div class="town-group" data-town="${town.id}">
+      <div class="town-group" id="itinerary-town-${escapeHtml(town.id)}" data-town="${escapeHtml(town.id)}">
         <div class="town-group-header">
           <span class="town-group-dot"></span>
           <span class="town-group-name">${escapeHtml(town.name)}</span>
           <span class="town-group-dates">${fmtSpreadDates(town.arrivalDate, town.departureDate)} &middot; ${nights}n</span>
+          <button class="town-add-btn" data-town-id="${escapeHtml(town.id)}">+ Add</button>
         </div>
-        ${dateKeys.map(dk => {
-          const isUnsched = dk === "unscheduled";
-          const dayHdr = isUnsched
-            ? `<div class="day-header"><span class="day-label">Unscheduled</span><div class="day-rule"></div></div>`
-            : (() => { const { dow, full } = fmtDayHeader(dk); return `<div class="day-header"><span class="day-label">${dow}</span><span class="day-date-full">${full}</span><div class="day-rule"></div></div>`; })();
+        ${days.map(dk => {
+          const daySpots = byDate[dk] || [];
+          const { dow, full } = fmtDayHeader(dk);
+          const isEmpty = daySpots.length === 0;
           return `
             <div class="day-group">
-              ${dayHdr}
-              <div class="spot-list" data-town="${town.id}" data-date="${dk}">
-                ${byDate[dk].map(s => spotCardHTML(s)).join("")}
+              <div class="day-header">
+                <span class="day-label">${dow}</span>
+                <span class="day-date-full">${full}</span>
+                <div class="day-rule"></div>
               </div>
+              <div class="spot-list" data-date="${dk}" data-town-id="${escapeHtml(town.id)}">
+                ${daySpots.map(s => spotCardHTML(s)).join("")}
+              </div>
+              ${isEmpty
+                ? `<div class="day-empty"><span>Drop a spot here</span><button class="add-spot-inline" data-town-id="${escapeHtml(town.id)}" data-date="${dk}">+ Add</button></div>`
+                : `<button class="add-spot-inline" data-town-id="${escapeHtml(town.id)}" data-date="${dk}" style="margin-top:5px">+ Add to this day</button>`
+              }
             </div>`;
         }).join("")}
+        <div class="day-group">
+          <div class="day-header">
+            <span class="day-label" style="color:var(--text-3);font-style:italic;font-family:var(--font-display)">Wishlist</span>
+            <div class="day-rule"></div>
+          </div>
+          <div class="spot-list" data-date="unscheduled" data-town-id="${escapeHtml(town.id)}">
+            ${unscheduled.map(s => spotCardHTML(s)).join("")}
+          </div>
+          <button class="add-spot-inline" data-town-id="${escapeHtml(town.id)}" data-date="" style="margin-top:5px">+ Add to wishlist</button>
+        </div>
       </div>`);
   }
 
-  container.innerHTML = html.join("") || `<div class="itinerary-empty"><p>No spots yet.</p></div>`;
+  container.innerHTML = html.join("");
 
-  // Click → open drawer
+  // Contextual "+" button handlers
+  container.querySelectorAll(".town-add-btn, .add-spot-inline").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const townId = btn.dataset.townId;
+      const date = "date" in btn.dataset ? (btn.dataset.date || null) : null;
+      openModal(null, { townId, scheduledDate: date });
+    });
+  });
+
+  // Spot card → drawer
   container.querySelectorAll(".spot-card").forEach(card => {
     card.addEventListener("click", (e) => {
       if (e.target.closest(".spot-drag-handle")) return;
@@ -2229,10 +2391,9 @@ function renderItinerary() {
     });
   });
 
-  // Sortable on each day list — grouped by town so spots can move between days
+  // SortableJS — global group enables cross-day and cross-town drag
   if (typeof Sortable !== "undefined") {
     container.querySelectorAll(".spot-list").forEach(list => {
-      const townId = list.dataset.town;
       const inst = Sortable.create(list, {
         animation: 150,
         handle: ".spot-drag-handle",
@@ -2240,35 +2401,48 @@ function renderItinerary() {
         delayOnTouchOnly: true,
         ghostClass: "sortable-ghost",
         chosenClass: "sortable-chosen",
-        group: townId, // shared group per town — enables cross-day dragging
+        group: "spots",
         onEnd: async (evt) => {
           const batch = writeBatch(db);
           const spotId = evt.item.dataset.spotId;
           const spot = state.spots.find(s => s.id === spotId);
           const newDateKey = evt.to.dataset.date;
+          const newTownId = evt.to.dataset.townId;
 
-          // Update scheduledDate if the spot moved to a different day bucket
           if (spot) {
+            const updates = {};
             const oldDateKey = spot.scheduledDate || "unscheduled";
             if (newDateKey !== oldDateKey) {
-              batch.update(spotDocRef(spotId), {
-                scheduledDate: newDateKey === "unscheduled" ? null : newDateKey,
-              });
+              updates.scheduledDate = (!newDateKey || newDateKey === "unscheduled") ? null : newDateKey;
             }
+            if (newTownId && newTownId !== spot.townId) {
+              updates.townId = newTownId;
+            }
+            if (Object.keys(updates).length) batch.update(spotDocRef(spotId), updates);
           }
 
-          // Re-index order in both the source and destination lists
           for (const l of new Set([evt.from, evt.to])) {
             [...l.querySelectorAll(".spot-card")].forEach((card, idx) => {
               batch.update(spotDocRef(card.dataset.spotId), { order: idx });
             });
           }
-
           await batch.commit().catch(e => console.error("Reorder failed:", e));
         },
       });
       sortableInstances.push(inst);
     });
+  }
+
+  // Scroll to focused town (navigated from dashboard)
+  if (state.focusTownId) {
+    const target = document.getElementById(`itinerary-town-${state.focusTownId}`);
+    if (target) {
+      setTimeout(() => {
+        const main = document.querySelector(".main");
+        main.scrollTo({ top: target.offsetTop - 72, behavior: "smooth" });
+      }, 100);
+    }
+    setState({ focusTownId: null });
   }
 }
 
@@ -2369,9 +2543,9 @@ let selectedType = "sight";
 let selectedTags = new Set();
 let visitedState = false;
 
-function openModal(spot = null) {
+function openModal(spot = null, presets = {}) {
   modalEditId = spot ? spot.id : null;
-  selectedType = spot ? (spot.type || "sight") : "sight";
+  selectedType = spot ? (spot.type || "sight") : (presets.type || "sight");
   selectedTags = new Set(spot ? (spot.tags || []) : []);
   visitedState = spot ? (spot.visited || false) : false;
 
@@ -2380,20 +2554,26 @@ function openModal(spot = null) {
   document.getElementById("spot-name").value = spot ? (spot.name || "") : "";
   document.getElementById("spot-neighborhood").value = spot ? (spot.neighborhood || "") : "";
   document.getElementById("spot-address").value = spot ? (spot.address || "") : "";
-  document.getElementById("spot-date").value = spot ? (spot.scheduledDate || "") : "";
   document.getElementById("spot-time").value = spot ? (spot.scheduledTime || "") : "";
   document.getElementById("spot-duration").value = spot ? (spot.durationMinutes || "") : "";
   document.getElementById("spot-notes").value = spot ? (spot.notes || "") : "";
 
+  // Town select — lock when pre-filled from a contextual "+" button
+  const presetTownId = spot ? spot.townId : presets.townId;
+  const townSel = document.getElementById("spot-town");
+  townSel.innerHTML = state.towns.map(t =>
+    `<option value="${t.id}"${t.id === presetTownId ? " selected" : ""}>${escapeHtml(t.name)}</option>`
+  ).join("");
+  townSel.disabled = !spot && !!presets.townId;
+
+  // Date — constrain to town's stay, then apply preset/existing value
+  const dateInput = document.getElementById("spot-date");
+  applyTownDateConstraints(presetTownId, dateInput);
+  dateInput.value = spot ? (spot.scheduledDate || "") : (presets.scheduledDate || "");
+
   // Type buttons
   document.querySelectorAll(".type-option").forEach(btn =>
     btn.classList.toggle("selected", btn.dataset.type === selectedType));
-
-  // Town select
-  const townSel = document.getElementById("spot-town");
-  townSel.innerHTML = state.towns.map(t =>
-    `<option value="${t.id}"${(spot && spot.townId === t.id) ? " selected" : ""}>${escapeHtml(t.name)}</option>`
-  ).join("");
 
   renderTagsGrid();
   document.getElementById("visited-switch").classList.toggle("on", visitedState);
@@ -2405,6 +2585,19 @@ function openModal(spot = null) {
   document.getElementById("spot-modal-overlay").classList.add("visible");
   document.body.style.overflow = "hidden";
   setTimeout(() => document.getElementById("spot-name").focus(), 60);
+}
+
+function applyTownDateConstraints(townId, dateInput) {
+  const town = townId ? state.towns.find(t => t.id === townId) : null;
+  if (town) {
+    dateInput.min = town.arrivalDate;
+    const last = new Date(town.departureDate + "T00:00:00");
+    last.setDate(last.getDate() - 1);
+    dateInput.max = last.toISOString().slice(0, 10);
+  } else {
+    dateInput.min = "";
+    dateInput.max = "";
+  }
 }
 
 function closeModal() {
@@ -2453,8 +2646,19 @@ document.getElementById("spot-modal-overlay").addEventListener("click", (e) => {
   if (e.target === document.getElementById("spot-modal-overlay")) closeModal();
 });
 
-// Add spot button
-document.getElementById("add-spot-btn").addEventListener("click", () => openModal(null));
+// Update date constraints when town changes (unlocked selects only)
+document.getElementById("spot-town").addEventListener("change", (e) => {
+  const townSel = document.getElementById("spot-town");
+  if (townSel.disabled) return;
+  const dateInput = document.getElementById("spot-date");
+  applyTownDateConstraints(e.target.value, dateInput);
+  if (dateInput.value && (dateInput.value < dateInput.min || dateInput.value > dateInput.max)) {
+    dateInput.value = "";
+  }
+});
+
+// Food view — quick-add pre-set to restaurant
+document.getElementById("add-food-btn").addEventListener("click", () => openModal(null, { type: "restaurant" }));
 
 // Save
 document.getElementById("modal-save-btn").addEventListener("click", async () => {
@@ -2493,6 +2697,128 @@ document.getElementById("delete-spot-btn").addEventListener("click", async () =>
   try { await removeSpot(modalEditId); closeModal(); }
   catch (e) { console.error(e); }
 });
+
+/* ─────────────────────────────────────────────────────────────
+   DASHBOARD WIDGETS (3g)
+   ───────────────────────────────────────────────────────────── */
+function renderDashboardWidgets() {
+  const container = document.getElementById("dash-widgets");
+  if (!container) return;
+
+  const today = new Date().toISOString().slice(0, 10);
+  const days = state.trip ? daysUntil(state.trip.startDate) : null;
+  const total = state.spots.length;
+  const visited = state.spots.filter(s => s.visited).length;
+  const pct = total > 0 ? Math.round((visited / total) * 100) : 0;
+
+  const nextSpot = state.spots
+    .filter(s => s.scheduledDate && s.scheduledDate >= today && !s.visited)
+    .sort((a, b) => {
+      if (a.scheduledDate !== b.scheduledDate) return a.scheduledDate.localeCompare(b.scheduledDate);
+      return (a.scheduledTime || "").localeCompare(b.scheduledTime || "");
+    })[0] || null;
+  const nextTown = nextSpot ? state.towns.find(t => t.id === nextSpot.townId) : null;
+  const nextDate = nextSpot
+    ? new Date(nextSpot.scheduledDate + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" })
+    : "";
+
+  let countdownContent;
+  if (days === null) {
+    countdownContent = `<span class="dash-countdown-num">—</span>`;
+  } else if (days > 0) {
+    countdownContent = `<span class="dash-countdown-num">${days}</span><div class="dash-widget-sub">days to go</div>`;
+  } else if (days === 0) {
+    countdownContent = `<span class="dash-countdown-num" style="font-size:1.75rem;line-height:1.2">Bon<br>voyage</span>`;
+  } else {
+    countdownContent = `<span class="dash-countdown-num">${Math.abs(days)}</span><div class="dash-widget-sub">days in</div>`;
+  }
+
+  container.innerHTML = `
+    <div class="dash-widget">
+      <div class="dash-widget-label">Departure</div>
+      ${countdownContent}
+    </div>
+    <div class="dash-widget">
+      <div class="dash-widget-label">Spots planned</div>
+      <div class="dash-widget-value">${total}</div>
+      <div class="dash-widget-sub">${visited} visited${total > 0 ? ` · ${pct}%` : ""}</div>
+      ${total > 0 ? `<div class="dash-progress-bar"><div class="dash-progress-fill" style="width:${pct}%"></div></div>` : ""}
+    </div>
+    <div class="dash-widget is-next-up">
+      <div class="dash-widget-label">Next up${nextTown ? ` · ${escapeHtml(nextTown.name)}` : ""}${nextDate ? ` · ${escapeHtml(nextDate)}` : ""}</div>
+      ${nextSpot
+        ? `<div class="dash-widget-value">${escapeHtml(nextSpot.name)}</div>
+           ${nextSpot.scheduledTime ? `<div class="dash-widget-sub">at ${fmtTime12(nextSpot.scheduledTime)}</div>` : ""}`
+        : `<div class="dash-widget-value" style="font-size:0.9375rem;color:var(--text-3);font-family:var(--font-body);font-weight:400">Nothing scheduled yet</div>`
+      }
+    </div>`;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   FOOD VIEW (3f)
+   ───────────────────────────────────────────────────────────── */
+function renderFood() {
+  const container = document.getElementById("food-content");
+  if (!container) return;
+
+  const foodSpots = state.spots.filter(s => s.type === "restaurant" || s.type === "cafe");
+
+  if (foodSpots.length === 0) {
+    container.innerHTML = `
+      <div class="itinerary-empty">
+        <p style="font-family:var(--font-display);font-style:italic;font-size:1.75rem;color:var(--text-3);margin-bottom:12px">Bon appétit.</p>
+        <p>Save restaurants and cafés here — scheduled meals and your wishlist in one place.</p>
+      </div>`;
+    return;
+  }
+
+  const scheduled = foodSpots.filter(s => s.scheduledDate).sort((a, b) => {
+    if (a.scheduledDate !== b.scheduledDate) return a.scheduledDate.localeCompare(b.scheduledDate);
+    return (a.scheduledTime || "").localeCompare(b.scheduledTime || "");
+  });
+  const wishlist = foodSpots.filter(s => !s.scheduledDate);
+
+  function buildSection(spots, title) {
+    if (!spots.length) return "";
+    const byTown = {};
+    for (const town of state.towns) {
+      const ts = spots.filter(s => s.townId === town.id);
+      if (ts.length) byTown[town.id] = { town, spots: ts };
+    }
+    return `
+      <div class="food-section">
+        <div class="food-section-header">
+          <div class="food-section-title">${escapeHtml(title)}</div>
+          <div class="food-section-count">${spots.length} place${spots.length !== 1 ? "s" : ""}</div>
+        </div>
+        ${Object.values(byTown).map(({ town, spots: ts }) => {
+          const byHood = {};
+          for (const s of ts) {
+            const hood = s.neighborhood || "_none";
+            (byHood[hood] = byHood[hood] || []).push(s);
+          }
+          return `
+            <div class="food-town-group">
+              <div class="food-town-label">${escapeHtml(town.name)}</div>
+              ${Object.entries(byHood).map(([hood, hs]) => `
+                <div class="food-hood-group">
+                  ${hood !== "_none" ? `<div class="food-hood-label">${escapeHtml(hood)}</div>` : ""}
+                  <div class="spot-list">${hs.map(s => spotCardHTML(s)).join("")}</div>
+                </div>`).join("")}
+            </div>`;
+        }).join("")}
+      </div>`;
+  }
+
+  container.innerHTML = buildSection(scheduled, "Scheduled meals") + buildSection(wishlist, "Wishlist");
+
+  container.querySelectorAll(".spot-card").forEach(card => {
+    card.addEventListener("click", () => {
+      const spot = state.spots.find(s => s.id === card.dataset.spotId);
+      if (spot) openDrawer(spot);
+    });
+  });
+}
 
 /* ─────────────────────────────────────────────────────────────
    APP INIT
