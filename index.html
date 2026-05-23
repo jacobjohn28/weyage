@@ -2185,8 +2185,17 @@
       <div id="price-booking-fields">
         <div class="form-row" style="margin-bottom:0">
           <div class="form-field">
-            <label class="form-label" for="spot-price">Price (€)</label>
-            <input class="form-input" id="spot-price" type="number" min="0" step="0.01" placeholder="0.00">
+            <label class="form-label" for="spot-price">Price</label>
+            <div style="display:flex;gap:6px">
+              <select class="form-input" id="spot-price-currency" style="width:76px;flex-shrink:0;padding-left:8px">
+                <option value="EUR">€ EUR</option>
+                <option value="SGD">S$ SGD</option>
+                <option value="USD">$ USD</option>
+                <option value="GBP">£ GBP</option>
+                <option value="AUD">A$ AUD</option>
+              </select>
+              <input class="form-input" id="spot-price" type="number" min="0" step="0.01" placeholder="0.00">
+            </div>
           </div>
           <div class="form-field">
             <label class="form-label" for="spot-booking-ref">Booking ref</label>
@@ -2285,8 +2294,17 @@
           <input class="form-input" id="accom-booking-ref" type="text" placeholder="e.g. BK-12345" autocomplete="off">
         </div>
         <div class="form-field">
-          <label class="form-label" for="accom-price">Total price (€)</label>
-          <input class="form-input" id="accom-price" type="number" min="0" step="0.01" placeholder="0.00">
+          <label class="form-label" for="accom-price">Total price</label>
+          <div style="display:flex;gap:6px">
+            <select class="form-input" id="accom-price-currency" style="width:76px;flex-shrink:0;padding-left:8px">
+              <option value="EUR">€ EUR</option>
+              <option value="SGD">S$ SGD</option>
+              <option value="USD">$ USD</option>
+              <option value="GBP">£ GBP</option>
+              <option value="AUD">A$ AUD</option>
+            </select>
+            <input class="form-input" id="accom-price" type="number" min="0" step="0.01" placeholder="0.00">
+          </div>
         </div>
       </div>
 
@@ -3677,6 +3695,7 @@ function openModal(spot = null, presets = {}) {
   document.getElementById("visited-switch").classList.toggle("on", visitedState);
 
   document.getElementById("spot-price").value = spot ? (spot.price ?? "") : "";
+  document.getElementById("spot-price-currency").value = spot?.priceCurrency || "EUR";
   document.getElementById("spot-booking-ref").value = spot ? (spot.bookingRef || "") : "";
   priceEstimatedState = spot ? (spot.priceEstimated ?? true) : true;
   bookedState = spot ? (spot.booked ?? false) : false;
@@ -3729,6 +3748,7 @@ function openAccomModal(town) {
   document.getElementById("accom-checkout-time").value  = a.checkoutTime || "";
   document.getElementById("accom-booking-ref").value    = a.bookingRef || "";
   document.getElementById("accom-price").value          = a.price != null ? a.price : "";
+  document.getElementById("accom-price-currency").value = a.priceCurrency || "EUR";
   document.getElementById("accom-notes").value          = a.notes || "";
 
   const sw = document.getElementById("accom-booked-switch");
@@ -3758,6 +3778,7 @@ async function saveAccommodation() {
     checkoutTime: document.getElementById("accom-checkout-time").value        || null,
     bookingRef:   document.getElementById("accom-booking-ref").value.trim()   || null,
     price:        parseFloat(document.getElementById("accom-price").value)    || null,
+    priceCurrency: document.getElementById("accom-price-currency").value      || "EUR",
     notes:        document.getElementById("accom-notes").value.trim()         || null,
     booked:       accomBooked,
   };
@@ -3953,6 +3974,7 @@ document.getElementById("modal-save-btn").addEventListener("click", async () => 
       visited:           false,
       tags:              [],
       price:             parseFloat(document.getElementById("spot-price").value) || null,
+      priceCurrency:     document.getElementById("spot-price-currency").value || "EUR",
       priceEstimated:    priceEstimatedState,
       booked:            bookedState,
       bookingRef:        document.getElementById("spot-booking-ref").value.trim() || null,
@@ -3971,6 +3993,7 @@ document.getElementById("modal-save-btn").addEventListener("click", async () => 
       notes: document.getElementById("spot-notes").value.trim() || null,
       visited: visitedState,
       price:          parseFloat(document.getElementById("spot-price").value) || null,
+      priceCurrency:  document.getElementById("spot-price-currency").value || "EUR",
       priceEstimated: priceEstimatedState,
       booked:         bookedState,
       bookingRef:     document.getElementById("spot-booking-ref").value.trim() || null,
@@ -4007,6 +4030,10 @@ function getBudgetCategory(spot) {
   return "Sights & Other";
 }
 
+function currencySymbol(code) {
+  return { EUR: "€", SGD: "S$", USD: "$", GBP: "£", AUD: "A$" }[code] || code;
+}
+
 function aggregateBudget() {
   const entries = [];
   state.spots.forEach(s => {
@@ -4014,6 +4041,7 @@ function aggregateBudget() {
       source: "spot", id: s.id, townId: s.townId,
       name: s.name, category: getBudgetCategory(s),
       amount: s.price,
+      currency: s.priceCurrency || "EUR",
       isEstimated: s.priceEstimated ?? true,
       isBooked: s.booked ?? false,
     });
@@ -4024,6 +4052,7 @@ function aggregateBudget() {
       name: t.accommodation.name || "Accommodation",
       category: "Accommodation",
       amount: t.accommodation.price,
+      currency: t.accommodation.priceCurrency || "EUR",
       isEstimated: t.accommodation.priceEstimated ?? false,
       isBooked: t.accommodation.booked ?? false,
     });
@@ -4035,12 +4064,18 @@ let budgetChartInstance = null;
 
 function renderBudget() {
   const entries = aggregateBudget();
-  const totalActual  = entries.filter(e => !e.isEstimated).reduce((s, e) => s + e.amount, 0);
-  const totalPlanned = entries.reduce((s, e) => s + e.amount, 0);
-  const totalBudget  = state.trip?.totalBudget || 0;
   const fmt = n => n.toLocaleString("en-GB", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  const totalBudget = state.trip?.totalBudget || 0;
 
-  // Budget target input — pre-fill with saved value
+  // Group entries by currency
+  const byCurrency = {};
+  entries.forEach(e => {
+    if (!byCurrency[e.currency]) byCurrency[e.currency] = [];
+    byCurrency[e.currency].push(e);
+  });
+  const currencyList = Object.keys(byCurrency);
+
+  // Budget target input (EUR-denominated)
   const targetInput = document.getElementById("budget-target-input");
   if (targetInput && totalBudget) targetInput.value = totalBudget;
   document.getElementById("budget-target-save")?.addEventListener("click", async () => {
@@ -4048,53 +4083,63 @@ function renderBudget() {
     await updateDoc(doc(db, "trips", TRIP_ID), { totalBudget: val });
   });
 
-  // Summary bar
+  // Summary bar — one block per currency
   const bar = document.getElementById("budget-summary-bar");
   if (bar) {
-    if (totalPlanned === 0 && !totalBudget) {
+    if (entries.length === 0 && !totalBudget) {
       bar.innerHTML = `<p style="color:var(--text-3);font-size:0.9375rem">No prices added yet — edit any spot and enter a price to start tracking your budget.</p>`;
     } else {
-      // Against overall budget if set, otherwise against planned total
-      const denominator = totalBudget || totalPlanned;
-      const pctActual   = denominator > 0 ? Math.min(Math.round((totalActual  / denominator) * 100), 100) : 0;
-      const pctPlanned  = denominator > 0 ? Math.min(Math.round((totalPlanned / denominator) * 100), 100) : 0;
-      const overBudget  = totalBudget && totalPlanned > totalBudget;
-      bar.innerHTML = `
-        <div class="budget-total-row">
-          <span class="budget-total-actual">€${fmt(totalActual)}</span>
-          <span class="budget-total-planned">paid · €${fmt(totalPlanned)} planned${totalBudget ? ` · €${fmt(totalBudget)} budget` : ""}</span>
-        </div>
-        <div class="budget-progress-track" title="Planned vs budget">
-          <div class="budget-progress-fill" style="width:${pctPlanned}%;opacity:0.35;background:var(--accent)"></div>
-        </div>
-        <div class="budget-progress-track" style="margin-top:4px" title="Paid vs budget">
-          <div class="budget-progress-fill" style="width:${pctActual}%;background:${overBudget ? "var(--danger)" : "var(--success)"}"></div>
-        </div>
-        <div class="budget-progress-label" style="color:${overBudget ? "var(--danger)" : "var(--text-3)"}">
-          ${totalBudget
-            ? `€${fmt(totalPlanned)} planned of €${fmt(totalBudget)} budget (${pctPlanned}%)${overBudget ? " · over budget" : ""}`
-            : `${pctActual}% committed (actual paid)`}
-        </div>`;
+      const blocks = currencyList.map((cur, i) => {
+        const ces = byCurrency[cur];
+        const sym = currencySymbol(cur);
+        const totalActual  = ces.filter(e => !e.isEstimated).reduce((s, e) => s + e.amount, 0);
+        const totalPlanned = ces.reduce((s, e) => s + e.amount, 0);
+        const budget = cur === "EUR" ? totalBudget : 0;
+        const denominator = budget || totalPlanned;
+        const pctActual  = denominator > 0 ? Math.min(Math.round((totalActual  / denominator) * 100), 100) : 0;
+        const pctPlanned = denominator > 0 ? Math.min(Math.round((totalPlanned / denominator) * 100), 100) : 0;
+        const overBudget = budget && totalPlanned > budget;
+        return `
+          <div style="${i > 0 ? "margin-top:20px;padding-top:16px;border-top:1px solid var(--border)" : ""}">
+            ${currencyList.length > 1 ? `<div class="budget-section-title" style="margin-bottom:8px">${cur}</div>` : ""}
+            <div class="budget-total-row">
+              <span class="budget-total-actual">${sym}${fmt(totalActual)}</span>
+              <span class="budget-total-planned">paid · ${sym}${fmt(totalPlanned)} planned${budget ? ` · ${sym}${fmt(budget)} budget` : ""}</span>
+            </div>
+            <div class="budget-progress-track" title="Planned vs budget">
+              <div class="budget-progress-fill" style="width:${pctPlanned}%;opacity:0.35;background:var(--accent)"></div>
+            </div>
+            <div class="budget-progress-track" style="margin-top:4px" title="Paid vs budget">
+              <div class="budget-progress-fill" style="width:${pctActual}%;background:${overBudget ? "var(--danger)" : "var(--success)"}"></div>
+            </div>
+            <div class="budget-progress-label" style="color:${overBudget ? "var(--danger)" : "var(--text-3)"}">
+              ${budget
+                ? `${sym}${fmt(totalPlanned)} planned of ${sym}${fmt(budget)} budget (${pctPlanned}%)${overBudget ? " · over budget" : ""}`
+                : `${pctActual}% committed (actual paid)`}
+            </div>
+          </div>`;
+      });
+      bar.innerHTML = blocks.join("");
     }
   }
 
-  // Chart by category
+  // Chart by category — use primary currency (EUR first, else first available)
+  const chartCur = currencyList.includes("EUR") ? "EUR" : (currencyList[0] || "EUR");
+  const chartEntries = byCurrency[chartCur] || [];
+  const chartSym = currencySymbol(chartCur);
   const categories = {};
-  entries.forEach(e => {
+  chartEntries.forEach(e => {
     categories[e.category] = (categories[e.category] || 0) + e.amount;
   });
   const catNames  = Object.keys(categories).sort((a, b) => categories[b] - categories[a]);
   const catValues = catNames.map(k => categories[k]);
-  const catColors = catNames.map(c => {
-    const map = {
-      "Accommodation": "#6B7DB3",
-      "Transport": "#8999C9",
-      "Food": "#B36B6B",
-      "Experiences": "#6BAA8D",
-      "Sights & Other": "#B39E6B",
-    };
-    return map[c] || "#888";
-  });
+  const catColors = catNames.map(c => ({
+    "Accommodation": "#6B7DB3",
+    "Transport": "#8999C9",
+    "Food": "#B36B6B",
+    "Experiences": "#6BAA8D",
+    "Sights & Other": "#B39E6B",
+  }[c] || "#888"));
 
   if (typeof Chart !== "undefined" && catNames.length > 0) {
     const ctx = document.getElementById("budget-chart");
@@ -4104,23 +4149,17 @@ function renderBudget() {
         type: "bar",
         data: {
           labels: catNames,
-          datasets: [{
-            data: catValues,
-            backgroundColor: catColors,
-            borderRadius: 6,
-            borderSkipped: false,
-          }],
+          datasets: [{ data: catValues, backgroundColor: catColors, borderRadius: 6, borderSkipped: false }],
         },
         options: {
           indexAxis: "y",
           responsive: true,
           plugins: {
             legend: { display: false },
-            tooltip: { callbacks: { label: ctx => ` €${fmt(ctx.raw)}` } },
+            tooltip: { callbacks: { label: ctx => ` ${chartSym}${fmt(ctx.raw)}` } },
           },
           scales: {
-            x: { grid: { color: "rgba(128,128,128,0.1)" },
-                 ticks: { callback: v => `€${fmt(v)}`, color: "#888" } },
+            x: { grid: { color: "rgba(128,128,128,0.1)" }, ticks: { callback: v => `${chartSym}${fmt(v)}`, color: "#888" } },
             y: { grid: { display: false }, ticks: { color: "#888" } },
           },
         },
@@ -4128,23 +4167,28 @@ function renderBudget() {
     }
   }
 
-  // By town
-  const byTown = {};
-  entries.forEach(e => { byTown[e.townId] = (byTown[e.townId] || 0) + e.amount; });
+  // By town — per-currency amounts
+  const byTownCur = {};
+  entries.forEach(e => {
+    if (!byTownCur[e.townId]) byTownCur[e.townId] = {};
+    byTownCur[e.townId][e.currency] = (byTownCur[e.townId][e.currency] || 0) + e.amount;
+  });
   const byTownEl = document.getElementById("budget-by-town");
   if (byTownEl) {
     const rows = state.towns
-      .filter(t => byTown[t.id])
-      .map(t => `<div class="budget-town-row">
-        <span>${escapeHtml(t.name)}</span>
-        <span class="budget-town-amount">€${fmt(byTown[t.id])}</span>
-      </div>`).join("");
-    byTownEl.innerHTML = rows
-      ? `<div class="budget-section-title">By city</div>${rows}`
-      : "";
+      .filter(t => byTownCur[t.id])
+      .map(t => {
+        const amountStr = Object.entries(byTownCur[t.id])
+          .map(([cur, amt]) => `${currencySymbol(cur)}${fmt(amt)}`).join(" · ");
+        return `<div class="budget-town-row">
+          <span>${escapeHtml(t.name)}</span>
+          <span class="budget-town-amount">${amountStr}</span>
+        </div>`;
+      }).join("");
+    byTownEl.innerHTML = rows ? `<div class="budget-section-title">By city</div>${rows}` : "";
   }
 
-  // Unbooked / estimated
+  // Estimated / not yet paid
   const unbookedEl = document.getElementById("budget-unbooked");
   if (unbookedEl) {
     const unbooked = entries.filter(e => e.isEstimated);
@@ -4152,11 +4196,9 @@ function renderBudget() {
       <div class="budget-unbooked-row">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="14" height="14" style="flex-shrink:0;color:var(--text-3)"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         <span class="budget-unbooked-name">${escapeHtml(e.name)}</span>
-        <span class="budget-unbooked-amount">~€${fmt(e.amount)}</span>
+        <span class="budget-unbooked-amount">~${currencySymbol(e.currency)}${fmt(e.amount)}</span>
       </div>`).join("");
-    unbookedEl.innerHTML = rows
-      ? `<div class="budget-section-title">Estimated / not yet paid</div>${rows}`
-      : "";
+    unbookedEl.innerHTML = rows ? `<div class="budget-section-title">Estimated / not yet paid</div>${rows}` : "";
   }
 }
 
