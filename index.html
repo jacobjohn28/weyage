@@ -2450,7 +2450,7 @@ function getDaysForTown(town) {
   const days = [];
   const start = new Date(town.arrivalDate + "T00:00:00");
   const end   = new Date(town.departureDate + "T00:00:00");
-  for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
     days.push(d.toISOString().slice(0, 10));
   }
   return days;
@@ -2741,8 +2741,9 @@ function renderItinerary() {
     if (target) {
       setTimeout(() => {
         const main = document.querySelector(".main");
-        main.scrollTo({ top: target.offsetTop - 72, behavior: "smooth" });
-      }, 100);
+        const targetTop = target.getBoundingClientRect().top - main.getBoundingClientRect().top + main.scrollTop - 24;
+        main.scrollTo({ top: targetTop, behavior: "smooth" });
+      }, 80);
     }
     setState({ focusTownId: null });
   }
