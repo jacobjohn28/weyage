@@ -3330,20 +3330,20 @@ function renderItinerary() {
             <button class="town-add-btn" data-town-id="${escapeHtml(town.id)}"
               style="background:rgba(0,0,0,0.38);border:1px solid rgba(255,255,255,0.18);color:#fff;backdrop-filter:blur(6px);margin-left:0">+ Add</button>
           </div>
-          <span class="town-photo-banner-name">${escapeHtml(town.name)}</span>
-          <span class="town-photo-banner-dates">${fmtSpreadDates(town.arrivalDate, town.departureDate)} &middot; ${nights}n</span>
         </div>
       </div>` : "";
 
     html.push(`
       <div class="town-group" id="itinerary-town-${escapeHtml(town.id)}" data-town="${escapeHtml(town.id)}">
         ${photoBanner}
-        ${!showPhoto ? `<div class="town-group-header">
+        <div class="town-group-header"${showPhoto ? ' style="margin-top:-4px;border-radius:0 0 12px 12px"' : ""}>
+          ${!showPhoto ? `<div class="town-header-img" style="background-image:url('${escapeHtml(townImgUrl)}')"></div>` : ""}
           <span class="town-group-dot"></span>
           <span class="town-group-name">${escapeHtml(town.name)}</span>
           <span class="town-group-dates">${fmtSpreadDates(town.arrivalDate, town.departureDate)} &middot; ${nights}n</span>
-          ${editBtn}${addBtn}
-        </div>` : ""}
+          ${showPhoto ? "" : editBtn}
+          ${showPhoto ? "" : addBtn}
+        </div>
         ${renderAccomCard(town)}
         ${days.map(dk => {
           const daySpots = byDate[dk] || [];
@@ -3489,9 +3489,9 @@ function renderItinerary() {
     if (!url) return;
     imgCache[t.wikipediaArticle] = url;
     saveImgCache(imgCache);
-    // Re-render only the banner for this town to avoid full re-render loop
+    // Inject banner above the existing header (no full re-render)
     const townEl = container.querySelector(`#itinerary-town-${CSS.escape(t.id)}`);
-    if (!townEl || townEl.querySelector(".town-photo-banner img")) return;
+    if (!townEl || townEl.querySelector(".town-photo-banner")) return;
     const banner = document.createElement("div");
     banner.className = "town-photo-banner";
     banner.innerHTML = `<img src="${escapeHtml(url)}" alt="${escapeHtml(t.name)}" loading="lazy" onerror="this.closest('.town-photo-banner').style.display='none'">
@@ -3504,19 +3504,22 @@ function renderItinerary() {
           <button class="town-add-btn" data-town-id="${escapeHtml(t.id)}"
             style="background:rgba(0,0,0,0.38);border:1px solid rgba(255,255,255,0.18);color:#fff;backdrop-filter:blur(6px);margin-left:0">+ Add</button>
         </div>
-        <span class="town-photo-banner-name">${escapeHtml(t.name)}</span>
-        <span class="town-photo-banner-dates">${fmtSpreadDates(t.arrivalDate, t.departureDate)} &middot; ${nightsBetween(t.arrivalDate, t.departureDate)}n</span>
       </div>`;
-    // Wire up the injected buttons
     banner.querySelector(".town-edit-btn")?.addEventListener("click", () => {
       const town = state.towns.find(x => x.id === t.id);
       if (town) openTownEditModal(town);
     });
     banner.querySelector(".town-add-btn")?.addEventListener("click", () => openModal(null, { townId: t.id }));
-    // Replace the old text-only header with banner + slim header, or just prepend
+    // Insert banner before the header; update header to tuck under the photo
     const oldHeader = townEl.querySelector(".town-group-header");
     townEl.insertBefore(banner, townEl.firstChild);
-    if (oldHeader) oldHeader.remove();
+    if (oldHeader) {
+      oldHeader.style.marginTop = "-4px";
+      oldHeader.style.borderRadius = "0 0 12px 12px";
+      // Remove duplicate edit/add buttons that were in the text-only header
+      oldHeader.querySelector(".town-edit-btn")?.remove();
+      oldHeader.querySelector(".town-add-btn")?.remove();
+    }
   });
 }
 
