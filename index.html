@@ -9,6 +9,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <title>France · May–June 2026</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" href="icon-192.png">
 
 <!--
 ================================================================================
@@ -5131,6 +5134,14 @@ init().catch((err) => {
   showAuthScreen("Couldn't start the app: " + (err.message || err.code || err));
 });
 
+</script>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js", { scope: "./" })
+      .catch(err => console.warn("SW registration failed:", err));
+  });
+}
 </script>
 </body>
 </html>
