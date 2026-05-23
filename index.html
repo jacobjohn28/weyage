@@ -3481,46 +3481,17 @@ function renderItinerary() {
     }));
   }
 
-  // Async: fetch missing Wikipedia images (same as overview — needed when itinerary is loaded first)
-  state.towns.forEach(async (t) => {
-    if (t.customImage || t.hidePhoto) return;
-    if (!t.wikipediaArticle || imgCache[t.wikipediaArticle]) return;
-    const url = await fetchWikipediaImage(t.wikipediaArticle);
-    if (!url) return;
-    imgCache[t.wikipediaArticle] = url;
-    saveImgCache(imgCache);
-    // Inject banner above the existing header (no full re-render)
-    const townEl = container.querySelector(`#itinerary-town-${CSS.escape(t.id)}`);
-    if (!townEl || townEl.querySelector(".town-photo-banner")) return;
-    const banner = document.createElement("div");
-    banner.className = "town-photo-banner";
-    banner.innerHTML = `<img src="${escapeHtml(url)}" alt="${escapeHtml(t.name)}" loading="lazy" onerror="this.closest('.town-photo-banner').style.display='none'">
-      <div class="town-photo-banner-overlay">
-        <div style="position:absolute;top:10px;right:10px;display:flex;gap:6px;z-index:2">
-          <button class="town-edit-btn icon-btn" data-town-id="${escapeHtml(t.id)}" title="Edit city"
-            style="padding:5px;background:rgba(0,0,0,0.38);border:1px solid rgba(255,255,255,0.18);border-radius:8px;color:#fff;backdrop-filter:blur(6px)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="14" height="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          </button>
-          <button class="town-add-btn" data-town-id="${escapeHtml(t.id)}"
-            style="background:rgba(0,0,0,0.38);border:1px solid rgba(255,255,255,0.18);color:#fff;backdrop-filter:blur(6px);margin-left:0">+ Add</button>
-        </div>
-      </div>`;
-    banner.querySelector(".town-edit-btn")?.addEventListener("click", () => {
-      const town = state.towns.find(x => x.id === t.id);
-      if (town) openTownEditModal(town);
+  // Async: fetch any missing Wikipedia images, then re-render once when all are ready.
+  // We do a single re-render (not per-town injection) to avoid stale-DOM races where
+  // a concurrent renderItinerary() call replaces the container before injection lands.
+  const missing = state.towns.filter(
+    t => !t.customImage && !t.hidePhoto && t.wikipediaArticle && !imgCache[t.wikipediaArticle]
+  );
+  if (missing.length > 0) {
+    Promise.all(missing.map(t => fetchWikipediaImage(t.wikipediaArticle))).then(() => {
+      if (state.currentView === "itinerary") renderItinerary();
     });
-    banner.querySelector(".town-add-btn")?.addEventListener("click", () => openModal(null, { townId: t.id }));
-    // Insert banner before the header; update header to tuck under the photo
-    const oldHeader = townEl.querySelector(".town-group-header");
-    townEl.insertBefore(banner, townEl.firstChild);
-    if (oldHeader) {
-      oldHeader.style.marginTop = "-4px";
-      oldHeader.style.borderRadius = "0 0 12px 12px";
-      // Remove duplicate edit/add buttons that were in the text-only header
-      oldHeader.querySelector(".town-edit-btn")?.remove();
-      oldHeader.querySelector(".town-add-btn")?.remove();
-    }
-  });
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────
