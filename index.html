@@ -932,6 +932,37 @@
 
   /* Town groups */
   .town-group { margin-bottom: 48px; }
+  .town-photo-banner {
+    width: 100%; height: 200px;
+    border-radius: 14px;
+    overflow: hidden;
+    position: relative;
+    background: var(--surface-2);
+    margin-bottom: 10px;
+  }
+  .town-photo-banner img {
+    width: 100%; height: 100%;
+    object-fit: cover; object-position: center;
+    display: block;
+  }
+  .town-photo-banner-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to bottom, transparent 30%, rgba(0,0,0,0.62));
+    display: flex; flex-direction: column; justify-content: flex-end;
+    padding: 16px 18px;
+  }
+  .town-photo-banner-name {
+    font-family: var(--font-display);
+    font-size: 1.875rem; font-weight: 500;
+    color: #fff; letter-spacing: -0.02em; line-height: 1;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.45);
+  }
+  .town-photo-banner-dates {
+    font-size: 0.8125rem;
+    color: rgba(255,255,255,0.82);
+    margin-top: 5px;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+  }
   .town-group-header {
     display: flex; align-items: center; gap: 10px;
     padding: 14px 16px;
@@ -3271,20 +3302,36 @@ function renderItinerary() {
     }
     const unscheduled = byDate["unscheduled"] || [];
 
-    // Resolve town image for header strip
+    // Resolve town image
     let townImgUrl = town.customImage || town.image || "";
     if (!townImgUrl && town.wikipediaArticle) townImgUrl = imgCache[town.wikipediaArticle] || "";
-    const headerBg = townImgUrl
+
+    const photoBanner = townImgUrl ? `
+      <div class="town-photo-banner">
+        <img src="${escapeHtml(townImgUrl)}" alt="${escapeHtml(town.name)}" loading="lazy"
+             onerror="this.closest('.town-photo-banner').style.display='none'">
+        <div class="town-photo-banner-overlay">
+          <span class="town-photo-banner-name">${escapeHtml(town.name)}</span>
+          <span class="town-photo-banner-dates">${fmtSpreadDates(town.arrivalDate, town.departureDate)} &middot; ${nights}n</span>
+        </div>
+      </div>` : "";
+
+    // When photo banner shows name+dates, simplify the header row to just action buttons
+    const headerBg = (!townImgUrl)
       ? `<div class="town-header-img" style="background-image:url('${escapeHtml(townImgUrl)}')"></div>`
       : "";
+    const headerNameDates = !townImgUrl ? `
+          <span class="town-group-dot"></span>
+          <span class="town-group-name">${escapeHtml(town.name)}</span>
+          <span class="town-group-dates">${fmtSpreadDates(town.arrivalDate, town.departureDate)} &middot; ${nights}n</span>` : "";
 
     html.push(`
       <div class="town-group" id="itinerary-town-${escapeHtml(town.id)}" data-town="${escapeHtml(town.id)}">
-        <div class="town-group-header">
+        ${photoBanner}
+        <div class="town-group-header"${townImgUrl ? ' style="min-height:unset;padding:10px 14px"' : ""}>
           ${headerBg}
-          <span class="town-group-dot"></span>
-          <span class="town-group-name">${escapeHtml(town.name)}</span>
-          <span class="town-group-dates">${fmtSpreadDates(town.arrivalDate, town.departureDate)} &middot; ${nights}n</span>
+          ${headerNameDates}
+          <span style="flex:1"></span>
           <button class="town-edit-btn icon-btn" data-town-id="${escapeHtml(town.id)}" title="Edit city" style="padding:4px;opacity:0.55;margin-right:2px">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="15" height="15"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           </button>
