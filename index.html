@@ -986,6 +986,140 @@
     white-space: nowrap;
   }
   .day-rule { flex: 1; height: 1px; background: var(--border); }
+  .day-ai-btn {
+    flex-shrink: 0;
+    background: none; border: none; padding: 0 2px; cursor: pointer;
+    font-size: 0.875rem; line-height: 1; opacity: 0.45;
+    transition: opacity 0.15s, transform 0.15s;
+  }
+  .day-ai-btn:hover { opacity: 1; transform: scale(1.2); }
+
+  /* ── AI Recommendation Panel ── */
+  .ai-panel-overlay {
+    position: fixed; inset: 0; z-index: 600;
+    pointer-events: none;
+  }
+  .ai-panel-overlay.visible { pointer-events: all; }
+  .ai-panel-backdrop {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0); transition: background 0.25s;
+  }
+  .ai-panel-overlay.visible .ai-panel-backdrop { background: rgba(0,0,0,0.28); }
+  .ai-panel {
+    position: absolute; right: 0; top: 0; bottom: 0;
+    width: min(440px, 100vw);
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    transform: translateX(100%);
+    transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
+    overflow: hidden;
+  }
+  .ai-panel-overlay.visible .ai-panel { transform: translateX(0); }
+  .ai-panel-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 18px 18px 14px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .ai-panel-title {
+    font-family: var(--font-display); font-size: 1rem; font-weight: 600;
+    flex: 1;
+  }
+  .ai-panel-close {
+    background: none; border: none; cursor: pointer;
+    color: var(--text-3); padding: 4px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .ai-panel-close:hover { background: var(--surface-2); color: var(--text-1); }
+  .ai-panel-context {
+    margin: 14px 18px 0;
+    padding: 12px 14px;
+    background: var(--surface-2);
+    border-radius: 10px;
+    font-size: 0.8rem; line-height: 1.6; color: var(--text-2);
+    font-style: italic;
+    flex-shrink: 0;
+  }
+  .ai-panel-body {
+    flex: 1; overflow-y: auto;
+    padding: 14px 18px 24px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .ai-panel-loading {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 14px; padding: 40px 0; color: var(--text-3);
+    font-size: 0.875rem;
+  }
+  .ai-spinner {
+    width: 28px; height: 28px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .ai-panel-error {
+    padding: 24px 0; text-align: center;
+    color: var(--text-3); font-size: 0.875rem; line-height: 1.6;
+  }
+  .ai-panel-error strong { display: block; color: var(--text-2); margin-bottom: 6px; }
+  .ai-reco-card {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    background: var(--surface);
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .ai-reco-card-top {
+    display: flex; align-items: flex-start; gap: 8px;
+  }
+  .ai-reco-type-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    flex-shrink: 0; margin-top: 5px;
+  }
+  .ai-reco-name {
+    font-weight: 600; font-size: 0.9375rem; flex: 1;
+    font-family: var(--font-display);
+  }
+  .ai-reco-meta {
+    font-size: 0.75rem; color: var(--text-3);
+    display: flex; flex-wrap: wrap; gap: 6px;
+    align-items: center;
+  }
+  .ai-reco-meta-chip {
+    background: var(--surface-2); border-radius: 20px;
+    padding: 2px 8px;
+  }
+  .ai-reco-reason {
+    font-size: 0.8125rem; color: var(--text-2);
+    line-height: 1.55; border-left: 2px solid var(--accent-soft);
+    padding-left: 10px;
+  }
+  .ai-reco-logistics {
+    font-size: 0.75rem; color: var(--text-3); line-height: 1.5;
+  }
+  .ai-reco-tags {
+    display: flex; flex-wrap: wrap; gap: 5px;
+  }
+  .ai-reco-tag {
+    font-size: 0.6875rem; font-weight: 500;
+    background: var(--accent-bg); color: var(--accent);
+    border-radius: 20px; padding: 2px 8px;
+  }
+  .ai-reco-add-btn {
+    align-self: flex-start;
+    background: var(--accent); color: #fff;
+    border: none; border-radius: 8px;
+    padding: 7px 14px; font-size: 0.8125rem; font-weight: 600;
+    cursor: pointer; margin-top: 2px;
+    transition: opacity 0.15s;
+  }
+  .ai-reco-add-btn:hover { opacity: 0.85; }
+  .ai-reco-add-btn:disabled { opacity: 0.4; cursor: default; }
+  @media (max-width: 600px) {
+    .ai-panel { width: 100vw; border-left: none; }
+  }
 
   /* Spot list (sortable container) */
   .spot-list {
@@ -2116,6 +2250,29 @@
 </div>
 
 <!-- ============================================================
+     AI RECOMMENDATION PANEL
+     ============================================================ -->
+<div class="ai-panel-overlay" id="ai-panel-overlay">
+  <div class="ai-panel-backdrop" id="ai-panel-backdrop"></div>
+  <div class="ai-panel" id="ai-panel">
+    <div class="ai-panel-header">
+      <span style="font-size:1.1rem">✨</span>
+      <span class="ai-panel-title" id="ai-panel-title">AI Suggestions</span>
+      <button class="ai-panel-close" id="ai-panel-close-btn" title="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="ai-panel-context" id="ai-panel-context" style="display:none"></div>
+    <div class="ai-panel-body" id="ai-panel-body">
+      <div class="ai-panel-loading" id="ai-panel-loading">
+        <div class="ai-spinner"></div>
+        <span>Thinking about your day…</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
      FONTS
      ============================================================ -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2150,6 +2307,14 @@ const FIREBASE_CONFIG = {
   storageBucket: "weyage-ed0cb.firebasestorage.app",
   messagingSenderId: "1002189778782",
   appId: "1:1002189778782:web:81493906785a07658b69cf"
+};
+
+/* ─────────────────────────────────────────────────────────────
+   GEMINI CONFIG
+   ───────────────────────────────────────────────────────────── */
+const GEMINI_CONFIG = {
+  apiKey: "AIzaSyBzip2Ljx7R-7nvRLfh_PBck_GG1OBPSLg",
+  model: "gemini-2.0-flash",
 };
 
 /* ─────────────────────────────────────────────────────────────
@@ -2968,6 +3133,7 @@ function renderItinerary() {
                 <span class="day-label">${dow}</span>
                 <span class="day-date-full">${full}</span>
                 <div class="day-rule"></div>
+                <button class="day-ai-btn" data-date="${dk}" data-town-id="${escapeHtml(town.id)}" title="AI suggestions for this day">✨</button>
               </div>
               <div class="spot-list" data-date="${dk}" data-town-id="${escapeHtml(town.id)}">
                 ${daySpots.map(s => spotCardHTML(s)).join("")}
@@ -2999,6 +3165,13 @@ function renderItinerary() {
       const townId = el.dataset.townId;
       const town = state.towns.find(t => t.id === townId);
       if (town) openAccomModal(town);
+    });
+  });
+
+  // AI ✨ button handlers
+  container.querySelectorAll(".day-ai-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      openRecommendationsPanel(btn.dataset.townId, btn.dataset.date);
     });
   });
 
@@ -4084,6 +4257,276 @@ async function init() {
     }
   });
 }
+
+/* ─────────────────────────────────────────────────────────────
+   AI RECOMMENDATIONS — GEMINI
+   ───────────────────────────────────────────────────────────── */
+
+const TYPE_COLORS = {
+  sight: "#7c6af7", restaurant: "#e07b54", cafe: "#c4963a",
+  experience: "#4aaa8b", transport: "#7a9ec4",
+};
+
+function buildRecommendationContext(townId, date) {
+  const town = state.towns.find(t => t.id === townId);
+  if (!town) return null;
+
+  const allTownSpots = getSpotsForTown(townId)
+    .filter(s => !s._arrivalView && s.type !== "transport");
+
+  const daySpots = allTownSpots
+    .filter(s => s.scheduledDate === date)
+    .sort((a, b) => (a.scheduledTime || "").localeCompare(b.scheduledTime || "") || (a.order ?? 9999) - (b.order ?? 9999));
+
+  const alreadyNames = allTownSpots.map(s => s.name).filter(Boolean);
+
+  // Trip day number
+  const tripStart = new Date(state.trip?.startDate + "T00:00:00");
+  const thisDay = new Date(date + "T00:00:00");
+  const tripDay = Math.floor((thisDay - tripStart) / 86400000) + 1;
+
+  // Town day number
+  const townStart = new Date(town.arrivalDate + "T00:00:00");
+  const townDay = Math.floor((thisDay - townStart) / 86400000) + 1;
+  const totalTownDays = Math.floor(
+    (new Date(town.departureDate + "T00:00:00") - townStart) / 86400000
+  ) + 1;
+
+  // Rough energy level: first day = fresh, last = winding down
+  const energyLevel = townDay === 1 ? "fresh, first full day in the city"
+    : townDay === totalTownDays ? "last day, winding down"
+    : "mid-stay, settled rhythm";
+
+  // Day plan summary
+  const dayPlanSummary = daySpots.length > 0
+    ? daySpots.map(s => {
+        const time = s.scheduledTime ? `${s.scheduledTime} ` : "";
+        return `${time}${s.name}${s.neighborhood ? ` (${s.neighborhood})` : ""}`;
+      }).join(", ")
+    : "Nothing planned yet — open slate";
+
+  // Last spot for logistics chaining
+  const lastSpot = daySpots[daySpots.length - 1] || null;
+
+  return {
+    town: town.name,
+    country: town.country || "France",
+    date,
+    tripDay,
+    townDay,
+    totalTownDays,
+    energyLevel,
+    dayPlanSummary,
+    lastSpotName: lastSpot?.name || null,
+    lastSpotNeighborhood: lastSpot?.neighborhood || null,
+    alreadyPlanned: alreadyNames,
+  };
+}
+
+async function callGeminiRecommendations(ctx) {
+  const systemPrompt = `You are a knowledgeable, opinionated travel companion helping plan a trip to ${ctx.town}, ${ctx.country}. Your philosophy:
+- Quality over quantity: suggest 3–4 genuinely excellent options, never a generic list
+- Local rhythm: match the energy of the day (${ctx.energyLevel})
+- Logistics-first: suggest places that flow naturally from what's already planned
+- Honest: include why this fits *this specific day*, not a generic description
+- Connected: reference the existing day plan when relevant
+
+Day context: Trip day ${ctx.tripDay}. Day ${ctx.townDay} of ${ctx.totalTownDays} in ${ctx.town}.
+Already planned today: ${ctx.dayPlanSummary}.
+${ctx.lastSpotName ? `Last stop: ${ctx.lastSpotName}${ctx.lastSpotNeighborhood ? ` in ${ctx.lastSpotNeighborhood}` : ""}.` : ""}
+Already in itinerary for ${ctx.town}: ${ctx.alreadyPlanned.length > 0 ? ctx.alreadyPlanned.join(", ") : "nothing yet"}.
+
+Suggest spots that are NOT already in the itinerary. Focus on what genuinely fits this day's energy and flow.`;
+
+  const userPrompt = `Give me 3–4 recommendations for ${ctx.date} in ${ctx.town}. They should complement what's already planned and fit the day's energy. Be specific and opinionated.`;
+
+  const functionDeclaration = {
+    name: "recommend_spots",
+    description: "Return a curated list of spot recommendations with reasoning",
+    parameters: {
+      type: "OBJECT",
+      properties: {
+        context_read: {
+          type: "STRING",
+          description: "1–2 sentence summary of how you read the day and what you optimised for",
+        },
+        spots: {
+          type: "ARRAY",
+          items: {
+            type: "OBJECT",
+            properties: {
+              name:            { type: "STRING" },
+              type:            { type: "STRING", enum: ["sight", "restaurant", "cafe", "experience"] },
+              neighborhood:    { type: "STRING" },
+              suggestedTime:   { type: "STRING", description: "HH:MM 24h, or empty" },
+              durationMinutes: { type: "INTEGER" },
+              reason:          { type: "STRING", description: "Why this fits *this specific day*" },
+              logistics:       { type: "STRING", description: "Tip on getting there or timing" },
+              tags:            { type: "ARRAY", items: { type: "STRING" } },
+              notes:           { type: "STRING", description: "Booking tip, insider detail, or leave empty" },
+            },
+            required: ["name", "type", "reason"],
+          },
+        },
+      },
+      required: ["context_read", "spots"],
+    },
+  };
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_CONFIG.model}:generateContent?key=${GEMINI_CONFIG.apiKey}`;
+  const body = {
+    system_instruction: { parts: [{ text: systemPrompt }] },
+    contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+    tools: [{ function_declarations: [functionDeclaration] }],
+    tool_config: { function_calling_config: { mode: "ANY", allowed_function_names: ["recommend_spots"] } },
+    generation_config: { temperature: 0.8 },
+  };
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `Gemini API error ${res.status}`);
+  }
+
+  const data = await res.json();
+  const call = data?.candidates?.[0]?.content?.parts?.find(p => p.functionCall);
+  if (!call) throw new Error("No recommendations returned — try again.");
+
+  return call.functionCall.args;
+}
+
+function renderRecommendationCards(result, townId, date) {
+  const body = document.getElementById("ai-panel-body");
+  const contextEl = document.getElementById("ai-panel-context");
+
+  if (result.context_read) {
+    contextEl.textContent = result.context_read;
+    contextEl.style.display = "";
+  }
+
+  const cards = (result.spots || []).map(spot => {
+    const color = TYPE_COLORS[spot.type] || "#888";
+    const metaChips = [
+      spot.neighborhood ? `<span class="ai-reco-meta-chip">${escapeHtml(spot.neighborhood)}</span>` : "",
+      spot.suggestedTime ? `<span class="ai-reco-meta-chip">${escapeHtml(spot.suggestedTime)}</span>` : "",
+      spot.durationMinutes ? `<span class="ai-reco-meta-chip">${spot.durationMinutes} min</span>` : "",
+    ].filter(Boolean).join("");
+
+    const tags = (spot.tags || []).slice(0, 4)
+      .map(t => `<span class="ai-reco-tag">${escapeHtml(t)}</span>`).join("");
+
+    return `
+      <div class="ai-reco-card" data-spot='${JSON.stringify(spot).replace(/'/g, "&#39;")}'>
+        <div class="ai-reco-card-top">
+          <div class="ai-reco-type-dot" style="background:${color}"></div>
+          <span class="ai-reco-name">${escapeHtml(spot.name)}</span>
+        </div>
+        ${metaChips ? `<div class="ai-reco-meta">${metaChips}</div>` : ""}
+        <div class="ai-reco-reason">${escapeHtml(spot.reason || "")}</div>
+        ${spot.logistics ? `<div class="ai-reco-logistics">${escapeHtml(spot.logistics)}</div>` : ""}
+        ${tags ? `<div class="ai-reco-tags">${tags}</div>` : ""}
+        ${spot.notes ? `<div class="ai-reco-logistics" style="font-style:italic">${escapeHtml(spot.notes)}</div>` : ""}
+        <button class="ai-reco-add-btn" data-date="${escapeHtml(date)}" data-town-id="${escapeHtml(townId)}">
+          + Add to ${new Date(date + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}
+        </button>
+      </div>`;
+  }).join("");
+
+  body.innerHTML = cards || `<div class="ai-panel-error"><strong>No suggestions</strong>Try again or adjust your day plan.</div>`;
+
+  body.querySelectorAll(".ai-reco-add-btn").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const card = btn.closest(".ai-reco-card");
+      const spot = JSON.parse(card.dataset.spot);
+      const targetDate = btn.dataset.date;
+      const targetTownId = btn.dataset.townId;
+
+      btn.disabled = true;
+      btn.textContent = "Adding…";
+
+      try {
+        const validTags = (spot.tags || []).filter(t => state.trip?.tags?.includes(t));
+        await saveSpot({
+          name: spot.name,
+          type: spot.type || "sight",
+          townId: targetTownId,
+          scheduledDate: targetDate || null,
+          scheduledTime: spot.suggestedTime || null,
+          neighborhood: spot.neighborhood || "",
+          notes: [spot.reason, spot.logistics, spot.notes].filter(Boolean).join("\n\n"),
+          tags: validTags,
+          bookingUrl: "",
+          cost: null,
+          costPaid: false,
+          paymentMethod: "",
+        });
+        btn.textContent = "✓ Added";
+        btn.style.background = "var(--success, #4aaa8b)";
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = "Add failed — retry";
+        console.error("AI add spot error:", err);
+      }
+    });
+  });
+}
+
+async function openRecommendationsPanel(townId, date) {
+  const town = state.towns.find(t => t.id === townId);
+  if (!town) return;
+
+  const overlay = document.getElementById("ai-panel-overlay");
+  const title = document.getElementById("ai-panel-title");
+  const body = document.getElementById("ai-panel-body");
+  const contextEl = document.getElementById("ai-panel-context");
+  const loading = document.getElementById("ai-panel-loading");
+
+  const dateLabel = new Date(date + "T00:00:00")
+    .toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+  title.textContent = `${town.name} · ${dateLabel}`;
+  contextEl.style.display = "none";
+  contextEl.textContent = "";
+  body.innerHTML = "";
+  body.appendChild(loading);
+  loading.style.display = "flex";
+
+  overlay.classList.add("visible");
+
+  if (GEMINI_CONFIG.apiKey === "REPLACE_ME_GEMINI_KEY") {
+    loading.style.display = "none";
+    body.innerHTML = `<div class="ai-panel-error"><strong>API key not set</strong>Add your Gemini API key to GEMINI_CONFIG in the source to use AI recommendations.</div>`;
+    return;
+  }
+
+  try {
+    const ctx = buildRecommendationContext(townId, date);
+    const result = await callGeminiRecommendations(ctx);
+    loading.style.display = "none";
+    renderRecommendationCards(result, townId, date);
+  } catch (err) {
+    loading.style.display = "none";
+    body.innerHTML = `<div class="ai-panel-error"><strong>Couldn't get suggestions</strong>${escapeHtml(err.message)}</div>`;
+    console.error("Gemini error:", err);
+  }
+}
+
+function closeRecommendationsPanel() {
+  document.getElementById("ai-panel-overlay").classList.remove("visible");
+}
+
+// Panel close wiring
+document.getElementById("ai-panel-close-btn").addEventListener("click", closeRecommendationsPanel);
+document.getElementById("ai-panel-backdrop").addEventListener("click", closeRecommendationsPanel);
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && document.getElementById("ai-panel-overlay").classList.contains("visible")) {
+    closeRecommendationsPanel();
+  }
+});
 
 init().catch((err) => {
   console.error("Boot error:", err);
