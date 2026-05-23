@@ -305,21 +305,24 @@
     overflow-y: auto;
   }
   .sidebar-brand {
-    padding: 4px 12px 24px;
+    padding: 4px 12px 20px;
     border-bottom: 1px solid var(--border);
     margin-bottom: 16px;
   }
-  .sidebar-brand-trip {
+  .sidebar-brand-name {
     font-family: var(--font-display);
-    font-size: 1.125rem;
-    font-style: italic;
-    line-height: 1.2;
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    color: var(--text);
   }
-  .sidebar-brand-dates {
+  .sidebar-brand-tagline {
     font-size: 0.75rem;
-    color: var(--text-2);
-    margin-top: 4px;
-    letter-spacing: 0.02em;
+    color: var(--text-3);
+    margin-top: 3px;
+    letter-spacing: 0.04em;
+    font-style: italic;
   }
   .nav-section {
     font-size: 0.6875rem;
@@ -932,9 +935,20 @@
   .town-group-header {
     display: flex; align-items: center; gap: 12px;
     margin-bottom: 20px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid var(--border);
+    padding: 14px 16px;
+    border-radius: var(--radius);
+    position: relative; overflow: hidden;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
   }
+  .town-header-img {
+    position: absolute; inset: 0;
+    background-size: cover; background-position: center;
+    opacity: 0.18;
+    border-radius: inherit;
+  }
+  [data-theme="dark"] .town-header-img { opacity: 0.12; }
+  .town-group-header > * { position: relative; z-index: 1; }
   .town-group-dot {
     width: 8px; height: 8px; border-radius: 50%;
     background: var(--accent); flex-shrink: 0;
@@ -1382,6 +1396,12 @@
     transition: width 400ms var(--ease-out);
   }
   .budget-progress-label { font-size: 0.8125rem; color: var(--text-3); }
+  .budget-target-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 16px;
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: var(--radius); margin-bottom: 24px;
+  }
   .budget-section-title {
     font-size: 0.6875rem; font-weight: 600;
     text-transform: uppercase; letter-spacing: 0.12em;
@@ -1578,16 +1598,16 @@
   <!-- Sidebar (desktop) -->
   <aside class="sidebar">
     <div class="sidebar-brand">
-      <div class="sidebar-brand-trip">Weyage <em>— Explore Endlessly</em></div>
-      <div class="sidebar-brand-dates">28 May — 14 Jun 2026</div>
+      <div class="sidebar-brand-name">Weyage</div>
+      <div class="sidebar-brand-tagline">Explore Endlessly</div>
     </div>
 
     <div class="nav-section">Views</div>
-    <button class="nav-item active" data-view="dashboard">
+    <button class="nav-item" data-view="dashboard">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-      Home
+      Overview
     </button>
-    <button class="nav-item" data-view="itinerary">
+    <button class="nav-item active" data-view="itinerary">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 2v4M16 2v4M3 10h18M5 6h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/></svg>
       Itinerary
     </button>
@@ -1626,7 +1646,7 @@
   <!-- Main content -->
   <main class="main">
     <header class="topbar">
-      <div class="topbar-title" id="topbar-title">Home</div>
+      <div class="topbar-title" id="topbar-title">Itinerary</div>
       <div class="topbar-actions">
         <button class="icon-btn" id="theme-toggle" title="Toggle theme" aria-label="Toggle theme">
           <svg id="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
@@ -1638,7 +1658,7 @@
     <div class="content">
 
       <!-- DASHBOARD VIEW — editorial photo essay style -->
-      <section class="view active" id="view-dashboard">
+      <section class="view" id="view-dashboard">
 
         <!-- Title block: minimal, like a magazine cover -->
         <div class="hero">
@@ -1685,7 +1705,7 @@
       </section>
 
       <!-- ITINERARY VIEW — Phase 3 (day placeholders + contextual add) -->
-      <section class="view" id="view-itinerary">
+      <section class="view active" id="view-itinerary">
         <div id="itinerary-content"></div>
       </section>
 
@@ -1709,8 +1729,15 @@
       </section>
 
       <section class="view" id="view-budget">
-        <div class="section-header" style="margin-bottom:28px">
+        <div class="section-header" style="margin-bottom:20px">
           <h1 class="section-title">Budget</h1>
+        </div>
+        <div class="budget-target-row" id="budget-target-row">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <label class="form-label" for="budget-target-input" style="margin:0;white-space:nowrap">Total budget (€)</label>
+            <input class="form-input" id="budget-target-input" type="number" min="0" step="100" placeholder="e.g. 3000" style="width:140px">
+            <button class="btn-primary" id="budget-target-save" style="padding:7px 14px;font-size:0.875rem">Set</button>
+          </div>
         </div>
         <div id="budget-summary-bar" style="margin-bottom:28px"></div>
         <div style="max-width:480px;margin-bottom:32px">
@@ -1729,29 +1756,45 @@
 
     </div>
 
-    <!-- Mobile bottom nav -->
+    <!-- Mobile bottom nav: Overview | Food | Itinerary (center) | Budget | ☰ -->
     <nav class="bottom-nav">
-      <button class="bottom-nav-item active" data-view="dashboard">
+      <button class="bottom-nav-item" data-view="dashboard">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-        <span>Home</span>
+        <span>Overview</span>
       </button>
-      <button class="bottom-nav-item" data-view="itinerary">
+      <button class="bottom-nav-item" data-view="food">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 11h18l-1.5 9a2 2 0 0 1-2 1.7H6.5a2 2 0 0 1-2-1.7L3 11z"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <span>Food</span>
+      </button>
+      <button class="bottom-nav-item active" data-view="itinerary">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 2v4M16 2v4M3 10h18M5 6h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/></svg>
-        <span>Plan</span>
-      </button>
-      <button class="bottom-nav-item" data-view="map">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-        <span>Map</span>
+        <span>Itinerary</span>
       </button>
       <button class="bottom-nav-item" data-view="budget">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
         <span>Budget</span>
       </button>
-      <button class="bottom-nav-item" data-view="more">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+      <button class="bottom-nav-item" id="mobile-more-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
         <span>More</span>
       </button>
     </nav>
+
+    <!-- Mobile "More" sheet -->
+    <div id="mobile-more-sheet" style="display:none;position:fixed;inset:0;z-index:300">
+      <div id="mobile-more-backdrop" style="position:absolute;inset:0;background:rgba(0,0,0,0.4)"></div>
+      <div style="position:absolute;bottom:0;left:0;right:0;background:var(--surface);border-radius:20px 20px 0 0;padding:16px 0 32px">
+        <div style="width:36px;height:4px;background:var(--border-strong);border-radius:2px;margin:0 auto 20px"></div>
+        <button class="bottom-nav-item" data-view="documents" style="width:100%;flex-direction:row;gap:14px;padding:14px 24px;justify-content:flex-start;font-size:1rem" id="sheet-documents-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Documents
+        </button>
+        <button class="bottom-nav-item" data-view="map" style="width:100%;flex-direction:row;gap:14px;padding:14px 24px;justify-content:flex-start;font-size:1rem" id="sheet-map-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Map
+        </button>
+      </div>
+    </div>
   </main>
 </div>
 
@@ -2181,7 +2224,7 @@ const state = {
   trip: null,
   towns: [],
   spots: [],
-  currentView: "dashboard",
+  currentView: "itinerary",
   focusTownId: null,
   theme: "light",
   online: navigator.onLine,
@@ -2255,7 +2298,7 @@ function setView(viewName) {
   document.querySelectorAll(".nav-item, .bottom-nav-item").forEach(b => {
     b.classList.toggle("active", b.dataset.view === viewName);
   });
-  const titles = { dashboard: "Home", itinerary: "Itinerary", food: "Food", map: "Map", budget: "Budget", documents: "Documents" };
+  const titles = { dashboard: "Overview", itinerary: "Itinerary", food: "Food", map: "Map", budget: "Budget", documents: "Documents" };
   document.getElementById("topbar-title").textContent = titles[viewName] || "Dashboard";
   if (viewName === "itinerary") renderItinerary();
   if (viewName === "food") renderFood();
@@ -2263,7 +2306,23 @@ function setView(viewName) {
   if (viewName === "documents") renderDocuments();
 }
 document.querySelectorAll(".nav-item, .bottom-nav-item").forEach(btn => {
-  btn.addEventListener("click", () => setView(btn.dataset.view));
+  if (btn.dataset.view) btn.addEventListener("click", () => setView(btn.dataset.view));
+});
+
+// Mobile "More" hamburger sheet
+const moreSheet = document.getElementById("mobile-more-sheet");
+document.getElementById("mobile-more-btn")?.addEventListener("click", () => {
+  moreSheet.style.display = "";
+});
+document.getElementById("mobile-more-backdrop")?.addEventListener("click", () => {
+  moreSheet.style.display = "none";
+});
+["sheet-documents-btn", "sheet-map-btn"].forEach(id => {
+  document.getElementById(id)?.addEventListener("click", () => {
+    moreSheet.style.display = "none";
+    const btn = document.getElementById(id);
+    if (btn?.dataset.view) setView(btn.dataset.view);
+  });
 });
 
 /* ─────────────────────────────────────────────────────────────
@@ -2479,6 +2538,12 @@ function renderSidebarTowns() {
       ${escapeHtml(t.name)}
     </button>
   `).join("");
+  container.querySelectorAll(".nav-item[data-town]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      pendingScrollTownId = btn.dataset.town;
+      setView("itinerary");
+    });
+  });
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -2762,6 +2827,7 @@ function transportCardHTML(spot) {
         <div class="spot-card-row1">
           ${typeIconSVG("transport")}
           <span class="spot-name">${escapeHtml(spot.name || subtype)}</span>
+          ${spot.booked && !isArrival ? `<span class="spot-booked-pill">Booked</span>` : ""}
           ${isArrival ? `<span class="spot-tag-pill" style="margin-left:auto;font-size:0.625rem;opacity:0.7">arrival</span>` : ""}
         </div>
         ${meta.length ? `<div class="spot-card-row2">${meta.join("")}</div>` : ""}
@@ -2875,9 +2941,17 @@ function renderItinerary() {
     }
     const unscheduled = byDate["unscheduled"] || [];
 
+    // Resolve town image for header strip
+    let townImgUrl = town.customImage || town.image || "";
+    if (!townImgUrl && town.wikipediaArticle) townImgUrl = imgCache[town.wikipediaArticle] || "";
+    const headerBg = townImgUrl
+      ? `<div class="town-header-img" style="background-image:url('${escapeHtml(townImgUrl)}')"></div>`
+      : "";
+
     html.push(`
       <div class="town-group" id="itinerary-town-${escapeHtml(town.id)}" data-town="${escapeHtml(town.id)}">
         <div class="town-group-header">
+          ${headerBg}
           <span class="town-group-dot"></span>
           <span class="town-group-name">${escapeHtml(town.name)}</span>
           <span class="town-group-dates">${fmtSpreadDates(town.arrivalDate, town.departureDate)} &middot; ${nights}n</span>
@@ -3088,24 +3162,36 @@ function openDrawer(spot) {
     </div>`;
   }).join("");
 
-  // Link / unlink section
-  const otherTownSpots = state.spots.filter(s => s.townId === spot.townId && s.id !== spot.id && s.type !== "transport");
+  // Link / unlink section — adjacent spots only
+  const sameDaySorted = state.spots
+    .filter(s => s.townId === spot.townId && s.scheduledDate === spot.scheduledDate && s.type !== "transport")
+    .sort((a, b) => (a.scheduledTime || "").localeCompare(b.scheduledTime || "") || (a.order ?? 9999) - (b.order ?? 9999));
+  const idx = sameDaySorted.findIndex(s => s.id === spot.id);
+  const prevSpot = idx > 0 ? sameDaySorted[idx - 1] : null;
+  const nextSpot = idx < sameDaySorted.length - 1 ? sameDaySorted[idx + 1] : null;
+  const linkedNames = spot.groupId
+    ? state.spots.filter(s => s.groupId === spot.groupId && s.id !== spot.id).map(s => escapeHtml(s.name)).join(", ")
+    : "";
+
+  let linkBody = "";
+  if (spot.groupId) {
+    linkBody = `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="13" height="13" style="color:var(--accent);flex-shrink:0"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+      <span style="font-size:0.8125rem;color:var(--text-2);flex:1">${linkedNames || "another spot"}</span>
+      <button class="btn-ghost" id="drawer-unlink-btn" style="padding:3px 8px;font-size:0.8125rem">Unlink</button>
+    </div>`;
+  } else {
+    const btns = [];
+    if (prevSpot && !prevSpot.groupId) btns.push(`<button class="btn-ghost drawer-link-adj-btn" data-link-id="${prevSpot.id}" style="padding:5px 10px;font-size:0.8125rem;text-align:left">↑ ${escapeHtml(prevSpot.name)}</button>`);
+    if (nextSpot && !nextSpot.groupId) btns.push(`<button class="btn-ghost drawer-link-adj-btn" data-link-id="${nextSpot.id}" style="padding:5px 10px;font-size:0.8125rem;text-align:left">↓ ${escapeHtml(nextSpot.name)}</button>`);
+    linkBody = btns.length
+      ? `<div style="display:flex;flex-direction:column;gap:4px;margin-top:6px">${btns.join("")}</div>`
+      : `<p style="font-size:0.8125rem;color:var(--text-3);margin-top:6px">No adjacent unlinked spots on this day.</p>`;
+  }
   const linkSection = `
     <div class="drawer-link-section">
-      <div class="drawer-section-label">Link to spot</div>
-      ${spot.groupId
-        ? `<div style="display:flex;align-items:center;gap:8px;margin-top:6px">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="14" height="14" style="color:var(--accent)"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-            <span style="font-size:0.875rem;color:var(--text-2)">Linked with ${state.spots.filter(s => s.groupId === spot.groupId && s.id !== spot.id).map(s => escapeHtml(s.name)).join(", ") || "another spot"}</span>
-            <button class="btn-ghost" id="drawer-unlink-btn" style="padding:4px 8px;font-size:0.8125rem;margin-left:auto">Unlink</button>
-          </div>`
-        : otherTownSpots.length > 0
-          ? `<select class="drawer-link-select" id="drawer-link-select">
-              <option value="">— select a spot to link —</option>
-              ${otherTownSpots.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join("")}
-            </select>`
-          : `<p style="font-size:0.8125rem;color:var(--text-3);margin-top:6px">No other spots in this city to link with.</p>`
-      }
+      <div class="drawer-section-label">Link to adjacent spot</div>
+      ${linkBody}
     </div>`;
 
   rows.push(`
@@ -3114,7 +3200,10 @@ function openDrawer(spot) {
       ${attachHtml}
       <div class="attach-upload-row" id="drawer-upload-row">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        Add photo or PDF
+        <div>
+          <div>Add photo or screenshot</div>
+          <div style="font-size:0.75rem;opacity:0.7;margin-top:1px">JPG or PNG recommended · keep under 500 KB · PDFs may exceed Firestore limits</div>
+        </div>
       </div>
       ${linkSection}
     </div>`);
@@ -3144,24 +3233,17 @@ function openDrawer(spot) {
     });
   });
 
-  // Wire link select
-  const linkSel = bodyEl.querySelector("#drawer-link-select");
-  if (linkSel) {
-    linkSel.addEventListener("change", async () => {
-      const targetId = linkSel.value;
-      if (!targetId) return;
-      await linkSpots(spot.id, targetId);
-      linkSel.value = "";
+  // Wire adjacent link buttons
+  bodyEl.querySelectorAll(".drawer-link-adj-btn").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      await linkSpots(spot.id, btn.dataset.linkId);
     });
-  }
+  });
 
   // Wire unlink button
-  const unlinkBtn = bodyEl.querySelector("#drawer-unlink-btn");
-  if (unlinkBtn) {
-    unlinkBtn.addEventListener("click", async () => {
-      await unlinkSpot(spot.id);
-    });
-  }
+  bodyEl.querySelector("#drawer-unlink-btn")?.addEventListener("click", async () => {
+    await unlinkSpot(spot.id);
+  });
 
   const visitedBtn = document.getElementById("drawer-visited-btn");
   if (spot.visited) {
@@ -3580,23 +3662,46 @@ function renderBudget() {
   const entries = aggregateBudget();
   const totalActual  = entries.filter(e => !e.isEstimated).reduce((s, e) => s + e.amount, 0);
   const totalPlanned = entries.reduce((s, e) => s + e.amount, 0);
-  const pct = totalPlanned > 0 ? Math.round((totalActual / totalPlanned) * 100) : 0;
-
+  const totalBudget  = state.trip?.totalBudget || 0;
   const fmt = n => n.toLocaleString("en-GB", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+
+  // Budget target input — pre-fill with saved value
+  const targetInput = document.getElementById("budget-target-input");
+  if (targetInput && totalBudget) targetInput.value = totalBudget;
+  document.getElementById("budget-target-save")?.addEventListener("click", async () => {
+    const val = parseFloat(document.getElementById("budget-target-input").value) || null;
+    await updateDoc(doc(db, "trips", TRIP_ID), { totalBudget: val });
+  });
 
   // Summary bar
   const bar = document.getElementById("budget-summary-bar");
-  if (bar) bar.innerHTML = totalPlanned === 0
-    ? `<p style="color:var(--text-3);font-size:0.9375rem">No prices added yet — edit any spot and enter a price to start tracking your budget.</p>`
-    : `
-    <div class="budget-total-row">
-      <span class="budget-total-actual">€${fmt(totalActual)}</span>
-      <span class="budget-total-planned">of €${fmt(totalPlanned)} planned</span>
-    </div>
-    <div class="budget-progress-track">
-      <div class="budget-progress-fill" style="width:${Math.min(pct, 100)}%"></div>
-    </div>
-    <div class="budget-progress-label">${pct}% committed (actual paid)</div>`;
+  if (bar) {
+    if (totalPlanned === 0 && !totalBudget) {
+      bar.innerHTML = `<p style="color:var(--text-3);font-size:0.9375rem">No prices added yet — edit any spot and enter a price to start tracking your budget.</p>`;
+    } else {
+      // Against overall budget if set, otherwise against planned total
+      const denominator = totalBudget || totalPlanned;
+      const pctActual   = denominator > 0 ? Math.min(Math.round((totalActual  / denominator) * 100), 100) : 0;
+      const pctPlanned  = denominator > 0 ? Math.min(Math.round((totalPlanned / denominator) * 100), 100) : 0;
+      const overBudget  = totalBudget && totalPlanned > totalBudget;
+      bar.innerHTML = `
+        <div class="budget-total-row">
+          <span class="budget-total-actual">€${fmt(totalActual)}</span>
+          <span class="budget-total-planned">paid · €${fmt(totalPlanned)} planned${totalBudget ? ` · €${fmt(totalBudget)} budget` : ""}</span>
+        </div>
+        <div class="budget-progress-track" title="Planned vs budget">
+          <div class="budget-progress-fill" style="width:${pctPlanned}%;opacity:0.35;background:var(--accent)"></div>
+        </div>
+        <div class="budget-progress-track" style="margin-top:4px" title="Paid vs budget">
+          <div class="budget-progress-fill" style="width:${pctActual}%;background:${overBudget ? "var(--danger)" : "var(--success)"}"></div>
+        </div>
+        <div class="budget-progress-label" style="color:${overBudget ? "var(--danger)" : "var(--text-3)"}">
+          ${totalBudget
+            ? `€${fmt(totalPlanned)} planned of €${fmt(totalBudget)} budget (${pctPlanned}%)${overBudget ? " · over budget" : ""}`
+            : `${pctActual}% committed (actual paid)`}
+        </div>`;
+    }
+  }
 
   // Chart by category
   const categories = {};
