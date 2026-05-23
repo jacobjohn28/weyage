@@ -933,19 +933,20 @@
   /* Town groups */
   .town-group { margin-bottom: 48px; }
   .town-group-header {
-    display: flex; align-items: center; gap: 12px;
-    margin-bottom: 20px;
+    display: flex; align-items: center; gap: 10px;
     padding: 14px 16px;
-    border-radius: var(--radius);
-    position: relative; overflow: hidden;
+    border-radius: 12px;
+    margin-bottom: 14px;
     background: var(--surface-2);
-    border: 1px solid var(--border);
+    position: relative; overflow: hidden;
+    min-height: 64px;
   }
   .town-header-img {
     position: absolute; inset: 0;
     background-size: cover; background-position: center;
-    opacity: 0.18;
     border-radius: inherit;
+    opacity: 0.18;
+    z-index: 0;
   }
   [data-theme="dark"] .town-header-img { opacity: 0.12; }
   .town-group-header > * { position: relative; z-index: 1; }
@@ -1761,9 +1762,8 @@
      ============================================================ -->
 <div id="auth-screen">
   <div class="auth-card">
-    <div class="auth-eyebrow">bon voyage en</div>
-    <h1 class="auth-title"><em>France</em></h1>
-    <div class="auth-dates">28 May — 14 June 2026</div>
+    <h1 class="auth-title" style="font-size:2.5rem;margin-bottom:4px">Weyage</h1>
+    <div class="auth-eyebrow" style="font-style:italic;margin-bottom:28px">Explore Endlessly</div>
 
     <button id="google-signin" class="google-btn">
       <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -2088,6 +2088,11 @@
 
       <!-- ── TRANSPORT FIELDS ── -->
       <div class="transport-section hidden" id="transport-fields">
+        <!-- Custom origin -->
+        <div class="form-field">
+          <div class="form-label" style="display:flex;align-items:center;justify-content:space-between">Custom origin <span style="font-size:0.7rem;color:var(--text-3);font-weight:400">optional — overrides departure city</span></div>
+          <input id="custom-origin" class="form-input" type="text" placeholder="e.g. Dublin Airport">
+        </div>
         <!-- Subtype -->
         <div class="form-field">
           <div class="form-label">Mode</div>
@@ -2123,8 +2128,11 @@
         </div>
         <!-- Arrival town + date + time -->
         <div class="form-field">
-          <label class="form-label" for="transport-arrival-town">Arrival town</label>
+          <label class="form-label" style="display:flex;align-items:center;justify-content:space-between" for="transport-arrival-town">Arrival town <button type="button" id="toggle-custom-dest-btn" style="font-size:0.75rem;color:var(--accent);background:none;border:none;cursor:pointer;padding:0">+ Custom</button></label>
           <select class="form-select" id="transport-arrival-town"></select>
+          <div id="custom-destination-wrap" style="margin-top:8px;display:none">
+            <input id="custom-destination" class="form-input" type="text" placeholder="Or type a custom destination (e.g. Dublin Airport)">
+          </div>
         </div>
         <div class="form-row">
           <div class="form-field">
@@ -2319,6 +2327,40 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M20 6L9 17l-5-5"/></svg>
         Mark visited
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     TOWN EDIT MODAL
+     ============================================================ -->
+<div class="modal-overlay" id="town-edit-overlay">
+  <div class="modal" id="town-edit-modal" style="max-width:400px">
+    <div class="modal-header">
+      <div class="modal-title">Edit city</div>
+      <button class="icon-btn" id="town-edit-close-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:14px;padding:20px">
+      <div class="form-field">
+        <div class="form-label">City name</div>
+        <input id="town-edit-name" class="form-input" type="text" placeholder="City name">
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <div class="form-label">Arrival date</div>
+          <input id="town-edit-arrival" class="form-input" type="date">
+        </div>
+        <div class="form-field">
+          <div class="form-label">Departure date</div>
+          <input id="town-edit-departure" class="form-input" type="date">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="town-edit-cancel-btn">Cancel</button>
+      <button class="btn-primary" id="town-edit-save-btn">Save</button>
     </div>
   </div>
 </div>
@@ -2911,6 +2953,10 @@ function renderDashboardTowns() {
     if (!t.wikipediaArticle || imgCache[t.wikipediaArticle]) return;
     const url = await fetchWikipediaImage(t.wikipediaArticle);
     if (!url) return;
+    imgCache[t.wikipediaArticle] = url;
+    saveImgCache(imgCache);
+    renderDashboardTowns();
+    if (state.currentView === "itinerary") renderItinerary();
     const article = container.querySelector(`[data-town-id="${CSS.escape(t.id)}"]`);
     if (!article) return;
     const frame = article.querySelector(".spread-img-frame");
@@ -3058,10 +3104,12 @@ function transportCardHTML(spot) {
   const meta = [];
   if (isArrival) {
     if (arrTime) meta.push(`<span class="spot-time">arrives ${arrTime}</span>`);
-    if (spot.transportFrom) meta.push(`<span class="spot-neighborhood">from ${escapeHtml(spot.transportFrom)}</span>`);
+    const originLabel = spot.customOrigin || spot.transportFrom;
+    if (originLabel) meta.push(`<span class="spot-neighborhood">from ${escapeHtml(originLabel)}</span>`);
   } else {
     if (depTime) meta.push(`<span class="spot-time">departs ${depTime}</span>`);
-    if (spot.transportTo) meta.push(`<span class="spot-neighborhood">to ${escapeHtml(spot.transportTo)}</span>`);
+    const destLabel = spot.customDestination || spot.transportTo;
+    if (destLabel) meta.push(`<span class="spot-neighborhood">to ${escapeHtml(destLabel)}</span>`);
   }
   if (spot.carrier) meta.push(`<span class="spot-tag-pill">${escapeHtml(spot.carrier)}</span>`);
 
@@ -3095,9 +3143,6 @@ function spotCardHTML(spot) {
   const tags = (spot.tags || []).slice(0, 2)
     .map(t => `<span class="spot-tag-pill">${escapeHtml(t)}</span>`).join("");
 
-  const priceBadge = spot.price
-    ? `<span class="spot-price-badge ${spot.priceEstimated ? 'estimated' : 'actual'}">€${Number(spot.price).toLocaleString()}</span>`
-    : "";
   const bookedBadge = spot.booked && !spot.visited
     ? `<span class="spot-booked-pill">Booked</span>`
     : "";
@@ -3120,7 +3165,7 @@ function spotCardHTML(spot) {
           <span class="spot-name">${escapeHtml(spot.name)}</span>
           ${chainIcon}
           ${spot.visited ? `<svg class="spot-visited-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>` : ""}
-          ${bookedBadge}${priceBadge}
+          ${bookedBadge}
         </div>
         ${(row2Parts.length || tags) ? `<div class="spot-card-row2">${row2Parts.join("")}${tags}</div>` : ""}
       </div>
@@ -3140,8 +3185,11 @@ function renderAccomCard(town) {
   }
   const checkin  = a.checkinDate  ? new Date(a.checkinDate  + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
   const checkout = a.checkoutDate ? new Date(a.checkoutDate + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
-  const dateRange = (checkin && checkout) ? `${checkin} – ${checkout}` : (checkin || checkout || "");
-  const price = a.price ? ` · €${Number(a.price).toLocaleString()}` : "";
+  const checkinStr  = [checkin,  a.checkinTime ].filter(Boolean).join(" ");
+  const checkoutStr = [checkout, a.checkoutTime].filter(Boolean).join(" ");
+  const dateRange = (checkinStr && checkoutStr)
+    ? `Check-in ${checkinStr} · Check-out ${checkoutStr}`
+    : (checkinStr ? `Check-in ${checkinStr}` : checkoutStr ? `Check-out ${checkoutStr}` : "");
   return `
     <div class="accom-card" data-town-id="${escapeHtml(town.id)}">
       <div class="accom-icon">
@@ -3149,7 +3197,8 @@ function renderAccomCard(town) {
       </div>
       <div class="accom-body">
         <div class="accom-name">${escapeHtml(a.name)}</div>
-        ${(dateRange || price) ? `<div class="accom-meta">${dateRange}${price}</div>` : ""}
+        ${a.address ? `<div class="accom-meta" style="font-size:0.75rem">${escapeHtml(a.address)}</div>` : ""}
+        ${dateRange ? `<div class="accom-meta">${dateRange}</div>` : ""}
         ${a.bookingRef ? `<div class="accom-meta" style="font-size:0.75rem">Ref: ${escapeHtml(a.bookingRef)}</div>` : ""}
       </div>
       ${a.booked ? `<span class="accom-booked">Booked</span>` : ""}
@@ -3203,6 +3252,9 @@ function renderItinerary() {
           <span class="town-group-dot"></span>
           <span class="town-group-name">${escapeHtml(town.name)}</span>
           <span class="town-group-dates">${fmtSpreadDates(town.arrivalDate, town.departureDate)} &middot; ${nights}n</span>
+          <button class="town-edit-btn icon-btn" data-town-id="${escapeHtml(town.id)}" title="Edit city" style="padding:4px;opacity:0.55;margin-right:2px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="15" height="15"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
           <button class="town-add-btn" data-town-id="${escapeHtml(town.id)}">+ Add</button>
         </div>
         ${renderAccomCard(town)}
@@ -3248,6 +3300,15 @@ function renderItinerary() {
       const townId = el.dataset.townId;
       const town = state.towns.find(t => t.id === townId);
       if (town) openAccomModal(town);
+    });
+  });
+
+  // Town edit button handlers
+  container.querySelectorAll(".town-edit-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const town = state.towns.find(t => t.id === btn.dataset.townId);
+      if (town) openTownEditModal(town);
     });
   });
 
@@ -3438,8 +3499,8 @@ function openDrawer(spot) {
     </div>`;
   } else {
     const btns = [];
-    if (prevSpot && !prevSpot.groupId) btns.push(`<button class="btn-ghost drawer-link-adj-btn" data-link-id="${prevSpot.id}" style="padding:5px 10px;font-size:0.8125rem;text-align:left">↑ ${escapeHtml(prevSpot.name)}</button>`);
-    if (nextSpot && !nextSpot.groupId) btns.push(`<button class="btn-ghost drawer-link-adj-btn" data-link-id="${nextSpot.id}" style="padding:5px 10px;font-size:0.8125rem;text-align:left">↓ ${escapeHtml(nextSpot.name)}</button>`);
+    if (prevSpot && prevSpot.groupId !== spot.groupId) btns.push(`<button class="btn-ghost drawer-link-adj-btn" data-link-id="${prevSpot.id}" style="padding:5px 10px;font-size:0.8125rem;text-align:left">↑ Add ${escapeHtml(prevSpot.name)}</button>`);
+    if (nextSpot && nextSpot.groupId !== spot.groupId) btns.push(`<button class="btn-ghost drawer-link-adj-btn" data-link-id="${nextSpot.id}" style="padding:5px 10px;font-size:0.8125rem;text-align:left">↓ Add ${escapeHtml(nextSpot.name)}</button>`);
     linkBody = btns.length
       ? `<div style="display:flex;flex-direction:column;gap:4px;margin-top:6px">${btns.join("")}</div>`
       : `<p style="font-size:0.8125rem;color:var(--text-3);margin-top:6px">No adjacent unlinked spots on this day.</p>`;
@@ -3751,6 +3812,16 @@ function applyTransportToggle(type) {
     sel.innerHTML = `<option value="">— select town —</option>` +
       state.towns.map(t => `<option value="${t.id}"${t.id === depTownId ? " disabled" : ""}>${escapeHtml(t.name)}</option>`).join("");
   }
+
+  const toggleDestBtn = document.getElementById("toggle-custom-dest-btn");
+  const customDestWrap = document.getElementById("custom-destination-wrap");
+  if (toggleDestBtn && customDestWrap) {
+    toggleDestBtn.onclick = () => {
+      const isShowing = customDestWrap.style.display !== "none";
+      customDestWrap.style.display = isShowing ? "none" : "";
+      toggleDestBtn.textContent = isShowing ? "+ Custom" : "× Custom";
+    };
+  }
 }
 
 // Type option clicks
@@ -3826,6 +3897,8 @@ document.getElementById("modal-save-btn").addEventListener("click", async () => 
       scheduledDate:     document.getElementById("transport-dep-date").value        || null,
       departureTime:     document.getElementById("transport-dep-time").value        || null,
       arrivalTownId:     document.getElementById("transport-arrival-town").value    || null,
+      customOrigin:      document.getElementById("custom-origin")?.value.trim()     || null,
+      customDestination: document.getElementById("custom-destination")?.value.trim() || null,
       arrivalDate:       document.getElementById("transport-arr-date").value        || null,
       arrivalTime:       document.getElementById("transport-arr-time").value        || null,
       carrier:           document.getElementById("transport-carrier").value.trim()  || null,
@@ -4161,6 +4234,50 @@ function renderDocuments() {
 }
 
 /* ─────────────────────────────────────────────────────────────
+   TOWN EDIT
+   ───────────────────────────────────────────────────────────── */
+let editingTownId = null;
+
+function openTownEditModal(town) {
+  editingTownId = town.id;
+  document.getElementById("town-edit-name").value     = town.name || "";
+  document.getElementById("town-edit-arrival").value  = town.arrivalDate || "";
+  document.getElementById("town-edit-departure").value = town.departureDate || "";
+  document.getElementById("town-edit-overlay").classList.add("visible");
+  document.getElementById("town-edit-name").focus();
+}
+
+function closeTownEditModal() {
+  editingTownId = null;
+  document.getElementById("town-edit-overlay").classList.remove("visible");
+}
+
+async function saveTownEdit() {
+  if (!editingTownId) return;
+  const name         = document.getElementById("town-edit-name").value.trim();
+  const arrivalDate  = document.getElementById("town-edit-arrival").value;
+  const departureDate = document.getElementById("town-edit-departure").value;
+  if (!name || !arrivalDate || !departureDate) return;
+  const saveBtn = document.getElementById("town-edit-save-btn");
+  saveBtn.disabled = true;
+  try {
+    await updateDoc(doc(db, "trips", TRIP_ID, "towns", editingTownId), { name, arrivalDate, departureDate });
+    closeTownEditModal();
+  } catch (err) {
+    console.error("Town edit error:", err);
+  } finally {
+    saveBtn.disabled = false;
+  }
+}
+
+document.getElementById("town-edit-close-btn").addEventListener("click", closeTownEditModal);
+document.getElementById("town-edit-cancel-btn").addEventListener("click", closeTownEditModal);
+document.getElementById("town-edit-save-btn").addEventListener("click", saveTownEdit);
+document.getElementById("town-edit-overlay").addEventListener("click", e => {
+  if (e.target === document.getElementById("town-edit-overlay")) closeTownEditModal();
+});
+
+/* ─────────────────────────────────────────────────────────────
    LINKED SPOTS (4c)
    ───────────────────────────────────────────────────────────── */
 async function linkSpots(spotIdA, spotIdB) {
@@ -4168,9 +4285,14 @@ async function linkSpots(spotIdA, spotIdB) {
   const b = state.spots.find(s => s.id === spotIdB);
   if (!a || !b) return;
   const groupId = a.groupId || b.groupId || crypto.randomUUID();
+  // Propagate groupId to all spots currently in either group
+  const affected = state.spots.filter(s =>
+    s.id === spotIdA || s.id === spotIdB ||
+    (a.groupId && s.groupId === a.groupId) ||
+    (b.groupId && s.groupId === b.groupId)
+  );
   const batch = writeBatch(db);
-  batch.update(doc(db, "trips", TRIP_ID, "spots", spotIdA), { groupId });
-  batch.update(doc(db, "trips", TRIP_ID, "spots", spotIdB), { groupId });
+  affected.forEach(s => batch.update(doc(db, "trips", TRIP_ID, "spots", s.id), { groupId }));
   await batch.commit();
 }
 
@@ -4525,9 +4647,12 @@ Respond ONLY with valid JSON — no markdown fences, no prose before or after. U
   ]
 }`;
 
+  const fullPrompt = ctx.userPrompt
+    ? prompt + `\n\nSpecific request from the traveller: ${ctx.userPrompt}`
+    : prompt;
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_CONFIG.model}:generateContent?key=${GEMINI_CONFIG.apiKey}`;
   const body = {
-    contents: [{ role: "user", parts: [{ text: prompt }] }],
+    contents: [{ role: "user", parts: [{ text: fullPrompt }] }],
     generation_config: { temperature: 0.8, response_mime_type: "application/json" },
   };
 
@@ -4664,7 +4789,7 @@ function showKeyEntryForm(onSave) {
   });
 }
 
-async function fetchAndRenderRecommendations(townId, date) {
+async function fetchAndRenderRecommendations(townId, date, userPrompt = "") {
   const body = document.getElementById("ai-panel-body");
   const contextEl = document.getElementById("ai-panel-context");
   contextEl.style.display = "none";
@@ -4672,12 +4797,35 @@ async function fetchAndRenderRecommendations(townId, date) {
   body.innerHTML = `<div class="ai-panel-loading"><div class="ai-spinner"></div><span>Thinking about your day…</span></div>`;
   try {
     const ctx = buildRecommendationContext(townId, date);
+    if (userPrompt) ctx.userPrompt = userPrompt;
     const result = await callGeminiRecommendations(ctx);
     renderRecommendationCards(result, townId, date);
   } catch (err) {
     body.innerHTML = `<div class="ai-panel-error"><strong>Couldn't get suggestions</strong>${escapeHtml(err.message)}</div>`;
     console.error("Gemini error:", err);
   }
+}
+
+function showPromptInputForm(townId, date) {
+  const body = document.getElementById("ai-panel-body");
+  const contextEl = document.getElementById("ai-panel-context");
+  contextEl.style.display = "none";
+  body.innerHTML = `
+    <div class="ai-key-form">
+      <p style="margin:0;font-size:0.8125rem;color:var(--text-2);line-height:1.6">Any specific needs for this day? Leave blank to get general suggestions.</p>
+      <textarea id="ai-user-prompt" class="ai-key-input" rows="3" placeholder="e.g. We want something relaxed in the morning, and a good dinner spot near the centre" style="font-family:inherit;resize:vertical;min-height:80px"></textarea>
+      <div style="display:flex;gap:8px">
+        <button class="btn-ghost" id="ai-prompt-skip-btn" style="flex:1;justify-content:center">Skip</button>
+        <button class="ai-key-save-btn" id="ai-prompt-go-btn" style="flex:2;text-align:center">Get suggestions</button>
+      </div>
+    </div>`;
+  const go = () => {
+    const prompt = document.getElementById("ai-user-prompt")?.value.trim() || "";
+    fetchAndRenderRecommendations(townId, date, prompt);
+  };
+  document.getElementById("ai-prompt-skip-btn").addEventListener("click", () => fetchAndRenderRecommendations(townId, date, ""));
+  document.getElementById("ai-prompt-go-btn").addEventListener("click", go);
+  document.getElementById("ai-user-prompt").addEventListener("keydown", e => { if (e.key === "Enter" && e.metaKey) go(); });
 }
 
 async function openRecommendationsPanel(townId, date) {
@@ -4693,9 +4841,9 @@ async function openRecommendationsPanel(townId, date) {
   overlay.classList.add("visible");
 
   if (!GEMINI_CONFIG.apiKey) {
-    showKeyEntryForm(() => fetchAndRenderRecommendations(townId, date));
+    showKeyEntryForm(() => showPromptInputForm(townId, date));
   } else {
-    await fetchAndRenderRecommendations(townId, date);
+    showPromptInputForm(townId, date);
   }
 }
 
