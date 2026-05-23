@@ -2363,6 +2363,8 @@
       </div>
     </div>
     <div class="modal-footer">
+      <button class="btn-ghost" id="town-edit-delete-btn" style="color:var(--danger,#c0392b);display:none">Delete city</button>
+      <div style="flex:1"></div>
       <button class="btn-ghost" id="town-edit-cancel-btn">Cancel</button>
       <button class="btn-primary" id="town-edit-save-btn">Save</button>
     </div>
@@ -4243,6 +4245,7 @@ function openTownEditModal(town = null) {
   document.getElementById("town-edit-name").value      = town?.name || "";
   document.getElementById("town-edit-arrival").value   = town?.arrivalDate || "";
   document.getElementById("town-edit-departure").value = town?.departureDate || "";
+  document.getElementById("town-edit-delete-btn").style.display = town ? "" : "none";
   document.getElementById("town-edit-overlay").classList.add("visible");
   document.getElementById("town-edit-name").focus();
 }
@@ -4250,6 +4253,17 @@ function openTownEditModal(town = null) {
 function closeTownEditModal() {
   editingTownId = null;
   document.getElementById("town-edit-overlay").classList.remove("visible");
+}
+
+async function reorderTownsByDate(extraTown = null) {
+  // Build full list including a newly created town not yet in state
+  const all = extraTown
+    ? [...state.towns.filter(t => t.id !== extraTown.id), extraTown]
+    : [...state.towns];
+  all.sort((a, b) => (a.arrivalDate || "").localeCompare(b.arrivalDate || ""));
+  const batch = writeBatch(db);
+  all.forEach((t, i) => batch.update(doc(db, "trips", TRIP_ID, "towns", t.id), { order: i + 1 }));
+  await batch.commit();
 }
 
 async function saveTownEdit() {
@@ -4262,13 +4276,14 @@ async function saveTownEdit() {
   try {
     if (editingTownId) {
       await updateDoc(doc(db, "trips", TRIP_ID, "towns", editingTownId), { name, arrivalDate, departureDate });
+      await reorderTownsByDate();
     } else {
-      const newId = name.toLowerCase().replace(/[^a-z0-9]/g, "-");
-      const order = Math.max(0, ...state.towns.map(t => t.order ?? 0)) + 1;
-      await setDoc(doc(db, "trips", TRIP_ID, "towns", newId), {
-        id: newId, name, arrivalDate, departureDate,
-        country: "France", order,
-      });
+      // Generate a unique ID from name; avoid collisions with existing towns
+      let newId = name.toLowerCase().replace(/[^a-z0-9]/g, "-");
+      if (state.towns.find(t => t.id === newId)) newId = `${newId}-${Date.now()}`;
+      const newTown = { id: newId, name, arrivalDate, departureDate, country: "France", order: 999 };
+      await setDoc(doc(db, "trips", TRIP_ID, "towns", newId), newTown);
+      await reorderTownsByDate(newTown);
     }
     closeTownEditModal();
   } catch (err) {
@@ -4278,9 +4293,36 @@ async function saveTownEdit() {
   }
 }
 
+async function deleteTownEdit() {
+  if (!editingTownId) return;
+  const town = state.towns.find(t => t.id === editingTownId);
+  const spotCount = state.spots.filter(s => s.townId === editingTownId).length;
+  const msg = spotCount > 0
+    ? `Delete ${town?.name || "this city"} and its ${spotCount} spot${spotCount > 1 ? "s" : ""}? This cannot be undone.`
+    : `Delete ${town?.name || "this city"}? This cannot be undone.`;
+  if (!confirm(msg)) return;
+
+  const deleteBtn = document.getElementById("town-edit-delete-btn");
+  deleteBtn.disabled = true;
+  try {
+    const batch = writeBatch(db);
+    // Delete all spots belonging to this town
+    state.spots.filter(s => s.townId === editingTownId)
+      .forEach(s => batch.delete(doc(db, "trips", TRIP_ID, "spots", s.id)));
+    // Delete the town doc
+    batch.delete(doc(db, "trips", TRIP_ID, "towns", editingTownId));
+    await batch.commit();
+    closeTownEditModal();
+  } catch (err) {
+    console.error("Town delete error:", err);
+    deleteBtn.disabled = false;
+  }
+}
+
 document.getElementById("town-edit-close-btn").addEventListener("click", closeTownEditModal);
 document.getElementById("town-edit-cancel-btn").addEventListener("click", closeTownEditModal);
 document.getElementById("town-edit-save-btn").addEventListener("click", saveTownEdit);
+document.getElementById("town-edit-delete-btn").addEventListener("click", deleteTownEdit);
 document.getElementById("town-edit-overlay").addEventListener("click", e => {
   if (e.target === document.getElementById("town-edit-overlay")) closeTownEditModal();
 });
