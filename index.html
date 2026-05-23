@@ -1146,6 +1146,41 @@
     .ai-panel { width: 100vw; border-left: none; }
   }
 
+  /* ── Share banner ── */
+  .share-banner {
+    display: none;
+    position: sticky; top: 0; z-index: 100;
+    background: var(--accent); color: #fff;
+    padding: 11px 20px;
+    align-items: center; gap: 12px;
+    font-size: 0.875rem; font-weight: 500;
+    flex-shrink: 0;
+  }
+  .share-banner-trip { flex: 1; font-family: var(--font-display); font-size: 1rem; }
+  .share-banner-badge {
+    background: rgba(255,255,255,0.22); border-radius: 20px;
+    padding: 3px 10px; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em;
+    text-transform: uppercase; white-space: nowrap;
+  }
+
+  /* share-mode: applied to <body> when viewing via share link */
+  body.share-mode .share-banner { display: flex; }
+  body.share-mode .sidebar { display: none !important; }
+  body.share-mode .bottom-nav { display: none !important; }
+  body.share-mode #app.visible { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+  body.share-mode .main { border-radius: 0; }
+  body.share-mode .add-spot-inline,
+  body.share-mode .town-add-btn,
+  body.share-mode .day-ai-btn,
+  body.share-mode .add-accom-link,
+  body.share-mode .day-empty .add-spot-inline { display: none !important; }
+  body.share-mode .spot-drag-handle { display: none !important; }
+  body.share-mode .accom-card { pointer-events: none; }
+  body.share-mode #drawer-edit-btn,
+  body.share-mode #drawer-delete-btn,
+  body.share-mode #drawer-visited-btn { display: none !important; }
+  body.share-mode .share-link-btn { display: none !important; }
+
   /* Spot list (sortable container) */
   .spot-list {
     display: flex; flex-direction: column;
@@ -1754,6 +1789,12 @@
      ============================================================ -->
 <div id="app">
 
+  <!-- Share banner — visible only in share-mode -->
+  <div class="share-banner" id="share-banner">
+    <span class="share-banner-trip" id="share-banner-trip">France · May–June 2026</span>
+    <span class="share-banner-badge">View only</span>
+  </div>
+
   <!-- Sidebar (desktop) -->
   <aside class="sidebar">
     <div class="sidebar-brand">
@@ -1792,6 +1833,10 @@
 
     <div class="sidebar-foot">
       <div id="status-indicator" class="status-dot">Synced</div>
+      <button class="nav-item share-link-btn" id="sidebar-share-btn" style="margin:6px 0 0;font-size:0.8125rem;opacity:0.7">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="16" height="16"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        Share itinerary
+      </button>
       <div class="user-chip">
         <div class="user-avatar" id="user-avatar">·</div>
         <div class="user-name" id="user-name">Loading…</div>
@@ -1951,6 +1996,10 @@
         <button class="bottom-nav-item" data-view="map" style="width:100%;flex-direction:row;gap:14px;padding:14px 24px;justify-content:flex-start;font-size:1rem" id="sheet-map-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
           Map
+        </button>
+        <button class="bottom-nav-item share-link-btn" id="sheet-share-btn" style="width:100%;flex-direction:row;gap:14px;padding:14px 24px;justify-content:flex-start;font-size:1rem">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          Share itinerary
         </button>
       </div>
     </div>
@@ -2422,6 +2471,7 @@ const state = {
   focusTownId: null,
   theme: "light",
   online: navigator.onLine,
+  shareMode: false,
 };
 const listeners = new Set();
 const subscribe = (fn) => { listeners.add(fn); return () => listeners.delete(fn); };
@@ -2534,7 +2584,8 @@ async function initFirebase() {
   initializeApp = appMod.initializeApp;
 
   const authMod = await import(`${FIREBASE_BASE}/firebase-auth.js`);
-  ({ getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } = authMod);
+  let signInAnonymously;
+  ({ getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, signInAnonymously } = authMod);
 
   const fsMod = await import(`${FIREBASE_BASE}/firebase-firestore.js`);
   ({ getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs,
@@ -4251,11 +4302,97 @@ function renderFood() {
 }
 
 /* ─────────────────────────────────────────────────────────────
+   SHARE LINK
+   ───────────────────────────────────────────────────────────── */
+
+async function generateAndCopyShareLink(btn) {
+  const original = btn.textContent;
+  btn.textContent = "Generating…";
+  btn.disabled = true;
+  try {
+    let token = state.trip?.shareToken;
+    if (!token) {
+      token = crypto.randomUUID();
+      await updateDoc(doc(db, "trips", TRIP_ID), { shareToken: token });
+    }
+    const url = `${location.origin}${location.pathname}?share=${token}`;
+    await navigator.clipboard.writeText(url);
+    btn.textContent = "✓ Link copied!";
+    setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 2500);
+  } catch (err) {
+    btn.textContent = "Failed — retry";
+    btn.disabled = false;
+    console.error("Share link error:", err);
+  }
+}
+
+async function initSharedView(token) {
+  await initFirebase();
+  try {
+    await signInAnonymously(auth);
+  } catch (err) {
+    document.getElementById("boot-screen").classList.add("hidden");
+    document.getElementById("auth-screen").classList.add("visible");
+    document.getElementById("auth-error").textContent = "Couldn't load shared itinerary. Try the link again.";
+    return;
+  }
+
+  // Apply share mode immediately so layout shifts before data loads
+  document.body.classList.add("share-mode");
+  setState({ shareMode: true, currentView: "itinerary" });
+
+  // Load trip + verify token
+  listenToTrip();
+
+  // Wait for first snapshot (trip data) before rendering
+  let resolved = false;
+  const unsub = subscribe(() => {
+    if (!state.trip || resolved) return;
+    resolved = true;
+    unsub();
+
+    if (state.trip.shareToken !== token) {
+      document.getElementById("boot-screen").classList.add("hidden");
+      const app = document.getElementById("app");
+      app.classList.add("visible");
+      document.querySelector(".main").innerHTML = `
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:16px;color:var(--text-3);padding:40px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="40" height="40"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <strong style="color:var(--text-1);font-size:1.1rem">Invalid or expired link</strong>
+          <span style="font-size:0.875rem">Ask the trip organiser to share a fresh link.</span>
+        </div>`;
+      return;
+    }
+
+    // Valid token — show app
+    const tripName = state.trip.name || "Trip";
+    const dates = state.trip.startDate && state.trip.endDate
+      ? ` · ${fmtDateRange(state.trip.startDate, state.trip.endDate)}`
+      : "";
+    document.getElementById("share-banner-trip").textContent = tripName + dates;
+    document.getElementById("boot-screen").classList.add("hidden");
+    document.getElementById("app").classList.add("visible");
+
+    subscribe(() => {
+      if (state.currentView === "itinerary") renderItinerary();
+    });
+    renderItinerary();
+  });
+}
+
+/* ─────────────────────────────────────────────────────────────
    APP INIT
    ───────────────────────────────────────────────────────────── */
 async function init() {
   initTheme();
   updateStatusIndicator();
+
+  // Share link: skip auth, show read-only itinerary
+  const shareToken = new URLSearchParams(location.search).get("share");
+  if (shareToken) {
+    await initSharedView(shareToken);
+    return;
+  }
 
   if (!isConfigured() || ALLOWED_EMAILS.length === 0) {
     showAuthScreen(
@@ -4587,6 +4724,12 @@ document.addEventListener("keydown", e => {
   if (e.key === "Escape" && document.getElementById("ai-panel-overlay").classList.contains("visible")) {
     closeRecommendationsPanel();
   }
+});
+
+// Share button wiring
+["sidebar-share-btn", "sheet-share-btn"].forEach(id => {
+  const btn = document.getElementById(id);
+  if (btn) btn.addEventListener("click", () => generateAndCopyShareLink(btn));
 });
 
 init().catch((err) => {
