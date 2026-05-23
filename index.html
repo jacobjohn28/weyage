@@ -2314,7 +2314,7 @@ const FIREBASE_CONFIG = {
    ───────────────────────────────────────────────────────────── */
 const GEMINI_CONFIG = {
   apiKey: "AIzaSyBzip2Ljx7R-7nvRLfh_PBck_GG1OBPSLg",
-  model: "gemini-1.5-flash-latest",
+  model: "gemini-2.0-flash-lite",
 };
 
 /* ─────────────────────────────────────────────────────────────
@@ -4325,7 +4325,7 @@ function buildRecommendationContext(townId, date) {
 }
 
 async function callGeminiRecommendations(ctx) {
-  const systemPrompt = `You are a knowledgeable, opinionated travel companion helping plan a trip to ${ctx.town}, ${ctx.country}. Your philosophy:
+  const prompt = `You are a knowledgeable, opinionated travel companion helping plan a trip to ${ctx.town}, ${ctx.country}. Your philosophy:
 - Quality over quantity: suggest 3–4 genuinely excellent options, never a generic list
 - Local rhythm: match the energy of the day (${ctx.energyLevel})
 - Logistics-first: suggest places that flow naturally from what's already planned
@@ -4337,50 +4337,30 @@ Already planned today: ${ctx.dayPlanSummary}.
 ${ctx.lastSpotName ? `Last stop: ${ctx.lastSpotName}${ctx.lastSpotNeighborhood ? ` in ${ctx.lastSpotNeighborhood}` : ""}.` : ""}
 Already in itinerary for ${ctx.town}: ${ctx.alreadyPlanned.length > 0 ? ctx.alreadyPlanned.join(", ") : "nothing yet"}.
 
-Suggest spots that are NOT already in the itinerary. Focus on what genuinely fits this day's energy and flow.`;
+Suggest spots that are NOT already in the itinerary. Focus on what genuinely fits this day's energy and flow.
 
-  const userPrompt = `Give me 3–4 recommendations for ${ctx.date} in ${ctx.town}. They should complement what's already planned and fit the day's energy. Be specific and opinionated.`;
-
-  const functionDeclaration = {
-    name: "recommend_spots",
-    description: "Return a curated list of spot recommendations with reasoning",
-    parameters: {
-      type: "OBJECT",
-      properties: {
-        context_read: {
-          type: "STRING",
-          description: "1–2 sentence summary of how you read the day and what you optimised for",
-        },
-        spots: {
-          type: "ARRAY",
-          items: {
-            type: "OBJECT",
-            properties: {
-              name:            { type: "STRING" },
-              type:            { type: "STRING", enum: ["sight", "restaurant", "cafe", "experience"] },
-              neighborhood:    { type: "STRING" },
-              suggestedTime:   { type: "STRING", description: "HH:MM 24h, or empty" },
-              durationMinutes: { type: "INTEGER" },
-              reason:          { type: "STRING", description: "Why this fits *this specific day*" },
-              logistics:       { type: "STRING", description: "Tip on getting there or timing" },
-              tags:            { type: "ARRAY", items: { type: "STRING" } },
-              notes:           { type: "STRING", description: "Booking tip, insider detail, or leave empty" },
-            },
-            required: ["name", "type", "reason"],
-          },
-        },
-      },
-      required: ["context_read", "spots"],
-    },
-  };
+Respond ONLY with valid JSON — no markdown fences, no prose before or after. Use this exact structure:
+{
+  "context_read": "1-2 sentence summary of how you read the day and what you optimised for",
+  "spots": [
+    {
+      "name": "Place name",
+      "type": "sight|restaurant|cafe|experience",
+      "neighborhood": "Neighbourhood or arrondissement",
+      "suggestedTime": "HH:MM",
+      "durationMinutes": 90,
+      "reason": "Why this fits this specific day",
+      "logistics": "How to get there or timing tip",
+      "tags": ["Tag1", "Tag2"],
+      "notes": "Booking tip or insider detail, or omit field"
+    }
+  ]
+}`;
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_CONFIG.model}:generateContent?key=${GEMINI_CONFIG.apiKey}`;
   const body = {
-    system_instruction: { parts: [{ text: systemPrompt }] },
-    contents: [{ role: "user", parts: [{ text: userPrompt }] }],
-    tools: [{ function_declarations: [functionDeclaration] }],
-    tool_config: { function_calling_config: { mode: "ANY", allowed_function_names: ["recommend_spots"] } },
-    generation_config: { temperature: 0.8 },
+    contents: [{ role: "user", parts: [{ text: prompt }] }],
+    generation_config: { temperature: 0.8, response_mime_type: "application/json" },
   };
 
   const res = await fetch(url, {
@@ -4395,10 +4375,15 @@ Suggest spots that are NOT already in the itinerary. Focus on what genuinely fit
   }
 
   const data = await res.json();
-  const call = data?.candidates?.[0]?.content?.parts?.find(p => p.functionCall);
-  if (!call) throw new Error("No recommendations returned — try again.");
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error("No recommendations returned — try again.");
 
-  return call.functionCall.args;
+  try {
+    const clean = text.replace(/^```json\s*/i, "").replace(/```\s*$/, "").trim();
+    return JSON.parse(clean);
+  } catch {
+    throw new Error("Couldn't parse recommendations — try again.");
+  }
 }
 
 function renderRecommendationCards(result, townId, date) {
