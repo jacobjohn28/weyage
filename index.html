@@ -843,6 +843,68 @@
     margin-bottom: 5px; padding-left: 2px;
   }
 
+  /* Accommodation card */
+  .accom-card {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px 14px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: border-color 160ms var(--ease);
+  }
+  .accom-card:hover { border-color: var(--border-strong); }
+  .accom-icon {
+    width: 32px; height: 32px; flex-shrink: 0;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-2);
+  }
+  .accom-icon svg { width: 16px; height: 16px; }
+  .accom-body { flex: 1; min-width: 0; }
+  .accom-name { font-weight: 500; font-size: 0.9375rem; }
+  .accom-meta { font-size: 0.8125rem; color: var(--text-3); margin-top: 2px; }
+  .accom-booked {
+    font-size: 0.6875rem; font-weight: 600;
+    padding: 2px 7px; border-radius: 100px;
+    background: rgba(76, 165, 100, 0.12);
+    color: var(--success);
+    flex-shrink: 0;
+  }
+  .add-accom-link {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 0.8125rem; color: var(--text-3);
+    cursor: pointer; margin-bottom: 10px;
+    transition: color 140ms var(--ease);
+  }
+  .add-accom-link:hover { color: var(--accent); }
+  .add-accom-link svg { width: 13px; height: 13px; }
+
+  /* Transport modal fields */
+  .subtype-selector {
+    display: flex; gap: 8px; flex-wrap: wrap;
+  }
+  .subtype-option {
+    padding: 6px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 100px;
+    font-size: 0.8125rem; font-weight: 500; color: var(--text-2);
+    cursor: pointer;
+    transition: all 140ms var(--ease);
+  }
+  .subtype-option.selected {
+    border-color: var(--tint-transport);
+    background: rgba(107, 125, 179, 0.1);
+    color: var(--tint-transport);
+  }
+  .subtype-option:hover:not(.selected) { border-color: var(--border-strong); color: var(--text); }
+  .transport-section {
+    display: flex; flex-direction: column; gap: 18px;
+  }
+  .transport-section.hidden { display: none; }
+
   @media (max-width: 768px) {
     .dash-widgets-row { grid-template-columns: 1fr 1fr; }
     .dash-widgets-row .dash-widget:first-child { grid-column: 1 / -1; }
@@ -941,6 +1003,13 @@
   .spot-card[data-type="restaurant"] .spot-type-bar,
   .spot-card[data-type="cafe"] .spot-type-bar { background: var(--tint-food); }
   .spot-card[data-type="experience"] .spot-type-bar { background: var(--tint-experience); }
+  .spot-card[data-type="transport"] .spot-type-bar { background: var(--tint-transport); }
+  .spot-card.arrival-view { opacity: 0.7; cursor: default; }
+  .spot-card.arrival-view .spot-type-bar {
+    background: repeating-linear-gradient(to bottom, var(--tint-transport) 0px, var(--tint-transport) 3px, transparent 3px, transparent 6px);
+  }
+  .spot-card.arrival-view .spot-drag-handle { display: none; }
+  .spot-card.arrival-view:hover { box-shadow: none; }
 
   /* Card body */
   .spot-card-body {
@@ -958,6 +1027,7 @@
   .spot-card[data-type="restaurant"] .spot-type-icon,
   .spot-card[data-type="cafe"] .spot-type-icon { color: var(--tint-food); }
   .spot-card[data-type="experience"] .spot-type-icon { color: var(--tint-experience); }
+  .spot-card[data-type="transport"] .spot-type-icon { color: var(--tint-transport); }
   .spot-name {
     font-weight: 500; font-size: 0.9375rem;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -1092,7 +1162,7 @@
   .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
 
   /* Type selector */
-  .type-selector { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .type-selector { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
   .type-option {
     display: flex; flex-direction: column; align-items: center; gap: 6px;
     padding: 10px 8px;
@@ -1243,7 +1313,7 @@
 
   @media (max-width: 768px) {
     /* Type selector 2x2 on mobile */
-    .type-selector { grid-template-columns: repeat(2, 1fr); }
+    .type-selector { grid-template-columns: repeat(3, 1fr); }
     /* Form rows stack on mobile */
     .form-row, .form-row-3 { grid-template-columns: 1fr; }
 
@@ -1536,6 +1606,10 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
             Experience
           </button>
+          <button class="type-option" data-type="transport">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+            Transport
+          </button>
         </div>
       </div>
 
@@ -1551,8 +1625,8 @@
         <select class="form-select" id="spot-town"></select>
       </div>
 
-      <!-- Neighborhood + Address -->
-      <div class="form-row">
+      <!-- Neighborhood + Address (hidden for transport) -->
+      <div class="form-row" id="standard-location-fields">
         <div class="form-field">
           <label class="form-label" for="spot-neighborhood">Neighborhood</label>
           <input class="form-input" id="spot-neighborhood" type="text" placeholder="e.g. 7ème" autocomplete="off">
@@ -1563,8 +1637,8 @@
         </div>
       </div>
 
-      <!-- Date + Time + Duration -->
-      <div class="form-row-3">
+      <!-- Date + Time + Duration (hidden for transport) -->
+      <div class="form-row-3" id="standard-time-fields">
         <div class="form-field">
           <label class="form-label" for="spot-date">Date</label>
           <input class="form-input" id="spot-date" type="date">
@@ -1579,7 +1653,70 @@
         </div>
       </div>
 
-      <!-- Tags -->
+      <!-- ── TRANSPORT FIELDS ── -->
+      <div class="transport-section hidden" id="transport-fields">
+        <!-- Subtype -->
+        <div class="form-field">
+          <div class="form-label">Mode</div>
+          <div class="subtype-selector" id="subtype-selector">
+            <button class="subtype-option selected" data-subtype="train">Train</button>
+            <button class="subtype-option" data-subtype="plane">Plane</button>
+            <button class="subtype-option" data-subtype="bus">Bus</button>
+            <button class="subtype-option" data-subtype="ferry">Ferry</button>
+            <button class="subtype-option" data-subtype="car">Car</button>
+          </div>
+        </div>
+        <!-- From / To -->
+        <div class="form-row">
+          <div class="form-field">
+            <label class="form-label" for="transport-from">From</label>
+            <input class="form-input" id="transport-from" type="text" placeholder="e.g. Paris Gare de Lyon" autocomplete="off">
+          </div>
+          <div class="form-field">
+            <label class="form-label" for="transport-to">To</label>
+            <input class="form-input" id="transport-to" type="text" placeholder="e.g. Annecy" autocomplete="off">
+          </div>
+        </div>
+        <!-- Departure date + time -->
+        <div class="form-row">
+          <div class="form-field">
+            <label class="form-label" for="transport-dep-date">Departure date</label>
+            <input class="form-input" id="transport-dep-date" type="date">
+          </div>
+          <div class="form-field">
+            <label class="form-label" for="transport-dep-time">Departure time</label>
+            <input class="form-input" id="transport-dep-time" type="time">
+          </div>
+        </div>
+        <!-- Arrival town + date + time -->
+        <div class="form-field">
+          <label class="form-label" for="transport-arrival-town">Arrival town</label>
+          <select class="form-select" id="transport-arrival-town"></select>
+        </div>
+        <div class="form-row">
+          <div class="form-field">
+            <label class="form-label" for="transport-arr-date">Arrival date</label>
+            <input class="form-input" id="transport-arr-date" type="date">
+          </div>
+          <div class="form-field">
+            <label class="form-label" for="transport-arr-time">Arrival time</label>
+            <input class="form-input" id="transport-arr-time" type="time">
+          </div>
+        </div>
+        <!-- Carrier + Seat -->
+        <div class="form-row">
+          <div class="form-field">
+            <label class="form-label" for="transport-carrier">Carrier / Number</label>
+            <input class="form-input" id="transport-carrier" type="text" placeholder="e.g. TGV 6613" autocomplete="off">
+          </div>
+          <div class="form-field">
+            <label class="form-label" for="transport-seat">Seat</label>
+            <input class="form-input" id="transport-seat" type="text" placeholder="e.g. 42A" autocomplete="off">
+          </div>
+        </div>
+      </div>
+
+      <!-- Tags (hidden for transport) -->
       <div class="form-field" id="tags-field">
         <div class="form-label">Tags</div>
         <div class="tags-grid" id="tags-grid"></div>
@@ -1608,6 +1745,91 @@
       <button class="btn-primary" id="modal-save-btn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
         Save spot
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     ACCOMMODATION MODAL
+     ============================================================ -->
+<div class="modal-overlay" id="accom-modal-overlay">
+  <div class="modal" id="accom-modal">
+    <div class="modal-header">
+      <div class="modal-title" id="accom-modal-title">Add accommodation</div>
+      <button class="icon-btn" id="accom-modal-close-btn" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Name -->
+      <div class="form-field">
+        <label class="form-label" for="accom-name">Property name *</label>
+        <input class="form-input" id="accom-name" type="text" placeholder="e.g. Hôtel des Invalides" autocomplete="off">
+      </div>
+
+      <!-- Address -->
+      <div class="form-field">
+        <label class="form-label" for="accom-address">Address</label>
+        <input class="form-input" id="accom-address" type="text" placeholder="Street address" autocomplete="off">
+      </div>
+
+      <!-- Check-in / Check-out dates -->
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-label" for="accom-checkin-date">Check-in date</label>
+          <input class="form-input" id="accom-checkin-date" type="date">
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="accom-checkout-date">Check-out date</label>
+          <input class="form-input" id="accom-checkout-date" type="date">
+        </div>
+      </div>
+
+      <!-- Check-in / Check-out times -->
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-label" for="accom-checkin-time">Check-in time</label>
+          <input class="form-input" id="accom-checkin-time" type="time">
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="accom-checkout-time">Check-out time</label>
+          <input class="form-input" id="accom-checkout-time" type="time">
+        </div>
+      </div>
+
+      <!-- Booking ref + Price -->
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-label" for="accom-booking-ref">Booking reference</label>
+          <input class="form-input" id="accom-booking-ref" type="text" placeholder="e.g. BK-12345" autocomplete="off">
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="accom-price">Total price (€)</label>
+          <input class="form-input" id="accom-price" type="number" min="0" step="0.01" placeholder="0.00">
+        </div>
+      </div>
+
+      <!-- Booked toggle -->
+      <div class="visited-toggle" id="accom-booked-toggle" role="button" tabindex="0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="18" height="18"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        <span class="visited-toggle-label">Booked / confirmed</span>
+        <div class="toggle-switch" id="accom-booked-switch"></div>
+      </div>
+
+      <!-- Notes -->
+      <div class="form-field">
+        <label class="form-label" for="accom-notes">Notes</label>
+        <textarea class="form-textarea" id="accom-notes" placeholder="Wi-Fi, parking, early check-in arranged…"></textarea>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="accom-modal-cancel-btn">Cancel</button>
+      <button class="btn-primary" id="accom-modal-save-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Save
       </button>
     </div>
   </div>
@@ -2235,8 +2457,14 @@ function getDaysForTown(town) {
 }
 
 function getSpotsForTown(townId) {
-  // Phase 3d will also include: s.type === 'transport' && s.arrivalTownId === townId
-  return state.spots.filter(s => s.townId === townId);
+  const own = state.spots.filter(s => s.townId === townId);
+  // Arrival-view projections: transport departing from another town, arriving here
+  const arrivals = state.spots
+    .filter(s => s.type === "transport" && s.arrivalTownId === townId && s.townId !== townId)
+    .map(s => ({ ...s, _arrivalView: true,
+      scheduledDate: s.arrivalDate || s.scheduledDate || null,
+      scheduledTime: s.arrivalTime || null }));
+  return [...own, ...arrivals];
 }
 
 const sortableInstances = [];
@@ -2263,11 +2491,49 @@ function typeIconSVG(type) {
     restaurant: `<svg class="spot-type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>`,
     cafe:       `<svg class="spot-type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M17 8h1a4 4 0 0 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V8z"/></svg>`,
     experience: `<svg class="spot-type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
+    transport:  `<svg class="spot-type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>`,
   };
   return icons[type] || icons.sight;
 }
 
+function transportCardHTML(spot) {
+  const isArrival = spot._arrivalView;
+  const depTime = fmtTime12(spot.departureTime);
+  const arrTime = fmtTime12(spot.arrivalTime);
+  const subtype = spot.transportSubtype ? spot.transportSubtype.charAt(0).toUpperCase() + spot.transportSubtype.slice(1) : "Transport";
+
+  const meta = [];
+  if (isArrival) {
+    if (arrTime) meta.push(`<span class="spot-time">arrives ${arrTime}</span>`);
+    if (spot.transportFrom) meta.push(`<span class="spot-neighborhood">from ${escapeHtml(spot.transportFrom)}</span>`);
+  } else {
+    if (depTime) meta.push(`<span class="spot-time">departs ${depTime}</span>`);
+    if (spot.transportTo) meta.push(`<span class="spot-neighborhood">to ${escapeHtml(spot.transportTo)}</span>`);
+  }
+  if (spot.carrier) meta.push(`<span class="spot-tag-pill">${escapeHtml(spot.carrier)}</span>`);
+
+  const draggable = isArrival ? ` data-draggable="false"` : "";
+  const arrivalClass = isArrival ? " arrival-view" : "";
+
+  return `
+    <div class="spot-card${arrivalClass}" data-spot-id="${spot.id}" data-type="transport"${draggable}>
+      <div class="spot-type-bar"></div>
+      <div class="spot-card-body">
+        <div class="spot-card-row1">
+          ${typeIconSVG("transport")}
+          <span class="spot-name">${escapeHtml(spot.name || subtype)}</span>
+          ${isArrival ? `<span class="spot-tag-pill" style="margin-left:auto;font-size:0.625rem;opacity:0.7">arrival</span>` : ""}
+        </div>
+        ${meta.length ? `<div class="spot-card-row2">${meta.join("")}</div>` : ""}
+      </div>
+      ${isArrival ? "" : `<div class="spot-drag-handle" title="Drag to reorder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="9" cy="7" r="1" fill="currentColor"/><circle cx="9" cy="12" r="1" fill="currentColor"/><circle cx="9" cy="17" r="1" fill="currentColor"/><circle cx="15" cy="7" r="1" fill="currentColor"/><circle cx="15" cy="12" r="1" fill="currentColor"/><circle cx="15" cy="17" r="1" fill="currentColor"/></svg>
+      </div>`}
+    </div>`;
+}
+
 function spotCardHTML(spot) {
+  if (spot.type === "transport") return transportCardHTML(spot);
   const type = spot.type || "sight";
   const timeStr = fmtTime12(spot.scheduledTime);
   const durStr = spot.durationMinutes ? `· ${spot.durationMinutes}min` : "";
@@ -2294,6 +2560,32 @@ function spotCardHTML(spot) {
       <div class="spot-drag-handle" title="Drag to reorder">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="9" cy="7" r="1" fill="currentColor"/><circle cx="9" cy="12" r="1" fill="currentColor"/><circle cx="9" cy="17" r="1" fill="currentColor"/><circle cx="15" cy="7" r="1" fill="currentColor"/><circle cx="15" cy="12" r="1" fill="currentColor"/><circle cx="15" cy="17" r="1" fill="currentColor"/></svg>
       </div>
+    </div>`;
+}
+
+function renderAccomCard(town) {
+  const a = town.accommodation;
+  if (!a || !a.name) {
+    return `<button class="add-accom-link" data-town-id="${escapeHtml(town.id)}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Add accommodation
+    </button>`;
+  }
+  const checkin  = a.checkinDate  ? new Date(a.checkinDate  + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
+  const checkout = a.checkoutDate ? new Date(a.checkoutDate + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
+  const dateRange = (checkin && checkout) ? `${checkin} – ${checkout}` : (checkin || checkout || "");
+  const price = a.price ? ` · €${Number(a.price).toLocaleString()}` : "";
+  return `
+    <div class="accom-card" data-town-id="${escapeHtml(town.id)}">
+      <div class="accom-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      </div>
+      <div class="accom-body">
+        <div class="accom-name">${escapeHtml(a.name)}</div>
+        ${(dateRange || price) ? `<div class="accom-meta">${dateRange}${price}</div>` : ""}
+        ${a.bookingRef ? `<div class="accom-meta" style="font-size:0.75rem">Ref: ${escapeHtml(a.bookingRef)}</div>` : ""}
+      </div>
+      ${a.booked ? `<span class="accom-booked">Booked</span>` : ""}
     </div>`;
 }
 
@@ -2338,6 +2630,7 @@ function renderItinerary() {
           <span class="town-group-dates">${fmtSpreadDates(town.arrivalDate, town.departureDate)} &middot; ${nights}n</span>
           <button class="town-add-btn" data-town-id="${escapeHtml(town.id)}">+ Add</button>
         </div>
+        ${renderAccomCard(town)}
         ${days.map(dk => {
           const daySpots = byDate[dk] || [];
           const { dow, full } = fmtDayHeader(dk);
@@ -2372,6 +2665,15 @@ function renderItinerary() {
   }
 
   container.innerHTML = html.join("");
+
+  // Accommodation card + add-accom-link → open accom modal
+  container.querySelectorAll(".accom-card, .add-accom-link").forEach(el => {
+    el.addEventListener("click", () => {
+      const townId = el.dataset.townId;
+      const town = state.towns.find(t => t.id === townId);
+      if (town) openAccomModal(town);
+    });
+  });
 
   // Contextual "+" button handlers
   container.querySelectorAll(".town-add-btn, .add-spot-inline").forEach(btn => {
@@ -2576,6 +2878,27 @@ function openModal(spot = null, presets = {}) {
     btn.classList.toggle("selected", btn.dataset.type === selectedType));
 
   renderTagsGrid();
+  // applyTransportToggle must run after renderTagsGrid (wins on tags-field) AND before
+  // transport field values are set (populates the arrival-town dropdown first)
+  applyTransportToggle(selectedType);
+
+  if (selectedType === "transport") {
+    const subtype = (spot && spot.transportSubtype) || "train";
+    document.querySelectorAll(".subtype-option").forEach(b =>
+      b.classList.toggle("selected", b.dataset.subtype === subtype));
+    document.getElementById("transport-from").value         = (spot && spot.transportFrom)  || "";
+    document.getElementById("transport-to").value           = (spot && spot.transportTo)    || "";
+    document.getElementById("transport-dep-date").value     = (spot && spot.scheduledDate)  || "";
+    document.getElementById("transport-dep-time").value     = (spot && spot.departureTime)  || "";
+    document.getElementById("transport-arr-date").value     = (spot && spot.arrivalDate)    || "";
+    document.getElementById("transport-arr-time").value     = (spot && spot.arrivalTime)    || "";
+    document.getElementById("transport-carrier").value      = (spot && spot.carrier)        || "";
+    document.getElementById("transport-seat").value         = (spot && spot.seat)           || "";
+    document.getElementById("transport-arrival-town").value = (spot && spot.arrivalTownId) || "";
+  } else {
+    document.querySelectorAll(".subtype-option").forEach((b, i) => b.classList.toggle("selected", i === 0));
+  }
+
   document.getElementById("visited-switch").classList.toggle("on", visitedState);
 
   const btn = document.getElementById("modal-save-btn");
@@ -2606,6 +2929,87 @@ function closeModal() {
   modalEditId = null;
 }
 
+// ── ACCOMMODATION MODAL ──
+let accomTownId = null;
+let accomBooked = false;
+
+function openAccomModal(town) {
+  accomTownId = town.id;
+  const a = town.accommodation || {};
+  accomBooked = !!a.booked;
+
+  document.getElementById("accom-modal-title").textContent = a.name ? "Edit accommodation" : "Add accommodation";
+  document.getElementById("accom-name").value           = a.name || "";
+  document.getElementById("accom-address").value        = a.address || "";
+  document.getElementById("accom-checkin-date").value   = a.checkinDate || town.arrivalDate || "";
+  document.getElementById("accom-checkout-date").value  = a.checkoutDate || town.departureDate || "";
+  document.getElementById("accom-checkin-time").value   = a.checkinTime || "";
+  document.getElementById("accom-checkout-time").value  = a.checkoutTime || "";
+  document.getElementById("accom-booking-ref").value    = a.bookingRef || "";
+  document.getElementById("accom-price").value          = a.price != null ? a.price : "";
+  document.getElementById("accom-notes").value          = a.notes || "";
+
+  const sw = document.getElementById("accom-booked-switch");
+  sw.classList.toggle("on", accomBooked);
+
+  document.getElementById("accom-modal-overlay").classList.add("visible");
+  document.body.style.overflow = "hidden";
+  document.getElementById("accom-name").focus();
+}
+
+function closeAccomModal() {
+  document.getElementById("accom-modal-overlay").classList.remove("visible");
+  document.body.style.overflow = "";
+  accomTownId = null;
+}
+
+async function saveAccommodation() {
+  const name = document.getElementById("accom-name").value.trim();
+  if (!name || !accomTownId) return;
+
+  const data = {
+    name,
+    address:      document.getElementById("accom-address").value.trim()       || null,
+    checkinDate:  document.getElementById("accom-checkin-date").value         || null,
+    checkoutDate: document.getElementById("accom-checkout-date").value        || null,
+    checkinTime:  document.getElementById("accom-checkin-time").value         || null,
+    checkoutTime: document.getElementById("accom-checkout-time").value        || null,
+    bookingRef:   document.getElementById("accom-booking-ref").value.trim()   || null,
+    price:        parseFloat(document.getElementById("accom-price").value)    || null,
+    notes:        document.getElementById("accom-notes").value.trim()         || null,
+    booked:       accomBooked,
+  };
+
+  const btn = document.getElementById("accom-modal-save-btn");
+  btn.disabled = true;
+  try {
+    const townRef = doc(db, "trips", TRIP_ID, "towns", accomTownId);
+    await updateDoc(townRef, { accommodation: data });
+
+    // Update local state
+    setState({
+      towns: state.towns.map(t => t.id === accomTownId ? { ...t, accommodation: data } : t)
+    });
+    closeAccomModal();
+  } catch (err) {
+    console.error("saveAccommodation:", err);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// Accom modal events
+document.getElementById("accom-modal-close-btn").addEventListener("click", closeAccomModal);
+document.getElementById("accom-modal-cancel-btn").addEventListener("click", closeAccomModal);
+document.getElementById("accom-modal-overlay").addEventListener("click", e => {
+  if (e.target === document.getElementById("accom-modal-overlay")) closeAccomModal();
+});
+document.getElementById("accom-modal-save-btn").addEventListener("click", saveAccommodation);
+document.getElementById("accom-booked-toggle").addEventListener("click", () => {
+  accomBooked = !accomBooked;
+  document.getElementById("accom-booked-switch").classList.toggle("on", accomBooked);
+});
+
 function renderTagsGrid() {
   const tags = state.trip?.tags || [];
   const field = document.getElementById("tags-field");
@@ -2625,12 +3029,37 @@ function renderTagsGrid() {
   });
 }
 
+function applyTransportToggle(type) {
+  const isTransport = type === "transport";
+  document.getElementById("transport-fields").classList.toggle("hidden", !isTransport);
+  document.getElementById("standard-location-fields").style.display = isTransport ? "none" : "";
+  document.getElementById("standard-time-fields").style.display     = isTransport ? "none" : "";
+  document.getElementById("tags-field").style.display               = isTransport ? "none" : "";
+  document.getElementById("visited-toggle").style.display           = isTransport ? "none" : "";
+
+  if (isTransport) {
+    // Populate arrival town dropdown
+    const sel = document.getElementById("transport-arrival-town");
+    const depTownId = document.getElementById("spot-town").value;
+    sel.innerHTML = `<option value="">— select town —</option>` +
+      state.towns.map(t => `<option value="${t.id}"${t.id === depTownId ? " disabled" : ""}>${escapeHtml(t.name)}</option>`).join("");
+  }
+}
+
 // Type option clicks
 document.querySelectorAll(".type-option").forEach(btn => {
   btn.addEventListener("click", () => {
     selectedType = btn.dataset.type;
     document.querySelectorAll(".type-option").forEach(b => b.classList.toggle("selected", b === btn));
+    applyTransportToggle(selectedType);
   });
+});
+
+// Subtype selector clicks
+document.getElementById("subtype-selector").addEventListener("click", e => {
+  const opt = e.target.closest(".subtype-option");
+  if (!opt) return;
+  document.querySelectorAll(".subtype-option").forEach(b => b.classList.toggle("selected", b === opt));
 });
 
 // Visited toggle
@@ -2655,6 +3084,8 @@ document.getElementById("spot-town").addEventListener("change", (e) => {
   if (dateInput.value && (dateInput.value < dateInput.min || dateInput.value > dateInput.max)) {
     dateInput.value = "";
   }
+  // Refresh arrival-town dropdown if in transport mode
+  if (selectedType === "transport") applyTransportToggle("transport");
 });
 
 // Food view — quick-add pre-set to restaurant
@@ -2664,19 +3095,43 @@ document.getElementById("add-food-btn").addEventListener("click", () => openModa
 document.getElementById("modal-save-btn").addEventListener("click", async () => {
   const name = document.getElementById("spot-name").value.trim();
   if (!name) { document.getElementById("spot-name").focus(); return; }
-  const data = {
-    name,
-    type: selectedType,
-    townId: document.getElementById("spot-town").value,
-    neighborhood: document.getElementById("spot-neighborhood").value.trim() || null,
-    address: document.getElementById("spot-address").value.trim() || null,
-    scheduledDate: document.getElementById("spot-date").value || null,
-    scheduledTime: document.getElementById("spot-time").value || null,
-    durationMinutes: parseInt(document.getElementById("spot-duration").value) || null,
-    tags: [...selectedTags],
-    notes: document.getElementById("spot-notes").value.trim() || null,
-    visited: visitedState,
-  };
+
+  let data;
+  if (selectedType === "transport") {
+    const subtype = document.querySelector(".subtype-option.selected")?.dataset.subtype || "train";
+    data = {
+      name,
+      type: "transport",
+      townId: document.getElementById("spot-town").value,
+      transportSubtype:  subtype,
+      transportFrom:     document.getElementById("transport-from").value.trim()     || null,
+      transportTo:       document.getElementById("transport-to").value.trim()       || null,
+      scheduledDate:     document.getElementById("transport-dep-date").value        || null,
+      departureTime:     document.getElementById("transport-dep-time").value        || null,
+      arrivalTownId:     document.getElementById("transport-arrival-town").value    || null,
+      arrivalDate:       document.getElementById("transport-arr-date").value        || null,
+      arrivalTime:       document.getElementById("transport-arr-time").value        || null,
+      carrier:           document.getElementById("transport-carrier").value.trim()  || null,
+      seat:              document.getElementById("transport-seat").value.trim()     || null,
+      notes:             document.getElementById("spot-notes").value.trim()         || null,
+      visited:           false,
+      tags:              [],
+    };
+  } else {
+    data = {
+      name,
+      type: selectedType,
+      townId: document.getElementById("spot-town").value,
+      neighborhood: document.getElementById("spot-neighborhood").value.trim() || null,
+      address: document.getElementById("spot-address").value.trim() || null,
+      scheduledDate: document.getElementById("spot-date").value || null,
+      scheduledTime: document.getElementById("spot-time").value || null,
+      durationMinutes: parseInt(document.getElementById("spot-duration").value) || null,
+      tags: [...selectedTags],
+      notes: document.getElementById("spot-notes").value.trim() || null,
+      visited: visitedState,
+    };
+  }
   const btn = document.getElementById("modal-save-btn");
   btn.disabled = true;
   btn.textContent = "Saving…";
