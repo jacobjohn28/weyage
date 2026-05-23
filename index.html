@@ -2370,7 +2370,7 @@
 const FIREBASE_VERSION = "10.13.2";
 const FIREBASE_BASE = `https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}`;
 
-let initializeApp, getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged;
+let initializeApp, getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, signInAnonymously;
 let getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs;
 let enableIndexedDbPersistence, onSnapshot, writeBatch, serverTimestamp;
 
@@ -2584,7 +2584,6 @@ async function initFirebase() {
   initializeApp = appMod.initializeApp;
 
   const authMod = await import(`${FIREBASE_BASE}/firebase-auth.js`);
-  let signInAnonymously;
   ({ getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, signInAnonymously } = authMod);
 
   const fsMod = await import(`${FIREBASE_BASE}/firebase-firestore.js`);
