@@ -2097,6 +2097,14 @@
           <div class="form-label" style="display:flex;align-items:center;justify-content:space-between">Custom origin <span style="font-size:0.7rem;color:var(--text-3);font-weight:400">optional — overrides departure city</span></div>
           <input id="custom-origin" class="form-input" type="text" placeholder="e.g. Dublin Airport">
         </div>
+        <!-- Direction -->
+        <div class="form-field">
+          <div class="form-label">Direction</div>
+          <div class="subtype-selector" id="transport-direction-selector" style="grid-template-columns:1fr 1fr">
+            <button class="subtype-option selected" data-direction="departing" id="dir-departing">Leaving</button>
+            <button class="subtype-option" data-direction="arriving" id="dir-arriving">Arriving</button>
+          </div>
+        </div>
         <!-- Subtype -->
         <div class="form-field">
           <div class="form-label">Mode</div>
@@ -3102,7 +3110,7 @@ function typeIconSVG(type) {
 }
 
 function transportCardHTML(spot) {
-  const isArrival = spot._arrivalView;
+  const isArrival = spot._arrivalView || spot.transportDirection === "arriving";
   const depTime = fmtTime12(spot.departureTime);
   const arrTime = fmtTime12(spot.arrivalTime);
   const subtype = spot.transportSubtype ? spot.transportSubtype.charAt(0).toUpperCase() + spot.transportSubtype.slice(1) : "Transport";
@@ -3119,7 +3127,8 @@ function transportCardHTML(spot) {
   }
   if (spot.carrier) meta.push(`<span class="spot-tag-pill">${escapeHtml(spot.carrier)}</span>`);
 
-  const draggable = isArrival ? ` data-draggable="false"` : "";
+  // Arriving-direction spots are native to this town (editable/draggable), not projections
+  const draggable = spot._arrivalView ? ` data-draggable="false"` : "";
   const arrivalClass = isArrival ? " arrival-view" : "";
 
   return `
@@ -3648,6 +3657,9 @@ function openModal(spot = null, presets = {}) {
     const subtype = (spot && spot.transportSubtype) || "train";
     document.querySelectorAll(".subtype-option").forEach(b =>
       b.classList.toggle("selected", b.dataset.subtype === subtype));
+    const direction = (spot && spot.transportDirection) || "departing";
+    document.querySelectorAll("#transport-direction-selector .subtype-option").forEach(b =>
+      b.classList.toggle("selected", b.dataset.direction === direction));
     document.getElementById("transport-from").value         = (spot && spot.transportFrom)  || "";
     document.getElementById("transport-to").value           = (spot && spot.transportTo)    || "";
     document.getElementById("transport-dep-date").value     = (spot && spot.scheduledDate)  || "";
@@ -3657,6 +3669,7 @@ function openModal(spot = null, presets = {}) {
     document.getElementById("transport-carrier").value      = (spot && spot.carrier)        || "";
     document.getElementById("transport-seat").value         = (spot && spot.seat)           || "";
     document.getElementById("transport-arrival-town").value = (spot && spot.arrivalTownId) || "";
+    document.getElementById("custom-origin").value          = (spot && spot.customOrigin)  || "";
   } else {
     document.querySelectorAll(".subtype-option").forEach((b, i) => b.classList.toggle("selected", i === 0));
   }
@@ -3798,6 +3811,27 @@ function renderTagsGrid() {
   });
 }
 
+function applyTransportDirection(direction) {
+  const isArriving = direction === "arriving";
+  // Show/hide arrival town section
+  const arrivalTownField = document.getElementById("transport-arrival-town")?.closest(".form-field");
+  if (arrivalTownField) arrivalTownField.style.display = isArriving ? "none" : "";
+  const customDestWrap = document.getElementById("custom-destination-wrap");
+  if (customDestWrap) customDestWrap.style.display = isArriving ? "none" : "none"; // keep hidden until toggled
+
+  // Update direction button selection
+  document.querySelectorAll("#transport-direction-selector .subtype-option").forEach(b => {
+    b.classList.toggle("selected", b.dataset.direction === direction);
+  });
+
+  // Update departure city label with context
+  const depTownId = document.getElementById("spot-town")?.value;
+  const depTown = state.towns.find(t => t.id === depTownId);
+  const cityName = depTown?.name || "city";
+  document.getElementById("dir-departing").textContent = `Leaving ${cityName}`;
+  document.getElementById("dir-arriving").textContent  = `Arriving in ${cityName}`;
+}
+
 function applyTransportToggle(type) {
   const isTransport = type === "transport";
   document.getElementById("transport-fields").classList.toggle("hidden", !isTransport);
@@ -3812,6 +3846,16 @@ function applyTransportToggle(type) {
     const depTownId = document.getElementById("spot-town").value;
     sel.innerHTML = `<option value="">— select town —</option>` +
       state.towns.map(t => `<option value="${t.id}"${t.id === depTownId ? " disabled" : ""}>${escapeHtml(t.name)}</option>`).join("");
+
+    // Apply current direction state
+    const currentDir = document.querySelector("#transport-direction-selector .subtype-option.selected")?.dataset.direction || "departing";
+    applyTransportDirection(currentDir);
+
+    // Wire direction buttons (idempotent — safe to re-call)
+    document.getElementById("transport-direction-selector").onclick = (e) => {
+      const btn = e.target.closest(".subtype-option");
+      if (btn) applyTransportDirection(btn.dataset.direction);
+    };
   }
 
   const toggleDestBtn = document.getElementById("toggle-custom-dest-btn");
@@ -3897,6 +3941,7 @@ document.getElementById("modal-save-btn").addEventListener("click", async () => 
       transportTo:       document.getElementById("transport-to").value.trim()       || null,
       scheduledDate:     document.getElementById("transport-dep-date").value        || null,
       departureTime:     document.getElementById("transport-dep-time").value        || null,
+      transportDirection: document.querySelector("#transport-direction-selector .subtype-option.selected")?.dataset.direction || "departing",
       arrivalTownId:     document.getElementById("transport-arrival-town").value    || null,
       customOrigin:      document.getElementById("custom-origin")?.value.trim()     || null,
       customDestination: document.getElementById("custom-destination")?.value.trim() || null,
