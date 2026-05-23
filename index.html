@@ -2418,6 +2418,11 @@
           <input id="town-edit-departure" class="form-input" type="date">
         </div>
       </div>
+      <div class="visited-toggle" id="town-hide-photo-toggle" role="button" tabindex="0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="18" height="18"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        <span class="visited-toggle-label">Hide photo in itinerary</span>
+        <div class="toggle-switch" id="town-hide-photo-switch"></div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn-ghost" id="town-edit-delete-btn" style="color:var(--danger,#c0392b);display:none">Delete city</button>
@@ -3305,38 +3310,40 @@ function renderItinerary() {
     // Resolve town image
     let townImgUrl = town.customImage || town.image || "";
     if (!townImgUrl && town.wikipediaArticle) townImgUrl = imgCache[town.wikipediaArticle] || "";
+    const showPhoto = !!townImgUrl && !town.hidePhoto;
 
-    const photoBanner = townImgUrl ? `
+    const editBtn = `<button class="town-edit-btn icon-btn" data-town-id="${escapeHtml(town.id)}" title="Edit city" style="padding:4px;opacity:0.55;margin-right:2px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="15" height="15"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>`;
+    const addBtn = `<button class="town-add-btn" data-town-id="${escapeHtml(town.id)}">+ Add</button>`;
+
+    const photoBanner = showPhoto ? `
       <div class="town-photo-banner">
         <img src="${escapeHtml(townImgUrl)}" alt="${escapeHtml(town.name)}" loading="lazy"
              onerror="this.closest('.town-photo-banner').style.display='none'">
         <div class="town-photo-banner-overlay">
+          <div style="position:absolute;top:10px;right:10px;display:flex;gap:6px;z-index:2">
+            <button class="town-edit-btn icon-btn" data-town-id="${escapeHtml(town.id)}" title="Edit city"
+              style="padding:5px;background:rgba(0,0,0,0.38);border:1px solid rgba(255,255,255,0.18);border-radius:8px;color:#fff;backdrop-filter:blur(6px)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="14" height="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <button class="town-add-btn" data-town-id="${escapeHtml(town.id)}"
+              style="background:rgba(0,0,0,0.38);border:1px solid rgba(255,255,255,0.18);color:#fff;backdrop-filter:blur(6px);margin-left:0">+ Add</button>
+          </div>
           <span class="town-photo-banner-name">${escapeHtml(town.name)}</span>
           <span class="town-photo-banner-dates">${fmtSpreadDates(town.arrivalDate, town.departureDate)} &middot; ${nights}n</span>
         </div>
       </div>` : "";
 
-    // When photo banner shows name+dates, simplify the header row to just action buttons
-    const headerBg = (!townImgUrl)
-      ? `<div class="town-header-img" style="background-image:url('${escapeHtml(townImgUrl)}')"></div>`
-      : "";
-    const headerNameDates = !townImgUrl ? `
-          <span class="town-group-dot"></span>
-          <span class="town-group-name">${escapeHtml(town.name)}</span>
-          <span class="town-group-dates">${fmtSpreadDates(town.arrivalDate, town.departureDate)} &middot; ${nights}n</span>` : "";
-
     html.push(`
       <div class="town-group" id="itinerary-town-${escapeHtml(town.id)}" data-town="${escapeHtml(town.id)}">
         ${photoBanner}
-        <div class="town-group-header"${townImgUrl ? ' style="min-height:unset;padding:10px 14px"' : ""}>
-          ${headerBg}
-          ${headerNameDates}
-          <span style="flex:1"></span>
-          <button class="town-edit-btn icon-btn" data-town-id="${escapeHtml(town.id)}" title="Edit city" style="padding:4px;opacity:0.55;margin-right:2px">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="15" height="15"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          </button>
-          <button class="town-add-btn" data-town-id="${escapeHtml(town.id)}">+ Add</button>
-        </div>
+        ${!showPhoto ? `<div class="town-group-header">
+          <span class="town-group-dot"></span>
+          <span class="town-group-name">${escapeHtml(town.name)}</span>
+          <span class="town-group-dates">${fmtSpreadDates(town.arrivalDate, town.departureDate)} &middot; ${nights}n</span>
+          ${editBtn}${addBtn}
+        </div>` : ""}
         ${renderAccomCard(town)}
         ${days.map(dk => {
           const daySpots = byDate[dk] || [];
@@ -3473,6 +3480,44 @@ function renderItinerary() {
       }
     }));
   }
+
+  // Async: fetch missing Wikipedia images (same as overview — needed when itinerary is loaded first)
+  state.towns.forEach(async (t) => {
+    if (t.customImage || t.hidePhoto) return;
+    if (!t.wikipediaArticle || imgCache[t.wikipediaArticle]) return;
+    const url = await fetchWikipediaImage(t.wikipediaArticle);
+    if (!url) return;
+    imgCache[t.wikipediaArticle] = url;
+    saveImgCache(imgCache);
+    // Re-render only the banner for this town to avoid full re-render loop
+    const townEl = container.querySelector(`#itinerary-town-${CSS.escape(t.id)}`);
+    if (!townEl || townEl.querySelector(".town-photo-banner img")) return;
+    const banner = document.createElement("div");
+    banner.className = "town-photo-banner";
+    banner.innerHTML = `<img src="${escapeHtml(url)}" alt="${escapeHtml(t.name)}" loading="lazy" onerror="this.closest('.town-photo-banner').style.display='none'">
+      <div class="town-photo-banner-overlay">
+        <div style="position:absolute;top:10px;right:10px;display:flex;gap:6px;z-index:2">
+          <button class="town-edit-btn icon-btn" data-town-id="${escapeHtml(t.id)}" title="Edit city"
+            style="padding:5px;background:rgba(0,0,0,0.38);border:1px solid rgba(255,255,255,0.18);border-radius:8px;color:#fff;backdrop-filter:blur(6px)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="14" height="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          <button class="town-add-btn" data-town-id="${escapeHtml(t.id)}"
+            style="background:rgba(0,0,0,0.38);border:1px solid rgba(255,255,255,0.18);color:#fff;backdrop-filter:blur(6px);margin-left:0">+ Add</button>
+        </div>
+        <span class="town-photo-banner-name">${escapeHtml(t.name)}</span>
+        <span class="town-photo-banner-dates">${fmtSpreadDates(t.arrivalDate, t.departureDate)} &middot; ${nightsBetween(t.arrivalDate, t.departureDate)}n</span>
+      </div>`;
+    // Wire up the injected buttons
+    banner.querySelector(".town-edit-btn")?.addEventListener("click", () => {
+      const town = state.towns.find(x => x.id === t.id);
+      if (town) openTownEditModal(town);
+    });
+    banner.querySelector(".town-add-btn")?.addEventListener("click", () => openModal(null, { townId: t.id }));
+    // Replace the old text-only header with banner + slim header, or just prepend
+    const oldHeader = townEl.querySelector(".town-group-header");
+    townEl.insertBefore(banner, townEl.firstChild);
+    if (oldHeader) oldHeader.remove();
+  });
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -4375,13 +4420,16 @@ function renderDocuments() {
    TOWN EDIT
    ───────────────────────────────────────────────────────────── */
 let editingTownId = null;
+let townHidePhotoState = false;
 
 function openTownEditModal(town = null) {
   editingTownId = town ? town.id : null;
+  townHidePhotoState = town?.hidePhoto ?? false;
   document.getElementById("town-edit-modal-title").textContent = town ? "Edit city" : "New city";
   document.getElementById("town-edit-name").value      = town?.name || "";
   document.getElementById("town-edit-arrival").value   = town?.arrivalDate || "";
   document.getElementById("town-edit-departure").value = town?.departureDate || "";
+  document.getElementById("town-hide-photo-switch").classList.toggle("on", townHidePhotoState);
   document.getElementById("town-edit-delete-btn").style.display = town ? "" : "none";
   document.getElementById("town-edit-overlay").classList.add("visible");
   document.getElementById("town-edit-name").focus();
@@ -4416,7 +4464,7 @@ async function saveTownEdit() {
   saveBtn.disabled = true;
   try {
     if (editingTownId) {
-      await updateDoc(doc(db, "trips", TRIP_ID, "towns", editingTownId), { name, arrivalDate, departureDate });
+      await updateDoc(doc(db, "trips", TRIP_ID, "towns", editingTownId), { name, arrivalDate, departureDate, hidePhoto: townHidePhotoState });
       await reorderTownsByDate();
     } else {
       // Generate a unique ID from name; avoid collisions with existing towns
@@ -4463,6 +4511,10 @@ async function deleteTownEdit() {
 document.getElementById("town-edit-close-btn").addEventListener("click", closeTownEditModal);
 document.getElementById("town-edit-cancel-btn").addEventListener("click", closeTownEditModal);
 document.getElementById("town-edit-save-btn").addEventListener("click", saveTownEdit);
+document.getElementById("town-hide-photo-toggle").addEventListener("click", () => {
+  townHidePhotoState = !townHidePhotoState;
+  document.getElementById("town-hide-photo-switch").classList.toggle("on", townHidePhotoState);
+});
 document.getElementById("town-edit-delete-btn").addEventListener("click", deleteTownEdit);
 document.getElementById("town-edit-overlay").addEventListener("click", e => {
   if (e.target === document.getElementById("town-edit-overlay")) closeTownEditModal();
