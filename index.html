@@ -2483,8 +2483,8 @@ const FIREBASE_VERSION = "10.13.2";
 const FIREBASE_BASE = `https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}`;
 
 let initializeApp, getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, signInAnonymously;
-let getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs;
-let enableIndexedDbPersistence, onSnapshot, writeBatch, serverTimestamp;
+let initializeFirestore, persistentLocalCache, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs;
+let onSnapshot, writeBatch, serverTimestamp;
 
 /* ─────────────────────────────────────────────────────────────
    FIREBASE CONFIG
@@ -2699,23 +2699,13 @@ async function initFirebase() {
   ({ getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, signInAnonymously } = authMod);
 
   const fsMod = await import(`${FIREBASE_BASE}/firebase-firestore.js`);
-  ({ getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs,
-     enableIndexedDbPersistence, onSnapshot, writeBatch, serverTimestamp } = fsMod);
+  ({ initializeFirestore, persistentLocalCache, doc, getDoc, setDoc, updateDoc, deleteDoc,
+     collection, getDocs, onSnapshot, writeBatch, serverTimestamp } = fsMod);
 
   app = initializeApp(FIREBASE_CONFIG);
   auth = getAuth(app);
-  db = getFirestore(app);
-
-  // Enable offline persistence for Firestore (best effort — safe to fail)
-  try {
-    await enableIndexedDbPersistence(db);
-  } catch (err) {
-    if (err.code === "failed-precondition") {
-      console.warn("Offline persistence: multiple tabs open, only one will be persistent.");
-    } else if (err.code === "unimplemented") {
-      console.warn("Offline persistence: browser does not support this feature.");
-    }
-  }
+  // persistentLocalCache replaces the deprecated enableIndexedDbPersistence()
+  db = initializeFirestore(app, { localCache: persistentLocalCache() });
 }
 
 /* ─────────────────────────────────────────────────────────────
