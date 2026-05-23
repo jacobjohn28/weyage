@@ -4851,7 +4851,19 @@ function buildRecommendationContext(townId, date) {
 }
 
 async function callGeminiRecommendations(ctx) {
-  const prompt = `You are a knowledgeable, opinionated travel companion helping plan a trip to ${ctx.town}, ${ctx.country}. Your philosophy:
+  const constraintHeader = ctx.userPrompt ? `\
+=== MANDATORY TRAVELLER REQUIREMENT ===
+"${ctx.userPrompt}"
+Every single suggestion MUST directly satisfy this requirement. Discard any spot that does not clearly and specifically address it — do not include it as a filler or secondary option. This requirement overrides all other preferences.
+=======================================
+
+` : "";
+
+  const constraintReminder = ctx.userPrompt
+    ? `\nCritical: filter every suggestion against the traveller's requirement: "${ctx.userPrompt}". Only include spots that genuinely satisfy it.`
+    : "";
+
+  const prompt = `${constraintHeader}You are a knowledgeable, opinionated travel companion helping plan a trip to ${ctx.town}, ${ctx.country}. Your philosophy:
 - Quality over quantity: suggest 3–4 genuinely excellent options, never a generic list
 - Local rhythm: match the energy of the day (${ctx.energyLevel})
 - Logistics-first: suggest places that flow naturally from what's already planned
@@ -4862,7 +4874,7 @@ Day context: Trip day ${ctx.tripDay}. Day ${ctx.townDay} of ${ctx.totalTownDays}
 Already planned today: ${ctx.dayPlanSummary}.
 ${ctx.lastSpotName ? `Last stop: ${ctx.lastSpotName}${ctx.lastSpotNeighborhood ? ` in ${ctx.lastSpotNeighborhood}` : ""}.` : ""}
 Already in itinerary for ${ctx.town}: ${ctx.alreadyPlanned.length > 0 ? ctx.alreadyPlanned.join(", ") : "nothing yet"}.
-
+${constraintReminder}
 Suggest spots that are NOT already in the itinerary. Focus on what genuinely fits this day's energy and flow.
 
 Respond ONLY with valid JSON — no markdown fences, no prose before or after. Use this exact structure:
@@ -4883,13 +4895,13 @@ Respond ONLY with valid JSON — no markdown fences, no prose before or after. U
   ]
 }`;
 
-  const fullPrompt = ctx.userPrompt
-    ? prompt + `\n\nSpecific request from the traveller: ${ctx.userPrompt}`
-    : prompt;
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_CONFIG.model}:generateContent?key=${GEMINI_CONFIG.apiKey}`;
   const body = {
-    contents: [{ role: "user", parts: [{ text: fullPrompt }] }],
-    generation_config: { temperature: 0.8, response_mime_type: "application/json" },
+    contents: [{ role: "user", parts: [{ text: prompt }] }],
+    generation_config: {
+      temperature: ctx.userPrompt ? 0.5 : 0.8,
+      response_mime_type: "application/json",
+    },
   };
 
   const res = await fetch(url, {
