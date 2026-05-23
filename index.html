@@ -1117,6 +1117,31 @@
   }
   .ai-reco-add-btn:hover { opacity: 0.85; }
   .ai-reco-add-btn:disabled { opacity: 0.4; cursor: default; }
+  .ai-key-form {
+    display: flex; flex-direction: column; gap: 12px;
+    padding: 8px 0;
+  }
+  .ai-key-form p {
+    font-size: 0.8125rem; color: var(--text-2); line-height: 1.6; margin: 0;
+  }
+  .ai-key-form a { color: var(--accent); }
+  .ai-key-input {
+    width: 100%; box-sizing: border-box;
+    padding: 10px 12px; font-size: 0.875rem;
+    border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface-2); color: var(--text-1);
+    font-family: monospace;
+  }
+  .ai-key-input:focus { outline: none; border-color: var(--accent); }
+  .ai-key-save-btn {
+    align-self: flex-start;
+    background: var(--accent); color: #fff;
+    border: none; border-radius: 8px;
+    padding: 9px 18px; font-size: 0.875rem; font-weight: 600;
+    cursor: pointer; transition: opacity 0.15s;
+  }
+  .ai-key-save-btn:hover { opacity: 0.85; }
+  .ai-key-save-btn:disabled { opacity: 0.4; cursor: default; }
   @media (max-width: 600px) {
     .ai-panel { width: 100vw; border-left: none; }
   }
@@ -2258,6 +2283,9 @@
     <div class="ai-panel-header">
       <span style="font-size:1.1rem">✨</span>
       <span class="ai-panel-title" id="ai-panel-title">AI Suggestions</span>
+      <button class="ai-panel-close" id="ai-panel-key-btn" title="Change API key" style="margin-right:2px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
       <button class="ai-panel-close" id="ai-panel-close-btn" title="Close">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M18 6L6 18M6 6l12 12"/></svg>
       </button>
@@ -2313,7 +2341,7 @@ const FIREBASE_CONFIG = {
    GEMINI CONFIG
    ───────────────────────────────────────────────────────────── */
 const GEMINI_CONFIG = {
-  apiKey: "AIzaSyBzip2Ljx7R-7nvRLfh_PBck_GG1OBPSLg",
+  apiKey: "",
   model: "gemini-2.0-flash-lite",
 };
 
@@ -2640,7 +2668,11 @@ async function seedTripIfNeeded() {
 function listenToTrip() {
   // Trip document — watch metadata for pending-writes sync indicator
   onSnapshot(doc(db, "trips", TRIP_ID), { includeMetadataChanges: true }, (snap) => {
-    if (snap.exists()) setState({ trip: { id: snap.id, ...snap.data() } });
+    if (snap.exists()) {
+      const data = snap.data();
+      setState({ trip: { id: snap.id, ...data } });
+      if (data.geminiApiKey) GEMINI_CONFIG.apiKey = data.geminiApiKey;
+    }
     const el = document.getElementById("status-indicator");
     if (el) {
       if (snap.metadata.hasPendingWrites) {
@@ -4462,29 +4494,46 @@ function renderRecommendationCards(result, townId, date) {
   });
 }
 
-async function openRecommendationsPanel(townId, date) {
-  const town = state.towns.find(t => t.id === townId);
-  if (!town) return;
-
-  const overlay = document.getElementById("ai-panel-overlay");
-  const title = document.getElementById("ai-panel-title");
+function showKeyEntryForm(onSave) {
   const body = document.getElementById("ai-panel-body");
   const contextEl = document.getElementById("ai-panel-context");
+  contextEl.style.display = "none";
+  body.innerHTML = `
+    <div class="ai-key-form">
+      <p>To use AI suggestions, paste your <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio API key</a> below. It will be saved to your trip and never stored in the source code.</p>
+      <input class="ai-key-input" id="ai-key-input" type="password" placeholder="AIza…" autocomplete="off" spellcheck="false">
+      <button class="ai-key-save-btn" id="ai-key-save-btn">Save &amp; get suggestions</button>
+    </div>`;
 
-  const dateLabel = new Date(date + "T00:00:00")
-    .toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
-  title.textContent = `${town.name} · ${dateLabel}`;
+  const input = document.getElementById("ai-key-input");
+  const saveBtn = document.getElementById("ai-key-save-btn");
+
+  input.focus();
+  input.addEventListener("keydown", e => { if (e.key === "Enter") saveBtn.click(); });
+
+  saveBtn.addEventListener("click", async () => {
+    const key = input.value.trim();
+    if (!key) { input.focus(); return; }
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Saving…";
+    try {
+      await updateDoc(doc(db, "trips", TRIP_ID), { geminiApiKey: key });
+      GEMINI_CONFIG.apiKey = key;
+      onSave();
+    } catch (err) {
+      saveBtn.disabled = false;
+      saveBtn.textContent = "Save & get suggestions";
+      body.insertAdjacentHTML("beforeend", `<div class="ai-panel-error" style="margin-top:8px"><strong>Couldn't save key</strong>${escapeHtml(err.message)}</div>`);
+    }
+  });
+}
+
+async function fetchAndRenderRecommendations(townId, date) {
+  const body = document.getElementById("ai-panel-body");
+  const contextEl = document.getElementById("ai-panel-context");
   contextEl.style.display = "none";
   contextEl.textContent = "";
   body.innerHTML = `<div class="ai-panel-loading"><div class="ai-spinner"></div><span>Thinking about your day…</span></div>`;
-
-  overlay.classList.add("visible");
-
-  if (GEMINI_CONFIG.apiKey === "REPLACE_ME_GEMINI_KEY") {
-    body.innerHTML = `<div class="ai-panel-error"><strong>API key not set</strong>Add your Gemini API key to GEMINI_CONFIG in the source to use AI recommendations.</div>`;
-    return;
-  }
-
   try {
     const ctx = buildRecommendationContext(townId, date);
     const result = await callGeminiRecommendations(ctx);
@@ -4495,6 +4544,25 @@ async function openRecommendationsPanel(townId, date) {
   }
 }
 
+async function openRecommendationsPanel(townId, date) {
+  const town = state.towns.find(t => t.id === townId);
+  if (!town) return;
+
+  const overlay = document.getElementById("ai-panel-overlay");
+  const title = document.getElementById("ai-panel-title");
+  const dateLabel = new Date(date + "T00:00:00")
+    .toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+  title.textContent = `${town.name} · ${dateLabel}`;
+
+  overlay.classList.add("visible");
+
+  if (!GEMINI_CONFIG.apiKey) {
+    showKeyEntryForm(() => fetchAndRenderRecommendations(townId, date));
+  } else {
+    await fetchAndRenderRecommendations(townId, date);
+  }
+}
+
 function closeRecommendationsPanel() {
   document.getElementById("ai-panel-overlay").classList.remove("visible");
 }
@@ -4502,6 +4570,19 @@ function closeRecommendationsPanel() {
 // Panel close wiring
 document.getElementById("ai-panel-close-btn").addEventListener("click", closeRecommendationsPanel);
 document.getElementById("ai-panel-backdrop").addEventListener("click", closeRecommendationsPanel);
+document.getElementById("ai-panel-key-btn").addEventListener("click", () => {
+  showKeyEntryForm(() => {
+    const overlay = document.getElementById("ai-panel-overlay");
+    if (overlay.classList.contains("visible")) {
+      const title = document.getElementById("ai-panel-title");
+      // Re-fetch for whatever day/town is currently open
+      const [townName, ...dateParts] = title.textContent.split(" · ");
+      const town = state.towns.find(t => t.name === townName);
+      // Just close — user can re-open the ✨ button to fetch fresh
+      closeRecommendationsPanel();
+    }
+  });
+});
 document.addEventListener("keydown", e => {
   if (e.key === "Escape" && document.getElementById("ai-panel-overlay").classList.contains("visible")) {
     closeRecommendationsPanel();
