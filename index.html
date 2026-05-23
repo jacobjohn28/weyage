@@ -2229,9 +2229,10 @@ function renderItinerary() {
     });
   });
 
-  // Sortable on each day list
+  // Sortable on each day list — grouped by town so spots can move between days
   if (typeof Sortable !== "undefined") {
     container.querySelectorAll(".spot-list").forEach(list => {
+      const townId = list.dataset.town;
       const inst = Sortable.create(list, {
         animation: 150,
         handle: ".spot-drag-handle",
@@ -2239,18 +2240,31 @@ function renderItinerary() {
         delayOnTouchOnly: true,
         ghostClass: "sortable-ghost",
         chosenClass: "sortable-chosen",
-        onEnd: async () => {
-          const cards = [...list.querySelectorAll(".spot-card")];
+        group: townId, // shared group per town — enables cross-day dragging
+        onEnd: async (evt) => {
           const batch = writeBatch(db);
-          let changed = false;
-          cards.forEach((card, idx) => {
-            const spot = state.spots.find(s => s.id === card.dataset.spotId);
-            if (spot && spot.order !== idx) {
-              batch.update(spotDocRef(spot.id), { order: idx });
-              changed = true;
+          const spotId = evt.item.dataset.spotId;
+          const spot = state.spots.find(s => s.id === spotId);
+          const newDateKey = evt.to.dataset.date;
+
+          // Update scheduledDate if the spot moved to a different day bucket
+          if (spot) {
+            const oldDateKey = spot.scheduledDate || "unscheduled";
+            if (newDateKey !== oldDateKey) {
+              batch.update(spotDocRef(spotId), {
+                scheduledDate: newDateKey === "unscheduled" ? null : newDateKey,
+              });
             }
-          });
-          if (changed) await batch.commit().catch(e => console.error("Reorder failed:", e));
+          }
+
+          // Re-index order in both the source and destination lists
+          for (const l of new Set([evt.from, evt.to])) {
+            [...l.querySelectorAll(".spot-card")].forEach((card, idx) => {
+              batch.update(spotDocRef(card.dataset.spotId), { order: idx });
+            });
+          }
+
+          await batch.commit().catch(e => console.error("Reorder failed:", e));
         },
       });
       sortableInstances.push(inst);
