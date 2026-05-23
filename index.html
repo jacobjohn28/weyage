@@ -4260,7 +4260,11 @@ async function reorderTownsByDate(extraTown = null) {
   const all = extraTown
     ? [...state.towns.filter(t => t.id !== extraTown.id), extraTown]
     : [...state.towns];
-  all.sort((a, b) => (a.arrivalDate || "").localeCompare(b.arrivalDate || ""));
+  all.sort((a, b) => {
+    const arr = (a.arrivalDate || "").localeCompare(b.arrivalDate || "");
+    if (arr !== 0) return arr;
+    return (a.departureDate || "").localeCompare(b.departureDate || "");
+  });
   const batch = writeBatch(db);
   all.forEach((t, i) => batch.update(doc(db, "trips", TRIP_ID, "towns", t.id), { order: i + 1 }));
   await batch.commit();
