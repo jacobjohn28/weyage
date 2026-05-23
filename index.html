@@ -2907,6 +2907,23 @@ function renderSidebarTowns() {
 /* ─────────────────────────────────────────────────────────────
    IMAGE FETCHING — Wikipedia REST API + localStorage cache
    ───────────────────────────────────────────────────────────── */
+// Fixed city images — keyed by base city name (parenthetical suffixes stripped)
+const CITY_IMAGES = {
+  "Paris":           "https://commons.wikimedia.org/wiki/Special:FilePath/Paris_from_the_Arc_de_Triomphe,_17_October_2019.jpg",
+  "Annecy":          "https://commons.wikimedia.org/wiki/Special:FilePath/Annecy_vue_du_mont_Veyrier.jpg",
+  "Nice":            "https://commons.wikimedia.org/wiki/Special:FilePath/Nizza-C%C3%B4te_d%27Azur.jpg",
+  "Aix-en-Provence": "https://commons.wikimedia.org/wiki/Special:FilePath/Lavender_field_and_Mont_Ventoux.jpg",
+  "Fontainebleau":   "https://commons.wikimedia.org/wiki/Special:FilePath/Fontainebleau_-_Ch%C3%A2teau_-_Etang_aux_Carpes.jpg",
+};
+
+function resolveTownImage(town) {
+  if (town.customImage) return town.customImage;
+  const baseName = town.name.replace(/\s*\(.*\)$/, "").trim();
+  if (CITY_IMAGES[baseName]) return CITY_IMAGES[baseName];
+  if (town.image) return town.image;
+  return (town.wikipediaArticle && imgCache[town.wikipediaArticle]) || "";
+}
+
 const IMG_CACHE_KEY = "trip-wiki-img-cache";
 function loadImgCache() {
   try { return JSON.parse(localStorage.getItem(IMG_CACHE_KEY) || "{}"); }
@@ -2970,15 +2987,7 @@ function renderDashboardTowns() {
       .map(ty => `<span class="spread-count-pill">${counts[ty]} ${typeLabel[ty]}</span>`)
       .join("");
 
-    // Image URL priority: customImage > Wikipedia cache > nothing (async fills later)
-    let cachedUrl = "";
-    if (t.customImage) {
-      cachedUrl = t.customImage;
-    } else if (t.wikipediaArticle) {
-      cachedUrl = imgCache[t.wikipediaArticle] || "";
-    } else if (t.image) {
-      cachedUrl = t.image;
-    }
+    const cachedUrl = resolveTownImage(t);
 
     const imgTag = cachedUrl
       ? `<img class="spread-img" src="${escapeHtml(cachedUrl)}" alt="${name}" loading="lazy"
@@ -3308,8 +3317,7 @@ function renderItinerary() {
     const unscheduled = byDate["unscheduled"] || [];
 
     // Resolve town image
-    let townImgUrl = town.customImage || town.image || "";
-    if (!townImgUrl && town.wikipediaArticle) townImgUrl = imgCache[town.wikipediaArticle] || "";
+    const townImgUrl = resolveTownImage(town);
     const showPhoto = !!townImgUrl && !town.hidePhoto;
 
     const editBtn = `<button class="town-edit-btn icon-btn" data-town-id="${escapeHtml(town.id)}" title="Edit city" style="padding:4px;opacity:0.55;margin-right:2px">
