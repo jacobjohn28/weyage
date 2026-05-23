@@ -4442,7 +4442,17 @@ async function linkSpots(spotIdA, spotIdB) {
 }
 
 async function unlinkSpot(spotId) {
-  await updateDoc(doc(db, "trips", TRIP_ID, "spots", spotId), { groupId: null });
+  const spot = state.spots.find(s => s.id === spotId);
+  if (!spot?.groupId) return;
+  const groupMembers = state.spots.filter(s => s.groupId === spot.groupId);
+  const batch = writeBatch(db);
+  if (groupMembers.length <= 2) {
+    // Last link — clear groupId on both so neither appears linked
+    groupMembers.forEach(s => batch.update(doc(db, "trips", TRIP_ID, "spots", s.id), { groupId: null }));
+  } else {
+    batch.update(doc(db, "trips", TRIP_ID, "spots", spotId), { groupId: null });
+  }
+  await batch.commit();
 }
 
 /* ─────────────────────────────────────────────────────────────
