@@ -2076,6 +2076,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input type="search" id="guides-search" placeholder="Search guides…" autocomplete="off" spellcheck="false">
           </div>
+          <button id="guides-generate-all-btn" class="guide-generate-btn" style="display:none;white-space:nowrap;flex-shrink:0">✦ Generate all</button>
         </div>
         <div id="guides-content"></div>
       </section>
@@ -4797,6 +4798,26 @@ async function generateSpotGuide(spotId, spotData) {
   }
 }
 
+async function generateAllGuides() {
+  const btn = document.getElementById("guides-generate-all-btn");
+  const pending = state.spots.filter(s =>
+    s.type !== "transport" &&
+    (!s.guide || s.guide.status === "error" || s.guide.status === undefined)
+  );
+  if (!pending.length) return;
+
+  if (btn) { btn.disabled = true; btn.textContent = `Generating 0 / ${pending.length}…`; }
+
+  for (let i = 0; i < pending.length; i++) {
+    const spot = pending[i];
+    if (btn) btn.textContent = `Generating ${i + 1} / ${pending.length}…`;
+    await generateSpotGuide(spot.id, spot);
+    if (i < pending.length - 1) await new Promise(r => setTimeout(r, 1200));
+  }
+
+  if (btn) { btn.disabled = false; btn.style.display = "none"; }
+}
+
 function guideCardHTML(spot) {
   const color = TYPE_COLORS[spot.type] || "#888";
   const typeLabel = { sight: "Sight", restaurant: "Restaurant", cafe: "Café", experience: "Experience" }[spot.type] || spot.type;
@@ -4824,13 +4845,12 @@ function guideCardHTML(spot) {
         <div class="guide-skeleton-line" style="width:74%"></div>
         <div class="guide-skeleton-line" style="width:60%"></div>
       </div>`;
-  } else if (hasGuide) {
-    stateHTML = `<div class="guide-card-overview clamped">${escapeHtml(content.overview || "")}</div>`;
   }
 
   let bodyHTML = "";
   if (hasGuide) {
     const sections = [
+      { key: "overview",      label: "Overview",           list: false },
       { key: "history",       label: "History",            list: false },
       { key: "highlights",    label: "What to see & do",   list: true  },
       { key: "gettingThere",  label: "Getting there",      list: false },
@@ -4880,6 +4900,13 @@ function renderGuides() {
   const allSpots = state.spots.filter(s => s.type !== "transport");
   const spots = query ? allSpots.filter(s => s.name.toLowerCase().includes(query)) : allSpots;
 
+  const needsGuide = allSpots.filter(s => !s.guide || s.guide.status === "error" || s.guide.status === undefined);
+  const genAllBtn = document.getElementById("guides-generate-all-btn");
+  if (genAllBtn && !genAllBtn.disabled) {
+    genAllBtn.style.display = needsGuide.length ? "" : "none";
+    genAllBtn.textContent = `✦ Generate all (${needsGuide.length})`;
+  }
+
   if (allSpots.length === 0) {
     container.innerHTML = `
       <div class="itinerary-empty">
@@ -4909,10 +4936,7 @@ function renderGuides() {
 
   container.querySelectorAll(".guide-card-header:not(.no-guide)").forEach(header => {
     header.addEventListener("click", () => {
-      const card = header.closest(".guide-card");
-      card.classList.toggle("expanded");
-      const overview = card.querySelector(".guide-card-overview");
-      if (overview) overview.classList.toggle("clamped", !card.classList.contains("expanded"));
+      header.closest(".guide-card").classList.toggle("expanded");
     });
   });
 
@@ -5413,8 +5437,9 @@ document.addEventListener("keydown", e => {
   }
 });
 
-// Guides search
+// Guides search + generate all
 document.getElementById("guides-search")?.addEventListener("input", () => renderGuides());
+document.getElementById("guides-generate-all-btn")?.addEventListener("click", () => generateAllGuides());
 
 // Share button wiring
 ["sidebar-share-btn", "sheet-share-btn"].forEach(id => {
