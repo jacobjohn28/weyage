@@ -2476,12 +2476,15 @@
       </div>
 
     </div>
-    <div class="modal-footer">
-      <button class="btn-ghost" id="accom-modal-cancel-btn">Cancel</button>
-      <button class="btn-primary" id="accom-modal-save-btn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-        Save
-      </button>
+    <div class="modal-footer" style="flex-direction:column;align-items:stretch;gap:8px">
+      <div id="accom-save-error" style="display:none;font-size:0.8125rem;color:var(--accent);padding:6px 10px;background:rgba(194,85,61,0.08);border-radius:6px"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn-ghost" id="accom-modal-cancel-btn">Cancel</button>
+        <button class="btn-primary" id="accom-modal-save-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Save
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -3975,46 +3978,52 @@ function closeAccomModal() {
 
 async function saveAccommodation() {
   const name = document.getElementById("accom-name").value.trim();
-  if (!name || !accomTownId) return;
+  if (!name || !accomTownId) {
+    document.getElementById("accom-name").focus();
+    return;
+  }
 
   const data = {
     name,
-    address:      document.getElementById("accom-address").value.trim()       || null,
-    checkinDate:  document.getElementById("accom-checkin-date").value         || null,
-    checkoutDate: document.getElementById("accom-checkout-date").value        || null,
-    checkinTime:  document.getElementById("accom-checkin-time").value         || null,
-    checkoutTime: document.getElementById("accom-checkout-time").value        || null,
-    bookingRef:   document.getElementById("accom-booking-ref").value.trim()   || null,
-    price:        parseFloat(document.getElementById("accom-price").value)    || null,
-    priceCurrency: document.getElementById("accom-price-currency").value      || "EUR",
-    notes:        document.getElementById("accom-notes").value.trim()         || null,
-    booked:       accomBooked,
+    address:       document.getElementById("accom-address").value.trim()     || null,
+    checkinDate:   document.getElementById("accom-checkin-date").value       || null,
+    checkoutDate:  document.getElementById("accom-checkout-date").value      || null,
+    checkinTime:   document.getElementById("accom-checkin-time").value       || null,
+    checkoutTime:  document.getElementById("accom-checkout-time").value      || null,
+    bookingRef:    document.getElementById("accom-booking-ref").value.trim() || null,
+    price:         parseFloat(document.getElementById("accom-price").value)  || null,
+    priceCurrency: document.getElementById("accom-price-currency").value     || "EUR",
+    notes:         document.getElementById("accom-notes").value.trim()       || null,
+    booked:        accomBooked,
   };
 
   const btn = document.getElementById("accom-modal-save-btn");
+  const errEl = document.getElementById("accom-save-error");
+  errEl.style.display = "none";
   btn.disabled = true;
+  btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Saving…`;
+
   try {
     const townRef = doc(db, "trips", TRIP_ID, "towns", accomTownId);
     await updateDoc(townRef, { accommodation: data });
-
-    // Update local state
     setState({
       towns: state.towns.map(t => t.id === accomTownId ? { ...t, accommodation: data } : t)
     });
-    closeAccomModal();
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="15" height="15"><polyline points="20 6 9 17 4 12"/></svg> Saved`;
+    setTimeout(() => closeAccomModal(), 800);
   } catch (err) {
     console.error("saveAccommodation:", err);
-  } finally {
+    errEl.textContent = `Couldn't save — ${err.message || "check your connection and try again"}`;
+    errEl.style.display = "";
     btn.disabled = false;
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save`;
   }
 }
 
 // Accom modal events
 document.getElementById("accom-modal-close-btn").addEventListener("click", closeAccomModal);
 document.getElementById("accom-modal-cancel-btn").addEventListener("click", closeAccomModal);
-document.getElementById("accom-modal-overlay").addEventListener("click", e => {
-  if (e.target === document.getElementById("accom-modal-overlay")) closeAccomModal();
-});
+// Backdrop tap intentionally disabled on accom modal — too easy to lose data on mobile
 document.getElementById("accom-modal-save-btn").addEventListener("click", saveAccommodation);
 document.getElementById("accom-booked-toggle").addEventListener("click", () => {
   accomBooked = !accomBooked;
