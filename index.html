@@ -1727,41 +1727,63 @@
   .drawer-empty { color: var(--text-3); font-size: 0.9375rem; }
 
   /* Budget view */
+  .budget-currency-section {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); margin-bottom: 12px; overflow: hidden;
+  }
+  .budget-currency-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 16px; cursor: pointer; user-select: none;
+  }
+  .budget-currency-code {
+    font-size: 0.6875rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.14em; color: var(--accent); width: 36px; flex-shrink: 0;
+  }
+  .budget-currency-totals { flex: 1; min-width: 0; }
+  .budget-currency-paid {
+    font-family: var(--font-display); font-size: 1.375rem; font-weight: 500;
+    letter-spacing: -0.02em; line-height: 1.2;
+  }
+  .budget-currency-planned { font-size: 0.8125rem; color: var(--text-3); margin-top: 1px; }
+  .budget-currency-chevron {
+    color: var(--text-3); transition: transform 200ms var(--ease); flex-shrink: 0;
+  }
+  .budget-currency-section.expanded .budget-currency-chevron { transform: rotate(180deg); }
+  .budget-currency-body { display: none; border-top: 1px solid var(--border); padding: 16px; }
+  .budget-currency-section.expanded .budget-currency-body { display: block; }
   .budget-total-row {
-    display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;
-    margin-bottom: 12px;
+    display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 10px;
   }
   .budget-total-actual {
-    font-family: var(--font-display); font-size: 2rem; font-weight: 500; letter-spacing: -0.02em;
+    font-family: var(--font-display); font-size: 1.75rem; font-weight: 500; letter-spacing: -0.02em;
   }
-  .budget-total-planned { font-size: 1rem; color: var(--text-3); }
+  .budget-total-planned { font-size: 0.9375rem; color: var(--text-3); }
   .budget-progress-track {
     height: 6px; background: var(--surface-2); border-radius: 100px;
-    overflow: hidden; margin-bottom: 6px;
+    overflow: hidden; margin-bottom: 4px;
   }
   .budget-progress-fill {
     height: 100%; background: var(--accent); border-radius: 100px;
     transition: width 400ms var(--ease-out);
   }
-  .budget-progress-label { font-size: 0.8125rem; color: var(--text-3); }
+  .budget-progress-label { font-size: 0.8125rem; color: var(--text-3); margin-bottom: 16px; }
   .budget-target-row {
-    display: flex; align-items: center; gap: 12px;
-    padding: 14px 16px;
-    background: var(--surface-2); border: 1px solid var(--border);
-    border-radius: var(--radius); margin-bottom: 24px;
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px;
+  }
+  .budget-target-row .form-label { margin: 0; white-space: nowrap; font-size: 0.8125rem; }
+  .budget-charts-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px;
+  }
+  @media (max-width: 600px) { .budget-charts-row { grid-template-columns: 1fr; } }
+  .budget-chart-label {
+    font-size: 0.6875rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.12em; color: var(--text-3); margin-bottom: 8px;
   }
   .budget-section-title {
     font-size: 0.6875rem; font-weight: 600;
     text-transform: uppercase; letter-spacing: 0.12em;
-    color: var(--text-3); margin-bottom: 12px; margin-top: 28px;
+    color: var(--text-3); margin-bottom: 12px; margin-top: 24px;
   }
-  .budget-town-row {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 10px 0; border-bottom: 1px solid var(--border);
-    font-size: 0.9375rem;
-  }
-  .budget-town-row:last-child { border-bottom: none; }
-  .budget-town-amount { font-variant-numeric: tabular-nums; font-weight: 500; }
   .budget-unbooked-row {
     display: flex; align-items: center; gap: 10px;
     padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 0.875rem;
@@ -2094,19 +2116,7 @@
         <div class="section-header" style="margin-bottom:20px">
           <h1 class="section-title">Budget</h1>
         </div>
-        <div class="budget-target-row" id="budget-target-row">
-          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-            <label class="form-label" for="budget-target-input" style="margin:0;white-space:nowrap">Total budget (€)</label>
-            <input class="form-input" id="budget-target-input" type="number" min="0" step="100" placeholder="e.g. 3000" style="width:140px">
-            <button class="btn-primary" id="budget-target-save" style="padding:7px 14px;font-size:0.875rem">Set</button>
-          </div>
-        </div>
-        <div id="budget-summary-bar" style="margin-bottom:28px"></div>
-        <div style="max-width:480px;margin-bottom:32px">
-          <canvas id="budget-chart" height="200"></canvas>
-        </div>
-        <div id="budget-by-town" style="margin-bottom:28px"></div>
-        <div id="budget-unbooked"></div>
+        <div id="budget-content"></div>
       </section>
 
       <section class="view" id="view-documents">
@@ -4243,7 +4253,19 @@ document.getElementById("delete-spot-btn").addEventListener("click", async () =>
 /* ─────────────────────────────────────────────────────────────
    BUDGET (4b)
    ───────────────────────────────────────────────────────────── */
+const CATEGORY_COLORS = {
+  "Accommodation": "#6B7DB3",
+  "Transport":     "#8999C9",
+  "Food":          "#B36B6B",
+  "Experiences":   "#6BAA8D",
+  "Sights & Other":"#B39E6B",
+};
+
+const CITY_PALETTE = ["#6B7DB3","#6BAA8D","#B36B6B","#B39E6B","#8999C9","#9B8DB3","#6BB3B3","#B3836B"];
+
 function getBudgetCategory(spot) {
+  const validCats = ["Accommodation","Transport","Food","Experiences","Sights & Other"];
+  if (spot.category && validCats.includes(spot.category)) return spot.category;
   if (spot.type === "transport") return "Transport";
   if (spot.type === "restaurant" || spot.type === "cafe") return "Food";
   if (spot.type === "experience") return "Experiences";
@@ -4280,146 +4302,182 @@ function aggregateBudget() {
   return entries;
 }
 
-let budgetChartInstance = null;
+let budgetChartInstances = {};
 
 function renderBudget() {
   const entries = aggregateBudget();
   const fmt = n => n.toLocaleString("en-GB", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-  const totalBudget = state.trip?.totalBudget || 0;
+  const content = document.getElementById("budget-content");
+  if (!content) return;
 
-  // Group entries by currency
+  if (entries.length === 0) {
+    Object.values(budgetChartInstances).forEach(c => c.destroy());
+    budgetChartInstances = {};
+    content.innerHTML = `<p style="color:var(--text-3);font-size:0.9375rem;padding:8px 0">No prices added yet — edit any spot and enter a price to start tracking your budget.</p>`;
+    return;
+  }
+
+  // Group by currency; EUR first then alphabetical
   const byCurrency = {};
   entries.forEach(e => {
     if (!byCurrency[e.currency]) byCurrency[e.currency] = [];
     byCurrency[e.currency].push(e);
   });
-  const currencyList = Object.keys(byCurrency);
-
-  // Budget target input (EUR-denominated)
-  const targetInput = document.getElementById("budget-target-input");
-  if (targetInput && totalBudget) targetInput.value = totalBudget;
-  document.getElementById("budget-target-save")?.addEventListener("click", async () => {
-    const val = parseFloat(document.getElementById("budget-target-input").value) || null;
-    await updateDoc(doc(db, "trips", TRIP_ID), { totalBudget: val });
+  const currencyList = Object.keys(byCurrency).sort((a, b) => {
+    if (a === "EUR") return -1; if (b === "EUR") return 1;
+    return a.localeCompare(b);
   });
 
-  // Summary bar — one block per currency
-  const bar = document.getElementById("budget-summary-bar");
-  if (bar) {
-    if (entries.length === 0 && !totalBudget) {
-      bar.innerHTML = `<p style="color:var(--text-3);font-size:0.9375rem">No prices added yet — edit any spot and enter a price to start tracking your budget.</p>`;
-    } else {
-      const blocks = currencyList.map((cur, i) => {
-        const ces = byCurrency[cur];
-        const sym = currencySymbol(cur);
-        const totalActual  = ces.filter(e => !e.isEstimated).reduce((s, e) => s + e.amount, 0);
-        const totalPlanned = ces.reduce((s, e) => s + e.amount, 0);
-        const budget = cur === "EUR" ? totalBudget : 0;
-        const denominator = budget || totalPlanned;
-        const pctActual  = denominator > 0 ? Math.min(Math.round((totalActual  / denominator) * 100), 100) : 0;
-        const pctPlanned = denominator > 0 ? Math.min(Math.round((totalPlanned / denominator) * 100), 100) : 0;
-        const overBudget = budget && totalPlanned > budget;
-        return `
-          <div style="${i > 0 ? "margin-top:20px;padding-top:16px;border-top:1px solid var(--border)" : ""}">
-            ${currencyList.length > 1 ? `<div class="budget-section-title" style="margin-bottom:8px">${cur}</div>` : ""}
-            <div class="budget-total-row">
-              <span class="budget-total-actual">${sym}${fmt(totalActual)}</span>
-              <span class="budget-total-planned">paid · ${sym}${fmt(totalPlanned)} planned${budget ? ` · ${sym}${fmt(budget)} budget` : ""}</span>
-            </div>
-            <div class="budget-progress-track" title="Planned vs budget">
-              <div class="budget-progress-fill" style="width:${pctPlanned}%;opacity:0.35;background:var(--accent)"></div>
-            </div>
-            <div class="budget-progress-track" style="margin-top:4px" title="Paid vs budget">
-              <div class="budget-progress-fill" style="width:${pctActual}%;background:${overBudget ? "var(--danger)" : "var(--success)"}"></div>
-            </div>
-            <div class="budget-progress-label" style="color:${overBudget ? "var(--danger)" : "var(--text-3)"}">
-              ${budget
-                ? `${sym}${fmt(totalPlanned)} planned of ${sym}${fmt(budget)} budget (${pctPlanned}%)${overBudget ? " · over budget" : ""}`
-                : `${pctActual}% committed (actual paid)`}
-            </div>
-          </div>`;
-      });
-      bar.innerHTML = blocks.join("");
-    }
-  }
+  // Merge legacy totalBudget into budgetTargets
+  const budgetTargets = { ...(state.trip?.budgetTargets || {}) };
+  if (state.trip?.totalBudget && !budgetTargets.EUR) budgetTargets.EUR = state.trip.totalBudget;
 
-  // Chart by category — use primary currency (EUR first, else first available)
-  const chartCur = currencyList.includes("EUR") ? "EUR" : (currencyList[0] || "EUR");
-  const chartEntries = byCurrency[chartCur] || [];
-  const chartSym = currencySymbol(chartCur);
-  const categories = {};
-  chartEntries.forEach(e => {
-    categories[e.category] = (categories[e.category] || 0) + e.amount;
-  });
-  const catNames  = Object.keys(categories).sort((a, b) => categories[b] - categories[a]);
-  const catValues = catNames.map(k => categories[k]);
-  const catColors = catNames.map(c => ({
-    "Accommodation": "#6B7DB3",
-    "Transport": "#8999C9",
-    "Food": "#B36B6B",
-    "Experiences": "#6BAA8D",
-    "Sights & Other": "#B39E6B",
-  }[c] || "#888"));
+  // Destroy stale chart instances before rebuilding DOM
+  Object.values(budgetChartInstances).forEach(c => c.destroy());
+  budgetChartInstances = {};
 
-  if (typeof Chart !== "undefined" && catNames.length > 0) {
-    const ctx = document.getElementById("budget-chart");
-    if (ctx) {
-      if (budgetChartInstance) budgetChartInstance.destroy();
-      budgetChartInstance = new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels: catNames,
-          datasets: [{ data: catValues, backgroundColor: catColors, borderRadius: 6, borderSkipped: false }],
-        },
-        options: {
-          indexAxis: "y",
-          responsive: true,
-          plugins: {
-            legend: { display: false },
-            tooltip: { callbacks: { label: ctx => ` ${chartSym}${fmt(ctx.raw)}` } },
-          },
-          scales: {
-            x: { grid: { color: "rgba(128,128,128,0.1)" }, ticks: { callback: v => `${chartSym}${fmt(v)}`, color: "#888" } },
-            y: { grid: { display: false }, ticks: { color: "#888" } },
-          },
-        },
-      });
-    }
-  }
+  const sectionsHTML = currencyList.map(cur => {
+    const ces = byCurrency[cur];
+    const sym = currencySymbol(cur);
+    const totalActual  = ces.filter(e => !e.isEstimated).reduce((s, e) => s + e.amount, 0);
+    const totalPlanned = ces.reduce((s, e) => s + e.amount, 0);
+    const budget = budgetTargets[cur] || 0;
+    const denominator = budget || totalPlanned;
+    const pctActual  = denominator > 0 ? Math.min(Math.round((totalActual  / denominator) * 100), 100) : 0;
+    const pctPlanned = denominator > 0 ? Math.min(Math.round((totalPlanned / denominator) * 100), 100) : 0;
+    const overBudget = budget && totalPlanned > budget;
+    const remaining  = budget ? budget - totalPlanned : null;
 
-  // By town — per-currency amounts
-  const byTownCur = {};
-  entries.forEach(e => {
-    if (!byTownCur[e.townId]) byTownCur[e.townId] = {};
-    byTownCur[e.townId][e.currency] = (byTownCur[e.townId][e.currency] || 0) + e.amount;
-  });
-  const byTownEl = document.getElementById("budget-by-town");
-  if (byTownEl) {
-    const rows = state.towns
-      .filter(t => byTownCur[t.id])
-      .map(t => {
-        const amountStr = Object.entries(byTownCur[t.id])
-          .map(([cur, amt]) => `${currencySymbol(cur)}${fmt(amt)}`).join(" · ");
-        return `<div class="budget-town-row">
-          <span>${escapeHtml(t.name)}</span>
-          <span class="budget-town-amount">${amountStr}</span>
-        </div>`;
-      }).join("");
-    byTownEl.innerHTML = rows ? `<div class="budget-section-title">By city</div>${rows}` : "";
-  }
+    return `
+      <div class="budget-currency-section expanded" data-currency="${escapeHtml(cur)}">
+        <div class="budget-currency-header">
+          <div class="budget-currency-code">${escapeHtml(cur)}</div>
+          <div class="budget-currency-totals">
+            <div class="budget-currency-paid">${sym}${fmt(totalActual)}</div>
+            <div class="budget-currency-planned">${sym}${fmt(totalPlanned)} planned${budget ? ` · ${sym}${fmt(budget)} budget` : ""}</div>
+          </div>
+          <svg class="budget-currency-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polyline points="18 15 12 9 6 15"/></svg>
+        </div>
+        <div class="budget-currency-body">
+          <div class="budget-total-row">
+            <span class="budget-total-actual">${sym}${fmt(totalActual)}</span>
+            <span class="budget-total-planned">paid · ${sym}${fmt(totalPlanned)} planned${budget ? ` · ${sym}${fmt(budget)} budget` : ""}</span>
+          </div>
+          <div class="budget-progress-track" title="Planned vs budget">
+            <div class="budget-progress-fill" style="width:${pctPlanned}%;opacity:0.35;background:var(--accent)"></div>
+          </div>
+          <div class="budget-progress-track" style="margin-top:4px" title="Paid vs budget">
+            <div class="budget-progress-fill" style="width:${pctActual}%;background:${overBudget ? "var(--danger)" : "var(--success)"}"></div>
+          </div>
+          <div class="budget-progress-label" style="color:${overBudget ? "var(--danger)" : "var(--text-3)"}">
+            ${budget
+              ? `${sym}${fmt(totalPlanned)} of ${sym}${fmt(budget)} (${pctPlanned}%) · ${remaining >= 0 ? sym+fmt(remaining)+" remaining" : sym+fmt(-remaining)+" over budget"}`
+              : `${sym}${fmt(totalActual)} paid · ${sym}${fmt(totalPlanned)} total planned`}
+          </div>
+          <div class="budget-target-row">
+            <label class="form-label">Budget target (${escapeHtml(cur)})</label>
+            <input class="form-input" id="budget-target-${escapeHtml(cur)}" type="number" min="0" step="100"
+              placeholder="${cur === "EUR" ? "e.g. 3000" : "e.g. 500"}" value="${budget || ""}" style="width:120px">
+            <button class="btn-ghost" data-budget-save="${escapeHtml(cur)}" style="padding:6px 12px;font-size:0.8125rem">Set</button>
+          </div>
+          <div class="budget-charts-row">
+            <div class="budget-chart-block">
+              <div class="budget-chart-label">By city</div>
+              <canvas id="budget-chart-${escapeHtml(cur)}-city"></canvas>
+            </div>
+            <div class="budget-chart-block">
+              <div class="budget-chart-label">By category</div>
+              <canvas id="budget-chart-${escapeHtml(cur)}-cat"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }).join("");
 
-  // Estimated / not yet paid
-  const unbookedEl = document.getElementById("budget-unbooked");
-  if (unbookedEl) {
-    const unbooked = entries.filter(e => e.isEstimated);
-    const rows = unbooked.map(e => `
+  const unbooked = entries.filter(e => e.isEstimated);
+  const unbookedHTML = unbooked.length > 0 ? `
+    <div class="budget-section-title" style="margin-top:24px">Estimated / not yet paid</div>
+    ${unbooked.map(e => `
       <div class="budget-unbooked-row">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="14" height="14" style="flex-shrink:0;color:var(--text-3)"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         <span class="budget-unbooked-name">${escapeHtml(e.name)}</span>
         <span class="budget-unbooked-amount">~${currencySymbol(e.currency)}${fmt(e.amount)}</span>
-      </div>`).join("");
-    unbookedEl.innerHTML = rows ? `<div class="budget-section-title">Estimated / not yet paid</div>${rows}` : "";
-  }
+      </div>`).join("")}` : "";
+
+  content.innerHTML = sectionsHTML + unbookedHTML;
+
+  // Collapse toggle
+  content.querySelectorAll(".budget-currency-header").forEach(header => {
+    header.addEventListener("click", () => {
+      header.closest(".budget-currency-section").classList.toggle("expanded");
+    });
+  });
+
+  // Budget target save
+  content.querySelectorAll("[data-budget-save]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const cur = btn.dataset.budgetSave;
+      const val = parseFloat(document.getElementById(`budget-target-${cur}`)?.value) || null;
+      const targets = { ...(state.trip?.budgetTargets || {}) };
+      if (val) targets[cur] = val; else delete targets[cur];
+      await updateDoc(doc(db, "trips", TRIP_ID), { budgetTargets: targets });
+    });
+  });
+
+  // Draw charts after DOM is painted
+  requestAnimationFrame(() => renderBudgetCharts(byCurrency, fmt));
+}
+
+function renderBudgetCharts(byCurrency, fmt) {
+  if (typeof Chart === "undefined") return;
+  Object.entries(byCurrency).forEach(([cur, ces]) => {
+    const sym = currencySymbol(cur);
+    const baseOpts = {
+      indexAxis: "y",
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ` ${sym}${fmt(ctx.raw)}` } },
+      },
+      scales: {
+        x: { grid: { color: "rgba(128,128,128,0.1)" }, ticks: { callback: v => `${sym}${fmt(v)}`, color: "#888", font: { size: 11 } } },
+        y: { grid: { display: false }, ticks: { color: "#888", font: { size: 11 } } },
+      },
+    };
+
+    // By city
+    const cityCtx = document.getElementById(`budget-chart-${cur}-city`);
+    if (cityCtx) {
+      const byCity = {};
+      ces.forEach(e => {
+        const name = state.towns.find(t => t.id === e.townId)?.name || "Other";
+        byCity[name] = (byCity[name] || 0) + e.amount;
+      });
+      const labels = Object.keys(byCity).sort((a, b) => byCity[b] - byCity[a]);
+      const data   = labels.map(k => byCity[k]);
+      const colors = labels.map((_, i) => CITY_PALETTE[i % CITY_PALETTE.length]);
+      budgetChartInstances[`${cur}-city`] = new Chart(cityCtx, {
+        type: "bar",
+        data: { labels, datasets: [{ data, backgroundColor: colors, borderRadius: 4, borderSkipped: false }] },
+        options: baseOpts,
+      });
+    }
+
+    // By category
+    const catCtx = document.getElementById(`budget-chart-${cur}-cat`);
+    if (catCtx) {
+      const byCat = {};
+      ces.forEach(e => { byCat[e.category] = (byCat[e.category] || 0) + e.amount; });
+      const labels = Object.keys(byCat).sort((a, b) => byCat[b] - byCat[a]);
+      const data   = labels.map(k => byCat[k]);
+      const colors = labels.map(c => CATEGORY_COLORS[c] || "#888");
+      budgetChartInstances[`${cur}-cat`] = new Chart(catCtx, {
+        type: "bar",
+        data: { labels, datasets: [{ data, backgroundColor: colors, borderRadius: 4, borderSkipped: false }] },
+        options: baseOpts,
+      });
+    }
+  });
 }
 
 /* ─────────────────────────────────────────────────────────────
