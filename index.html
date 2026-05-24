@@ -1327,6 +1327,7 @@
   body.share-mode .add-accom-link,
   body.share-mode .day-empty .add-spot-inline { display: none !important; }
   body.share-mode .spot-drag-handle { display: none !important; }
+  body.share-mode .spot-guide-link { display: none !important; }
   body.share-mode .accom-card { pointer-events: none; }
   body.share-mode #drawer-edit-btn,
   body.share-mode #drawer-delete-btn,
@@ -1942,7 +1943,7 @@
 
   <!-- Share banner — visible only in share-mode -->
   <div class="share-banner" id="share-banner">
-    <span class="share-banner-trip" id="share-banner-trip">France · May–June 2026</span>
+    <span class="share-banner-trip" id="share-banner-trip">France Trip | May 28 – Jun 14</span>
     <span class="share-banner-badge">View only</span>
   </div>
 
@@ -3492,7 +3493,7 @@ function renderItinerary() {
               }
             </div>`;
         }).join("")}
-        <div class="day-group">
+        ${state.shareMode ? "" : `<div class="day-group">
           <div class="day-header">
             <span class="day-label" style="color:var(--text-3);font-style:italic;font-family:var(--font-display)">Wishlist</span>
             <div class="day-rule"></div>
@@ -3501,7 +3502,7 @@ function renderItinerary() {
             ${unscheduled.map(s => spotCardHTML(s)).join("")}
           </div>
           <button class="add-spot-inline" data-town-id="${escapeHtml(town.id)}" data-date="" style="margin-top:5px">+ Add to wishlist</button>
-        </div>
+        </div>`}
       </div>`);
   }
 
@@ -5012,11 +5013,12 @@ async function initSharedView(token) {
     }
 
     // Valid token — show app
-    const tripName = state.trip.name || "Trip";
-    const dates = state.trip.startDate && state.trip.endDate
-      ? ` · ${fmtDateRange(state.trip.startDate, state.trip.endDate)}`
-      : "";
-    document.getElementById("share-banner-trip").textContent = tripName + dates;
+    const s = state.trip.startDate ? new Date(state.trip.startDate + "T00:00:00") : null;
+    const e = state.trip.endDate   ? new Date(state.trip.endDate   + "T00:00:00") : null;
+    const startStr = s ? s.toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "";
+    const endStr   = e ? e.toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "";
+    const dates = startStr && endStr ? ` | ${startStr} – ${endStr}` : "";
+    document.getElementById("share-banner-trip").textContent = (state.trip.name || "Trip") + dates;
     document.getElementById("boot-screen").classList.add("hidden");
     document.getElementById("app").classList.add("visible");
 
