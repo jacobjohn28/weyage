@@ -5018,7 +5018,7 @@ async function initSharedView(token) {
     const startStr = s ? s.toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "";
     const endStr   = e ? e.toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "";
     const dates = startStr && endStr ? ` | ${startStr} – ${endStr}` : "";
-    document.getElementById("share-banner-trip").textContent = (state.trip.name || "Trip") + dates;
+    document.getElementById("share-banner-trip").textContent = "France Trip" + dates;
     document.getElementById("boot-screen").classList.add("hidden");
     document.getElementById("app").classList.add("visible");
 
