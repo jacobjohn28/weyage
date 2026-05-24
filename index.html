@@ -1812,6 +1812,36 @@
   .drawer-empty { color: var(--text-3); font-size: 0.9375rem; }
 
   /* Budget view */
+  .budget-sgd-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 20px 22px; margin-bottom: 16px;
+  }
+  .budget-sgd-header {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 8px; margin-bottom: 14px;
+  }
+  .budget-sgd-label {
+    font-size: 0.6875rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.14em; color: var(--accent);
+  }
+  .budget-sgd-rates-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .budget-sgd-ts { font-size: 0.75rem; color: var(--text-3); }
+  .budget-sgd-refresh {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 0.75rem; padding: 4px 10px; border-radius: 6px;
+    background: none; border: 1px solid var(--border); cursor: pointer;
+    color: var(--text-2); transition: all 140ms var(--ease);
+  }
+  .budget-sgd-refresh:hover { border-color: var(--accent); color: var(--accent); }
+  .budget-sgd-refresh:disabled { opacity: 0.5; pointer-events: none; }
+  .budget-sgd-total {
+    font-family: var(--font-display); font-size: 2.5rem; font-weight: 500;
+    letter-spacing: -0.03em; line-height: 1;
+  }
+  .budget-sgd-breakdown {
+    font-size: 0.75rem; color: var(--text-3);
+    margin-top: 10px; display: flex; flex-wrap: wrap; gap: 4px 14px;
+  }
   .budget-currency-section {
     background: var(--surface); border: 1px solid var(--border);
     border-radius: var(--radius); margin-bottom: 12px; overflow: hidden;
@@ -4668,6 +4698,133 @@ function aggregateBudget() {
   return entries;
 }
 
+/* ── SGD conversion helpers ─────────────────────────────── */
+
+// rates are stored as "X units of foreign per 1 SGD" (from open.er-api.com/v6/latest/SGD)
+function toSGD(amount, currency) {
+  if (!currency || currency === "SGD") return amount;
+  const rates = state.trip?.exchangeRates;
+  if (!rates) return null;
+  const rate = rates[currency]; // how many units of `currency` per 1 SGD
+  if (!rate) return null;
+  return amount / rate;
+}
+
+async function fetchAndSaveRates(btn) {
+  if (btn) { btn.disabled = true; btn.textContent = "Fetching…"; }
+  try {
+    const res = await fetch("https://open.er-api.com/v6/latest/SGD");
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (data.result !== "success") throw new Error("API error");
+    // Store rates + timestamp
+    await updateDoc(doc(db, "trips", TRIP_ID), {
+      exchangeRates: data.rates,
+      exchangeRatesUpdatedAt: serverTimestamp(),
+    });
+    if (btn) { btn.textContent = "Updated ✓"; setTimeout(() => { if (btn) btn.textContent = "Refresh rates"; btn.disabled = false; }, 2000); }
+  } catch (err) {
+    console.error("Rate fetch failed:", err);
+    if (btn) { btn.textContent = "Failed — retry"; btn.disabled = false; }
+  }
+}
+
+function buildSgdSummaryHTML(entries, budgetTargets, fmt) {
+  const rates   = state.trip?.exchangeRates || null;
+  const sgdBudget = budgetTargets.SGD || 0;
+
+  // Aggregate per-currency paid + planned totals
+  const byCur = {};
+  entries.forEach(e => {
+    if (!byCur[e.currency]) byCur[e.currency] = { planned: 0, paid: 0 };
+    byCur[e.currency].planned += e.amount;
+    if (!e.isEstimated) byCur[e.currency].paid += e.amount;
+  });
+
+  let totalPaidSGD = 0, totalPlannedSGD = 0;
+  const breakdownParts = [];
+  const missingCurs = [];
+
+  for (const [cur, { planned, paid }] of Object.entries(byCur)) {
+    const sym = currencySymbol(cur);
+    if (cur === "SGD") {
+      totalPaidSGD    += paid;
+      totalPlannedSGD += planned;
+      breakdownParts.push(`S$${fmt(Math.round(planned))}`);
+    } else if (rates && rates[cur]) {
+      const rate       = rates[cur];              // units of cur per 1 SGD
+      const multiplier = 1 / rate;               // 1 cur = X SGD
+      const paidSGD    = paid    / rate;
+      const planSGD    = planned / rate;
+      totalPaidSGD    += paidSGD;
+      totalPlannedSGD += planSGD;
+      breakdownParts.push(`${sym}${fmt(Math.round(planned))} × ${multiplier.toFixed(3)} = S$${fmt(Math.round(planSGD))}`);
+    } else {
+      missingCurs.push(cur);
+    }
+  }
+
+  const hasFullRates = missingCurs.length === 0;
+  const denominator  = sgdBudget || totalPlannedSGD;
+  const pctPaid    = denominator > 0 ? Math.min(Math.round((totalPaidSGD    / denominator) * 100), 100) : 0;
+  const pctPlanned = denominator > 0 ? Math.min(Math.round((totalPlannedSGD / denominator) * 100), 100) : 0;
+  const overBudget = sgdBudget && totalPlannedSGD > sgdBudget;
+  const remaining  = sgdBudget ? sgdBudget - totalPlannedSGD : null;
+
+  let tsLabel = "No rates set — tap refresh";
+  if (state.trip?.exchangeRatesUpdatedAt) {
+    const d = state.trip.exchangeRatesUpdatedAt;
+    const date = new Date(d.toDate ? d.toDate() : d);
+    tsLabel = `Rates: ${date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`;
+  }
+
+  return `
+    <div class="budget-sgd-card">
+      <div class="budget-sgd-header">
+        <span class="budget-sgd-label">Total · SGD</span>
+        <div class="budget-sgd-rates-meta">
+          <span class="budget-sgd-ts">${tsLabel}</span>
+          <button class="budget-sgd-refresh" id="budget-refresh-rates-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="11" height="11"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+            Refresh rates
+          </button>
+        </div>
+      </div>
+
+      <div class="budget-total-row" style="margin-bottom:10px">
+        <span class="budget-sgd-total">S$${fmt(Math.round(totalPaidSGD))}</span>
+        <span class="budget-total-planned">
+          paid · S$${fmt(Math.round(totalPlannedSGD))} planned
+          ${sgdBudget ? ` · S$${fmt(sgdBudget)} budget` : ""}
+        </span>
+      </div>
+
+      ${rates || Object.keys(byCur).every(c => c === "SGD") ? `
+        <div class="budget-progress-track" title="Planned vs budget">
+          <div class="budget-progress-fill" style="width:${pctPlanned}%;opacity:0.35;background:var(--accent)"></div>
+        </div>
+        <div class="budget-progress-track" style="margin-top:4px" title="Paid vs budget">
+          <div class="budget-progress-fill" style="width:${pctPaid}%;background:${overBudget ? "var(--danger)" : "var(--success)"}"></div>
+        </div>
+        <div class="budget-progress-label" style="color:${overBudget ? "var(--danger)" : "var(--text-3)"}">
+          ${sgdBudget
+            ? `S$${fmt(Math.round(totalPlannedSGD))} of S$${fmt(sgdBudget)} (${pctPlanned}%) · ${remaining >= 0 ? "S$"+fmt(Math.round(remaining))+" remaining" : "S$"+fmt(Math.round(-remaining))+" over budget"}`
+            : `S$${fmt(Math.round(totalPaidSGD))} paid · S$${fmt(Math.round(totalPlannedSGD))} total planned`}
+        </div>
+      ` : `<p style="font-size:0.8125rem;color:var(--text-3);margin:8px 0">Refresh rates to calculate SGD totals.</p>`}
+
+      ${breakdownParts.length > 1 ? `<div class="budget-sgd-breakdown">${breakdownParts.join("<span style='color:var(--border-strong)'>·</span>")}</div>` : ""}
+      ${missingCurs.length ? `<div style="font-size:0.75rem;color:var(--text-3);margin-top:6px">Missing rates for: ${missingCurs.join(", ")}</div>` : ""}
+
+      <div class="budget-target-row" style="margin-top:16px;margin-bottom:0">
+        <label class="form-label">Total budget (SGD)</label>
+        <input class="form-input" id="budget-target-SGD" type="number" min="0" step="500"
+          placeholder="e.g. 12000" value="${sgdBudget || ""}" style="width:130px">
+        <button class="btn-ghost" data-budget-save="SGD" style="padding:6px 12px;font-size:0.8125rem">Set</button>
+      </div>
+    </div>`;
+}
+
 let budgetChartInstances = {};
 
 function renderBudget() {
@@ -4701,6 +4858,8 @@ function renderBudget() {
   // Destroy stale chart instances before rebuilding DOM
   Object.values(budgetChartInstances).forEach(c => c.destroy());
   budgetChartInstances = {};
+
+  const sgdSummary = buildSgdSummaryHTML(entries, budgetTargets, fmt);
 
   const sectionsHTML = currencyList.map(cur => {
     const ces = byCurrency[cur];
@@ -4770,7 +4929,12 @@ function renderBudget() {
         <span class="budget-unbooked-amount">~${currencySymbol(e.currency)}${fmt(e.amount)}</span>
       </div>`).join("")}` : "";
 
-  content.innerHTML = sectionsHTML + unbookedHTML;
+  content.innerHTML = sgdSummary + sectionsHTML + unbookedHTML;
+
+  // Refresh exchange rates
+  document.getElementById("budget-refresh-rates-btn")?.addEventListener("click", e => {
+    fetchAndSaveRates(e.currentTarget);
+  });
 
   // Collapse toggle
   content.querySelectorAll(".budget-currency-header").forEach(header => {
