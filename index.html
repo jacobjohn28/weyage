@@ -4590,7 +4590,9 @@ async function saveTownEdit() {
   try {
     if (editingTownId) {
       await updateDoc(doc(db, "trips", TRIP_ID, "towns", editingTownId), { name, arrivalDate, departureDate, hidePhoto: townHidePhotoState });
-      await reorderTownsByDate();
+      // Pass updated town explicitly — state.towns still has old dates at this point
+      const updatedTown = { ...state.towns.find(t => t.id === editingTownId), name, arrivalDate, departureDate };
+      await reorderTownsByDate(updatedTown);
     } else {
       // Generate a unique ID from name; avoid collisions with existing towns
       let newId = name.toLowerCase().replace(/[^a-z0-9]/g, "-");
