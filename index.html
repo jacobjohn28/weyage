@@ -940,6 +940,32 @@
     transition: color 160ms var(--ease);
   }
   .guide-regen-btn:hover { color: var(--text-2); }
+  .guides-search-wrap { margin-bottom: 20px; }
+  .guides-search-field {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 0 12px;
+    transition: border-color 160ms var(--ease);
+  }
+  .guides-search-field:focus-within { border-color: var(--border-strong); }
+  .guides-search-field svg { color: var(--text-3); flex-shrink: 0; }
+  .guides-search-field input {
+    flex: 1; border: none; background: transparent; outline: none;
+    font-size: 0.875rem; color: var(--text); padding: 10px 0;
+    font-family: var(--font-ui);
+  }
+  .guides-search-field input::placeholder { color: var(--text-3); }
+  .guides-no-results {
+    text-align: center; padding: 48px 20px;
+    font-size: 0.875rem; color: var(--text-3); font-style: italic;
+  }
+  .spot-guide-link {
+    background: none; border: none; cursor: pointer;
+    color: var(--text-3); padding: 6px 4px;
+    display: flex; align-items: center; flex-shrink: 0;
+    transition: color 160ms var(--ease);
+  }
+  .spot-guide-link:hover { color: var(--accent); }
 
   /* Accommodation card */
   .accom-card {
@@ -2044,6 +2070,12 @@
 
       <!-- GUIDES VIEW -->
       <section class="view" id="view-guides">
+        <div class="guides-search-wrap">
+          <div class="guides-search-field">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="search" id="guides-search" placeholder="Search guides…" autocomplete="off" spellcheck="false">
+          </div>
+        </div>
         <div id="guides-content"></div>
       </section>
 
@@ -3314,6 +3346,10 @@ function spotCardHTML(spot) {
   if (timeStr && durStr) row2Parts.push(`<span class="spot-duration">${durStr}</span>`);
   if (hood) row2Parts.push(`<span class="spot-neighborhood">${timeStr || durStr ? "·" : ""} ${hood}</span>`);
 
+  const guideLink = `<button class="spot-guide-link" data-spot-id="${spot.id}" title="View guide">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="14" height="14"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      </button>`;
+
   return `
     <div class="spot-card${spot.visited ? " visited" : ""}" data-spot-id="${spot.id}" data-type="${type}">
       ${spot.groupId ? `<div class="spot-group-indicator"></div>` : ""}
@@ -3328,6 +3364,7 @@ function spotCardHTML(spot) {
         </div>
         ${(row2Parts.length || tags) ? `<div class="spot-card-row2">${row2Parts.join("")}${tags}</div>` : ""}
       </div>
+      ${guideLink}
       <div class="spot-drag-handle" title="Drag to reorder">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="9" cy="7" r="1" fill="currentColor"/><circle cx="9" cy="12" r="1" fill="currentColor"/><circle cx="9" cy="17" r="1" fill="currentColor"/><circle cx="15" cy="7" r="1" fill="currentColor"/><circle cx="15" cy="12" r="1" fill="currentColor"/><circle cx="15" cy="17" r="1" fill="currentColor"/></svg>
       </div>
@@ -3508,8 +3545,17 @@ function renderItinerary() {
   container.querySelectorAll(".spot-card").forEach(card => {
     card.addEventListener("click", (e) => {
       if (e.target.closest(".spot-drag-handle")) return;
+      if (e.target.closest(".spot-guide-link")) return;
       const spot = state.spots.find(s => s.id === card.dataset.spotId);
       if (spot) openDrawer(spot);
+    });
+  });
+
+  container.querySelectorAll(".spot-guide-link").forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      pendingGuideSpotId = btn.dataset.spotId;
+      setView("guides");
     });
   });
 
@@ -3785,6 +3831,7 @@ document.getElementById("drawer-visited-btn").addEventListener("click", async ()
    ADD / EDIT MODAL
    ───────────────────────────────────────────────────────────── */
 let pendingScrollTownId = null;
+let pendingGuideSpotId = null;
 let modalEditId = null;
 let selectedType = "sight";
 let selectedTags = new Set();
@@ -4828,14 +4875,21 @@ function renderGuides() {
   const container = document.getElementById("guides-content");
   if (!container) return;
 
-  const spots = state.spots.filter(s => s.type !== "transport");
+  const query = (document.getElementById("guides-search")?.value || "").toLowerCase().trim();
+  const allSpots = state.spots.filter(s => s.type !== "transport");
+  const spots = query ? allSpots.filter(s => s.name.toLowerCase().includes(query)) : allSpots;
 
-  if (spots.length === 0) {
+  if (allSpots.length === 0) {
     container.innerHTML = `
       <div class="itinerary-empty">
         <p style="font-family:var(--font-display);font-style:italic;font-size:1.75rem;color:var(--text-3);margin-bottom:12px">Your guides await.</p>
         <p>Add sights, experiences, and restaurants to your itinerary — a guide will be generated for each one.</p>
       </div>`;
+    return;
+  }
+
+  if (spots.length === 0) {
+    container.innerHTML = `<div class="guides-no-results">No guides match "${escapeHtml(query)}"</div>`;
     return;
   }
 
@@ -4853,7 +4907,12 @@ function renderGuides() {
   container.innerHTML = html;
 
   container.querySelectorAll(".guide-card-header:not(.no-guide)").forEach(header => {
-    header.addEventListener("click", () => header.closest(".guide-card").classList.toggle("expanded"));
+    header.addEventListener("click", () => {
+      const card = header.closest(".guide-card");
+      card.classList.toggle("expanded");
+      const overview = card.querySelector(".guide-card-overview");
+      if (overview) overview.classList.toggle("clamped", !card.classList.contains("expanded"));
+    });
   });
 
   container.querySelectorAll(".guide-generate-btn, .guide-regen-btn").forEach(btn => {
@@ -4873,6 +4932,20 @@ function renderGuides() {
       generateSpotGuide(spotId, spot).catch(() => {});
     });
   });
+
+  if (pendingGuideSpotId) {
+    const targetId = pendingGuideSpotId;
+    pendingGuideSpotId = null;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const card = container.querySelector(`.guide-card[data-spot-id="${CSS.escape(targetId)}"]`);
+      if (!card) return;
+      if (!card.classList.contains("expanded")) {
+        const header = card.querySelector(".guide-card-header:not(.no-guide)");
+        if (header) header.click();
+      }
+      card.scrollIntoView({ behavior: "smooth", block: "start" });
+    }));
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -5337,6 +5410,9 @@ document.addEventListener("keydown", e => {
     closeRecommendationsPanel();
   }
 });
+
+// Guides search
+document.getElementById("guides-search")?.addEventListener("input", () => renderGuides());
 
 // Share button wiring
 ["sidebar-share-btn", "sheet-share-btn"].forEach(id => {
