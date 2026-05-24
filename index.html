@@ -4043,39 +4043,118 @@ function openDrawer(spot) {
   document.getElementById("drawer-spot-name").textContent = spot.name;
 
   const rows = [];
-  if (spot.neighborhood || spot.address) {
-    rows.push(`
-      <div class="drawer-section">
-        <div class="drawer-section-label">Location</div>
-        ${spot.neighborhood ? `<div class="drawer-meta-row">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-          ${escapeHtml(spot.neighborhood)}
-        </div>` : ""}
-        ${spot.address ? `<div class="drawer-meta-sub">${escapeHtml(spot.address)}</div>` : ""}
-      </div>`);
+
+  if (spot.type === "transport") {
+    /* ── Transport-specific drawer sections ── */
+
+    // Update badge to subtype name (e.g. "Train", "Flight")
+    const subtypeLabel = spot.transportSubtype
+      ? spot.transportSubtype.charAt(0).toUpperCase() + spot.transportSubtype.slice(1)
+      : "Transport";
+    badge.textContent = subtypeLabel;
+
+    // Resolve city names
+    const fromTown    = state.towns.find(t => t.id === spot.townId);
+    const arrivalTown = state.towns.find(t => t.id === spot.arrivalTownId);
+    const origin      = spot.customOrigin      || spot.transportFrom || fromTown?.name    || "";
+    const destination = spot.customDestination || spot.transportTo   || arrivalTown?.name || "";
+
+    // Route section
+    if (origin || destination) {
+      rows.push(`
+        <div class="drawer-section">
+          <div class="drawer-section-label">Route</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:4px;flex-wrap:wrap">
+            <div style="font-size:1rem;font-weight:500;color:var(--text)">${escapeHtml(origin || "—")}</div>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="16" height="16" style="flex-shrink:0;color:var(--tint-transport)"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            <div style="font-size:1rem;font-weight:500;color:var(--text)">${escapeHtml(destination || "—")}</div>
+          </div>
+          ${arrivalTown && arrivalTown.id !== fromTown?.id
+            ? `<div class="drawer-meta-sub" style="margin-top:4px">Arriving in ${escapeHtml(arrivalTown.name)}</div>` : ""}
+        </div>`);
+    }
+
+    // Journey section — departure + arrival times
+    const fmtJourneyDate = iso => iso
+      ? new Date(iso + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })
+      : null;
+    const depDate = fmtJourneyDate(spot.scheduledDate);
+    const arrDate = fmtJourneyDate(spot.arrivalDate);
+    const depTime = fmtTime12(spot.departureTime);
+    const arrTime = fmtTime12(spot.arrivalTime);
+
+    if (depDate || depTime || arrDate || arrTime) {
+      const depLine = [depDate, depTime].filter(Boolean).join(" · ");
+      const arrLine = [arrDate, arrTime].filter(Boolean).join(" · ");
+      rows.push(`
+        <div class="drawer-section">
+          <div class="drawer-section-label">Journey</div>
+          ${depLine ? `<div class="drawer-meta-row" style="margin-bottom:4px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span style="color:var(--text-3);font-size:0.8125rem;flex-shrink:0">Departs</span>
+            ${escapeHtml(depLine)}
+          </div>` : ""}
+          ${arrLine ? `<div class="drawer-meta-row">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span style="color:var(--text-3);font-size:0.8125rem;flex-shrink:0">Arrives</span>
+            ${escapeHtml(arrLine)}
+          </div>` : ""}
+        </div>`);
+    }
+
+    // Details section — carrier + seat
+    if (spot.carrier || spot.seat) {
+      rows.push(`
+        <div class="drawer-section">
+          <div class="drawer-section-label">Details</div>
+          ${spot.carrier ? `<div class="drawer-meta-row">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+            ${escapeHtml(spot.carrier)}
+          </div>` : ""}
+          ${spot.seat ? `<div class="drawer-meta-row">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M20.2 7.8l-7.7 7.7-4-4-5.7 5.7"/><path d="M15 7h6v6"/></svg>
+            Seat ${escapeHtml(spot.seat)}
+          </div>` : ""}
+        </div>`);
+    }
+
+  } else {
+    /* ── Regular spot sections ── */
+    if (spot.neighborhood || spot.address) {
+      rows.push(`
+        <div class="drawer-section">
+          <div class="drawer-section-label">Location</div>
+          ${spot.neighborhood ? `<div class="drawer-meta-row">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            ${escapeHtml(spot.neighborhood)}
+          </div>` : ""}
+          ${spot.address ? `<div class="drawer-meta-sub">${escapeHtml(spot.address)}</div>` : ""}
+        </div>`);
+    }
+    if (spot.scheduledDate || spot.scheduledTime) {
+      const dateLine = spot.scheduledDate
+        ? new Date(spot.scheduledDate + "T00:00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })
+        : "";
+      const timeLine = fmtTime12(spot.scheduledTime);
+      const durLine = spot.durationMinutes ? ` · ${spot.durationMinutes} min` : "";
+      rows.push(`
+        <div class="drawer-section">
+          <div class="drawer-section-label">Schedule</div>
+          <div class="drawer-meta-row">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            ${escapeHtml(dateLine)}${timeLine ? ` at ${timeLine}` : ""}${escapeHtml(durLine)}
+          </div>
+        </div>`);
+    }
+    if (spot.tags && spot.tags.length) {
+      rows.push(`
+        <div class="drawer-section">
+          <div class="drawer-section-label">Tags</div>
+          <div class="drawer-tags">${spot.tags.map(t => `<span class="spot-tag-pill">${escapeHtml(t)}</span>`).join("")}</div>
+        </div>`);
+    }
   }
-  if (spot.scheduledDate || spot.scheduledTime) {
-    const dateLine = spot.scheduledDate
-      ? new Date(spot.scheduledDate + "T00:00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })
-      : "";
-    const timeLine = fmtTime12(spot.scheduledTime);
-    const durLine = spot.durationMinutes ? ` · ${spot.durationMinutes} min` : "";
-    rows.push(`
-      <div class="drawer-section">
-        <div class="drawer-section-label">Schedule</div>
-        <div class="drawer-meta-row">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          ${escapeHtml(dateLine)}${timeLine ? ` at ${timeLine}` : ""}${escapeHtml(durLine)}
-        </div>
-      </div>`);
-  }
-  if (spot.tags && spot.tags.length) {
-    rows.push(`
-      <div class="drawer-section">
-        <div class="drawer-section-label">Tags</div>
-        <div class="drawer-tags">${spot.tags.map(t => `<span class="spot-tag-pill">${escapeHtml(t)}</span>`).join("")}</div>
-      </div>`);
-  }
+
   if (spot.notes) {
     rows.push(`
       <div class="drawer-section">
