@@ -1954,6 +1954,92 @@
     transition: all 140ms var(--ease);
   }
   .attach-delete-btn:hover { color: var(--error, #C23D3D); background: rgba(194,61,61,0.08); }
+  .attach-thumb-row { cursor: pointer; }
+  .attach-thumb-row:hover .attach-name { color: var(--text); }
+
+  /* ── Lightbox ── */
+  .lightbox-overlay {
+    display: none; position: fixed; inset: 0; z-index: 3000;
+    background: rgba(0,0,0,0.93);
+    flex-direction: column; align-items: center; justify-content: center;
+  }
+  .lightbox-overlay.open { display: flex; }
+  .lightbox-close {
+    position: absolute; top: 14px; right: 14px; z-index: 10;
+    width: 38px; height: 38px; border-radius: 50%;
+    background: rgba(255,255,255,0.13); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: background 140ms;
+  }
+  .lightbox-close:hover { background: rgba(255,255,255,0.22); }
+  .lightbox-scroll {
+    flex: 1; width: 100%; display: flex;
+    align-items: center; justify-content: center; overflow: hidden;
+  }
+  .lightbox-img {
+    max-width: 100%; max-height: calc(100vh - 72px);
+    object-fit: contain; user-select: none; -webkit-user-drag: none;
+    transform-origin: center center;
+    transition: transform 180ms var(--ease);
+    cursor: zoom-in;
+  }
+  .lightbox-img.zoomed { cursor: grab; transition: none; }
+  .lightbox-img.dragging { cursor: grabbing; }
+  .lightbox-bar {
+    width: 100%; display: flex; align-items: center;
+    padding: 10px 16px 14px; gap: 10px;
+  }
+  .lightbox-nav-btn {
+    width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+    background: rgba(255,255,255,0.12); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: background 140ms;
+  }
+  .lightbox-nav-btn:hover { background: rgba(255,255,255,0.22); }
+  .lightbox-nav-btn:disabled { opacity: 0.22; pointer-events: none; }
+  .lightbox-caption-wrap { flex: 1; text-align: center; min-width: 0; }
+  .lightbox-caption {
+    font-size: 0.875rem; color: rgba(255,255,255,0.75);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .lightbox-counter { font-size: 0.75rem; color: rgba(255,255,255,0.4); margin-top: 2px; }
+
+  /* ── Documents search ── */
+  .docs-search-wrap { display: flex; align-items: center; gap: 10px; margin-bottom: 24px; }
+  .docs-search-field {
+    flex: 1; display: flex; align-items: center; gap: 8px;
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 8px 12px;
+    transition: border-color 160ms var(--ease);
+  }
+  .docs-search-field:focus-within { border-color: var(--border-strong); }
+  .docs-search-field svg { color: var(--text-3); flex-shrink: 0; }
+  #docs-search {
+    flex: 1; background: none; border: none; outline: none;
+    font-size: 0.9375rem; color: var(--text); font-family: var(--font-body);
+  }
+  #docs-search::placeholder { color: var(--text-3); }
+  .docs-search-clear {
+    background: none; border: none; cursor: pointer;
+    color: var(--text-3); display: flex; align-items: center; padding: 2px; border-radius: 4px;
+  }
+  .docs-search-clear:hover { color: var(--text); }
+
+  /* ── Documents spot grouping ── */
+  .docs-spot-group { margin-bottom: 14px; }
+  .docs-spot-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 0 7px; margin-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+  }
+  .docs-spot-header:hover .docs-spot-header-name { color: var(--accent); }
+  .docs-spot-header-name {
+    flex: 1; font-size: 0.875rem; font-weight: 500;
+    transition: color 140ms var(--ease);
+  }
+  .docs-spot-header-meta { font-size: 0.75rem; color: var(--text-3); flex-shrink: 0; }
+  .docs-spot-header svg { color: var(--text-3); flex-shrink: 0; }
 
   /* Drawer link section */
   .drawer-link-section { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
@@ -2205,8 +2291,17 @@
       </section>
 
       <section class="view" id="view-documents">
-        <div class="section-header" style="margin-bottom:28px">
+        <div class="section-header" style="margin-bottom:20px">
           <h1 class="section-title">Documents</h1>
+        </div>
+        <div class="docs-search-wrap">
+          <div class="docs-search-field">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="16" height="16"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input id="docs-search" type="search" placeholder="Search documents…" autocomplete="off">
+            <button class="docs-search-clear" id="docs-search-clear" style="display:none">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
         </div>
         <div id="docs-content"></div>
       </section>
@@ -4049,6 +4144,17 @@ function openDrawer(spot) {
     input.click();
   });
 
+  // Wire attach thumbnail click → lightbox
+  bodyEl.querySelectorAll(".attach-thumb-row").forEach((row, rowIdx) => {
+    row.addEventListener("click", e => {
+      if (e.target.closest(".attach-delete-btn")) return;
+      const imgAttachments = (spot.attachments || []).filter(a => a.mimeType?.startsWith("image/"));
+      const attId = row.dataset.attachId;
+      const lbStart = imgAttachments.findIndex(a => a.id === attId);
+      if (lbStart >= 0) openLightbox(imgAttachments, lbStart, spot.name);
+    });
+  });
+
   // Wire attach delete buttons
   bodyEl.querySelectorAll("[data-delete-attach]").forEach(btn => {
     btn.addEventListener("click", async e => {
@@ -4805,51 +4911,99 @@ function renderDocuments() {
   const container = document.getElementById("docs-content");
   if (!container) return;
 
-  const spotsWithDocs = state.spots.filter(s => s.attachments && s.attachments.length > 0);
-  if (spotsWithDocs.length === 0) {
+  const query = (document.getElementById("docs-search")?.value || "").trim().toLowerCase();
+
+  const allSpotsWithDocs = state.spots.filter(s => s.attachments && s.attachments.length > 0);
+  if (allSpotsWithDocs.length === 0) {
     container.innerHTML = `<div class="itinerary-empty"><p>No documents yet. Add photos, QR codes, or tickets to any spot from the spot detail drawer.</p></div>`;
     return;
   }
 
   const html = [];
+  let totalShown = 0;
+
   for (const town of state.towns) {
-    const townSpots = spotsWithDocs.filter(s => s.townId === town.id);
+    const townSpots = allSpotsWithDocs.filter(s => s.townId === town.id);
     if (!townSpots.length) continue;
-    html.push(`<div class="docs-town-group"><div class="docs-town-label">${escapeHtml(town.name)}</div>`);
+
+    const townHtml = [];
     for (const spot of townSpots) {
       const sorted = [...spot.attachments].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
-      for (const att of sorted) {
+
+      // Apply search filter at attachment level
+      const matchingAtts = query
+        ? sorted.filter(att =>
+            spot.name.toLowerCase().includes(query) ||
+            att.name.toLowerCase().includes(query) ||
+            town.name.toLowerCase().includes(query))
+        : sorted;
+      if (!matchingAtts.length) continue;
+
+      // Spot sub-header
+      const dateMeta = spot.scheduledDate
+        ? new Date(spot.scheduledDate + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" })
+        : "";
+      townHtml.push(`
+        <div class="docs-spot-group">
+          <div class="docs-spot-header" data-spot-id="${escapeHtml(spot.id)}">
+            <span class="docs-spot-header-name">${escapeHtml(spot.name)}</span>
+            ${dateMeta ? `<span class="docs-spot-header-meta">${dateMeta}</span>` : ""}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="13" height="13"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>`);
+
+      for (const att of matchingAtts) {
         const isImg = att.mimeType && att.mimeType.startsWith("image/");
         const thumb = isImg
-          ? `<img class="doc-thumb" src="${att.data}" alt="${escapeHtml(att.name)}">`
+          ? `<img class="doc-thumb" src="${escapeHtml(att.data)}" alt="${escapeHtml(att.name)}" loading="lazy">`
           : `<div class="doc-thumb-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>`;
-        html.push(`
-          <div class="doc-card${att.pinned ? " pinned" : ""}" data-spot-id="${spot.id}" data-attach-id="${att.id}">
+        townHtml.push(`
+          <div class="doc-card${att.pinned ? " pinned" : ""}" data-spot-id="${escapeHtml(spot.id)}" data-attach-id="${escapeHtml(att.id)}">
             ${thumb}
             <div class="doc-body">
-              <div class="doc-spot-name">${escapeHtml(spot.name)}</div>
-              <div class="doc-attach-name">${escapeHtml(att.name)}</div>
+              <div class="doc-attach-name" style="font-size:0.9375rem;color:var(--text)">${escapeHtml(att.name)}</div>
+              ${isImg ? `<div class="doc-attach-name" style="margin-top:2px">Image</div>` : `<div class="doc-attach-name">File</div>`}
             </div>
             <button class="doc-pin-btn${att.pinned ? " active" : ""}" data-pin="true" title="${att.pinned ? "Unpin" : "Pin"}">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
             </button>
           </div>`);
+        totalShown++;
       }
+      townHtml.push(`</div>`); // close docs-spot-group
     }
-    html.push(`</div>`);
+
+    if (!townHtml.length) continue;
+    html.push(`<div class="docs-town-group"><div class="docs-town-label">${escapeHtml(town.name)}</div>${townHtml.join("")}</div>`);
+  }
+
+  if (!totalShown) {
+    container.innerHTML = `<p style="color:var(--text-3);font-size:0.9375rem">No documents matching "${escapeHtml(query)}".</p>`;
+    return;
   }
   container.innerHTML = html.join("");
 
+  // Spot header → jump to itinerary
+  container.querySelectorAll(".docs-spot-header").forEach(header => {
+    header.addEventListener("click", () => {
+      const spot = state.spots.find(s => s.id === header.dataset.spotId);
+      if (spot) {
+        pendingScrollTownId = spot.townId;
+        setView("itinerary");
+      }
+    });
+  });
+
+  // Doc card click → lightbox for images
   container.querySelectorAll(".doc-card").forEach(card => {
     card.addEventListener("click", e => {
       if (e.target.closest(".doc-pin-btn")) return;
-      const spotId = card.dataset.spotId;
-      const attachId = card.dataset.attachId;
-      const spot = state.spots.find(s => s.id === spotId);
-      const att = spot?.attachments?.find(a => a.id === attachId);
-      if (att?.mimeType?.startsWith("image/")) {
-        const win = window.open();
-        win.document.write(`<img src="${att.data}" style="max-width:100%;max-height:100vh">`);
+      const spot = state.spots.find(s => s.id === card.dataset.spotId);
+      const att  = spot?.attachments?.find(a => a.id === card.dataset.attachId);
+      if (!att) return;
+      if (att.mimeType?.startsWith("image/")) {
+        const imgAtts = (spot.attachments || []).filter(a => a.mimeType?.startsWith("image/"));
+        const idx = imgAtts.findIndex(a => a.id === att.id);
+        openLightbox(imgAtts, idx, spot.name);
       }
     });
     card.querySelector(".doc-pin-btn")?.addEventListener("click", async e => {
@@ -5840,6 +5994,162 @@ document.addEventListener("keydown", e => {
 document.getElementById("guides-search")?.addEventListener("input", () => renderGuides());
 document.getElementById("guides-generate-all-btn")?.addEventListener("click", () => generateAllGuides());
 
+// Documents search
+document.getElementById("docs-search")?.addEventListener("input", e => {
+  const clearBtn = document.getElementById("docs-search-clear");
+  if (clearBtn) clearBtn.style.display = e.target.value ? "" : "none";
+  renderDocuments();
+});
+document.getElementById("docs-search-clear")?.addEventListener("click", () => {
+  const input = document.getElementById("docs-search");
+  if (input) { input.value = ""; input.dispatchEvent(new Event("input")); input.focus(); }
+});
+
+/* ── LIGHTBOX ─────────────────────────────────────── */
+let lbSlides = [], lbIdx = 0, lbZoom = 1;
+let lbPan = { x: 0, y: 0 };
+let lbDrag = null;
+let lbLastTap = 0;
+
+function openLightbox(attachments, startIndex, spotName) {
+  lbSlides = (attachments || []).filter(a => a.mimeType?.startsWith("image/"));
+  if (!lbSlides.length) return;
+  lbIdx = Math.max(0, Math.min(startIndex ?? 0, lbSlides.length - 1));
+  lbZoom = 1; lbPan = { x: 0, y: 0 }; lbDrag = null;
+  document.getElementById("lightbox-overlay").classList.add("open");
+  document.body.style.overflow = "hidden";
+  lbRender();
+}
+
+function lbClose() {
+  document.getElementById("lightbox-overlay").classList.remove("open");
+  document.body.style.overflow = "";
+  lbZoom = 1; lbPan = { x: 0, y: 0 }; lbDrag = null;
+}
+
+function lbRender() {
+  const att = lbSlides[lbIdx];
+  const img = document.getElementById("lb-img");
+  img.src = att.data; img.alt = att.name;
+  img.classList.remove("zoomed", "dragging");
+  img.style.transform = "none";
+  document.getElementById("lb-caption").textContent = att.name;
+  document.getElementById("lb-counter").textContent =
+    lbSlides.length > 1 ? `${lbIdx + 1} / ${lbSlides.length}` : "";
+  document.getElementById("lb-prev").disabled = lbIdx === 0;
+  document.getElementById("lb-next").disabled = lbIdx === lbSlides.length - 1;
+  lbZoom = 1; lbPan = { x: 0, y: 0 };
+}
+
+function lbApply() {
+  const img = document.getElementById("lb-img");
+  if (!img) return;
+  if (lbZoom <= 1) {
+    lbZoom = 1; lbPan = { x: 0, y: 0 };
+    img.style.transform = "none";
+    img.classList.remove("zoomed");
+  } else {
+    img.style.transform = `translate(${lbPan.x}px, ${lbPan.y}px) scale(${lbZoom})`;
+    img.classList.add("zoomed");
+  }
+}
+
+// ── wiring ──
+document.getElementById("lb-close").addEventListener("click", lbClose);
+document.getElementById("lb-prev").addEventListener("click", e => {
+  e.stopPropagation();
+  if (lbIdx > 0) { lbIdx--; lbRender(); }
+});
+document.getElementById("lb-next").addEventListener("click", e => {
+  e.stopPropagation();
+  if (lbIdx < lbSlides.length - 1) { lbIdx++; lbRender(); }
+});
+
+// Close on backdrop
+document.getElementById("lb-scroll").addEventListener("click", e => {
+  if (e.target === e.currentTarget) lbClose();
+});
+
+// Escape / arrow keys
+document.addEventListener("keydown", e => {
+  const overlay = document.getElementById("lightbox-overlay");
+  if (!overlay.classList.contains("open")) return;
+  if (e.key === "Escape") lbClose();
+  if (e.key === "ArrowLeft"  && lbIdx > 0) { lbIdx--; lbRender(); }
+  if (e.key === "ArrowRight" && lbIdx < lbSlides.length - 1) { lbIdx++; lbRender(); }
+});
+
+// Scroll-wheel zoom (desktop)
+document.getElementById("lb-scroll").addEventListener("wheel", e => {
+  if (!document.getElementById("lightbox-overlay").classList.contains("open")) return;
+  e.preventDefault();
+  lbZoom = Math.max(1, Math.min(5, lbZoom + (e.deltaY < 0 ? 0.25 : -0.25)));
+  lbApply();
+}, { passive: false });
+
+// Double-click / double-tap toggle zoom
+document.getElementById("lb-img").addEventListener("click", () => {
+  const now = Date.now();
+  if (now - lbLastTap < 320) {
+    lbZoom = lbZoom > 1.05 ? 1 : 2.5;
+    lbPan = { x: 0, y: 0 };
+    lbApply();
+  }
+  lbLastTap = now;
+});
+
+// Mouse drag to pan
+document.getElementById("lb-img").addEventListener("mousedown", e => {
+  if (lbZoom <= 1) return;
+  e.preventDefault();
+  lbDrag = { sx: e.clientX, sy: e.clientY, px: lbPan.x, py: lbPan.y };
+  document.getElementById("lb-img").classList.add("dragging");
+});
+document.addEventListener("mousemove", e => {
+  if (!lbDrag) return;
+  lbPan.x = lbDrag.px + (e.clientX - lbDrag.sx);
+  lbPan.y = lbDrag.py + (e.clientY - lbDrag.sy);
+  lbApply();
+});
+document.addEventListener("mouseup", () => {
+  if (lbDrag) {
+    lbDrag = null;
+    document.getElementById("lb-img")?.classList.remove("dragging");
+  }
+});
+
+// Touch: pinch-to-zoom + drag-to-pan
+let lbPinchDist0 = 0, lbPinchZoom0 = 1, lbTouchDrag = null;
+document.getElementById("lb-img").addEventListener("touchstart", e => {
+  if (e.touches.length === 2) {
+    lbPinchDist0 = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY);
+    lbPinchZoom0 = lbZoom;
+    lbTouchDrag = null;
+  } else if (e.touches.length === 1 && lbZoom > 1) {
+    lbTouchDrag = { sx: e.touches[0].clientX, sy: e.touches[0].clientY, px: lbPan.x, py: lbPan.y };
+  }
+}, { passive: true });
+document.getElementById("lb-img").addEventListener("touchmove", e => {
+  if (e.touches.length === 2) {
+    e.preventDefault();
+    const d = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY);
+    lbZoom = Math.max(1, Math.min(5, lbPinchZoom0 * (d / lbPinchDist0)));
+    lbApply();
+  } else if (e.touches.length === 1 && lbTouchDrag) {
+    lbPan.x = lbTouchDrag.px + (e.touches[0].clientX - lbTouchDrag.sx);
+    lbPan.y = lbTouchDrag.py + (e.touches[0].clientY - lbTouchDrag.sy);
+    lbApply();
+  }
+}, { passive: false });
+document.getElementById("lb-img").addEventListener("touchend", e => {
+  if (e.touches.length < 2) lbTouchDrag = null;
+  if (lbZoom < 1.05) { lbZoom = 1; lbPan = { x: 0, y: 0 }; lbApply(); }
+}, { passive: true });
+
 // Share button wiring
 ["sidebar-share-btn", "sheet-share-btn"].forEach(id => {
   const btn = document.getElementById(id);
@@ -5852,6 +6162,28 @@ init().catch((err) => {
 });
 
 </script>
+<!-- ── Lightbox overlay ── -->
+<div class="lightbox-overlay" id="lightbox-overlay" role="dialog" aria-modal="true">
+  <button class="lightbox-close" id="lb-close" aria-label="Close">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  </button>
+  <div class="lightbox-scroll" id="lb-scroll">
+    <img class="lightbox-img" id="lb-img" src="" alt="">
+  </div>
+  <div class="lightbox-bar">
+    <button class="lightbox-nav-btn" id="lb-prev" aria-label="Previous">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div class="lightbox-caption-wrap">
+      <div class="lightbox-caption" id="lb-caption"></div>
+      <div class="lightbox-counter" id="lb-counter"></div>
+    </div>
+    <button class="lightbox-nav-btn" id="lb-next" aria-label="Next">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+  </div>
+</div>
+
 <script>
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
