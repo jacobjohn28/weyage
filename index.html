@@ -849,6 +849,98 @@
     margin-bottom: 5px; padding-left: 2px;
   }
 
+  /* Guides view */
+  .guides-toolbar { display: flex; align-items: center; justify-content: flex-end; margin-bottom: 28px; gap: 12px; }
+  .guides-town-group { margin-bottom: 48px; }
+  .guides-town-label {
+    font-size: 0.6875rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--text-3); margin-bottom: 16px; padding-left: 2px;
+  }
+  .guide-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); margin-bottom: 12px; overflow: hidden;
+    transition: border-color 160ms var(--ease);
+  }
+  .guide-card-header {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 16px; cursor: pointer; user-select: none;
+  }
+  .guide-card-header.no-guide { cursor: default; }
+  .guide-type-bar {
+    width: 3px; border-radius: 2px; flex-shrink: 0;
+    align-self: stretch; min-height: 40px;
+  }
+  .guide-card-title-group { flex: 1; min-width: 0; }
+  .guide-card-name {
+    font-family: var(--font-display);
+    font-size: 1.0625rem; font-weight: 500; letter-spacing: -0.01em;
+    line-height: 1.3; color: var(--text);
+  }
+  .guide-card-meta { font-size: 0.75rem; color: var(--text-3); margin-top: 4px; }
+  .guide-card-chevron {
+    background: none; border: none; cursor: pointer; color: var(--text-3);
+    padding: 2px; flex-shrink: 0; display: flex; align-items: center;
+    justify-content: center; width: 28px; height: 28px; border-radius: 50%;
+    transition: transform 200ms var(--ease), color 160ms var(--ease);
+  }
+  .guide-card-chevron:hover { color: var(--text-2); }
+  .guide-card.expanded .guide-card-chevron { transform: rotate(180deg); }
+  .guide-card-overview {
+    padding: 0 16px 14px 31px;
+    font-size: 0.8125rem; color: var(--text-2); line-height: 1.7;
+  }
+  .guide-card-overview.clamped {
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .guide-card-body { display: none; border-top: 1px solid var(--border); }
+  .guide-card.expanded .guide-card-body { display: block; }
+  .guide-section { padding: 14px 16px; border-bottom: 1px solid var(--border); }
+  .guide-section:last-of-type { border-bottom: none; }
+  .guide-section-label {
+    font-size: 0.625rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.14em;
+    color: var(--accent); margin-bottom: 8px;
+  }
+  .guide-section-text { font-size: 0.875rem; color: var(--text); line-height: 1.75; }
+  .guide-highlights { list-style: none; padding: 0; margin: 0; }
+  .guide-highlights li {
+    display: flex; gap: 10px; align-items: flex-start;
+    padding: 4px 0; font-size: 0.875rem; line-height: 1.6; color: var(--text);
+  }
+  .guide-highlight-bullet {
+    color: var(--accent); flex-shrink: 0;
+    font-size: 0.75rem; margin-top: 4px; font-weight: 700;
+  }
+  .guide-pending-state {
+    padding: 0 16px 16px 31px;
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  }
+  .guide-generate-btn {
+    font-size: 0.75rem; color: var(--text-2);
+    background: none; border: 1px solid var(--border);
+    border-radius: 20px; padding: 5px 14px; cursor: pointer;
+    transition: all 160ms var(--ease); white-space: nowrap;
+  }
+  .guide-generate-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .guide-generate-btn:disabled { opacity: 0.5; cursor: default; }
+  .guide-error-msg { font-size: 0.8125rem; color: var(--accent); }
+  .guide-skeleton { padding: 0 16px 16px 31px; }
+  .guide-skeleton-line {
+    height: 9px; background: var(--border); border-radius: 5px; margin-bottom: 7px;
+    animation: skel-pulse 1.5s ease-in-out infinite;
+  }
+  .guide-skeleton-line:last-child { width: 60%; margin-bottom: 0; }
+  @keyframes skel-pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
+  .guide-regen-row { padding: 10px 16px; display: flex; justify-content: flex-end; }
+  .guide-regen-btn {
+    font-size: 0.75rem; color: var(--text-3); background: none; border: none;
+    cursor: pointer; padding: 0; text-decoration: underline;
+    transition: color 160ms var(--ease);
+  }
+  .guide-regen-btn:hover { color: var(--text-2); }
+
   /* Accommodation card */
   .accom-card {
     display: flex; align-items: flex-start; gap: 12px;
@@ -1844,9 +1936,9 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 2v4M16 2v4M3 10h18M5 6h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/></svg>
       Itinerary
     </button>
-    <button class="nav-item" data-view="food">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 11h18l-1.5 9a2 2 0 0 1-2 1.7H6.5a2 2 0 0 1-2-1.7L3 11z"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-      Food
+    <button class="nav-item" data-view="guides">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      Guides
     </button>
     <button class="nav-item" data-view="map">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
@@ -1950,15 +2042,9 @@
         <div id="itinerary-content"></div>
       </section>
 
-      <!-- FOOD VIEW — Phase 3 -->
-      <section class="view" id="view-food">
-        <div class="food-toolbar">
-          <button class="btn-primary" id="add-food-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Add restaurant
-          </button>
-        </div>
-        <div id="food-content"></div>
+      <!-- GUIDES VIEW -->
+      <section class="view" id="view-guides">
+        <div id="guides-content"></div>
       </section>
 
       <section class="view" id="view-map">
@@ -2003,9 +2089,9 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
         <span>Overview</span>
       </button>
-      <button class="bottom-nav-item" data-view="food">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 11h18l-1.5 9a2 2 0 0 1-2 1.7H6.5a2 2 0 0 1-2-1.7L3 11z"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        <span>Food</span>
+      <button class="bottom-nav-item" data-view="guides">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        <span>Guides</span>
       </button>
       <button class="bottom-nav-item active" data-view="itinerary">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 2v4M16 2v4M3 10h18M5 6h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/></svg>
@@ -2654,10 +2740,10 @@ function setView(viewName) {
   document.querySelectorAll(".nav-item, .bottom-nav-item").forEach(b => {
     b.classList.toggle("active", b.dataset.view === viewName);
   });
-  const titles = { dashboard: "Overview", itinerary: "Itinerary", food: "Food", map: "Map", budget: "Budget", documents: "Documents" };
+  const titles = { dashboard: "Overview", itinerary: "Itinerary", guides: "Guides", map: "Map", budget: "Budget", documents: "Documents" };
   document.getElementById("topbar-title").textContent = titles[viewName] || "Dashboard";
   if (viewName === "itinerary") renderItinerary();
-  if (viewName === "food") renderFood();
+  if (viewName === "guides") renderGuides();
   if (viewName === "budget") renderBudget();
   if (viewName === "documents") renderDocuments();
 }
@@ -3063,7 +3149,7 @@ subscribe(() => {
   renderDashboardMeta();
   renderDashboardWidgets();
   if (state.currentView === "itinerary") renderItinerary();
-  if (state.currentView === "food") renderFood();
+  if (state.currentView === "guides") renderGuides();
   if (state.currentView === "budget") renderBudget();
   if (state.currentView === "documents") renderDocuments();
   // Keep drawer in sync if it's open and the spot was updated
@@ -3094,6 +3180,9 @@ async function saveSpot(data, existingId) {
       expenses: [],
       createdAt: serverTimestamp(),
     });
+    if (data.type !== "transport" && GEMINI_CONFIG.apiKey) {
+      generateSpotGuide(id, data).catch(err => console.error("Guide gen failed:", err));
+    }
   }
 }
 
@@ -4012,7 +4101,6 @@ document.getElementById("spot-town").addEventListener("change", (e) => {
 });
 
 // Food view — quick-add pre-set to restaurant
-document.getElementById("add-food-btn").addEventListener("click", () => openModal(null, { type: "restaurant" }));
 
 // Save
 document.getElementById("modal-save-btn").addEventListener("click", async () => {
@@ -4585,67 +4673,204 @@ function renderDashboardWidgets() {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   FOOD VIEW (3f)
+   GUIDES VIEW
    ───────────────────────────────────────────────────────────── */
-function renderFood() {
-  const container = document.getElementById("food-content");
+
+async function callGeminiGuide(spot, town) {
+  const townName = town?.name || "France";
+  const country = town?.country || "France";
+  const typeLabel = {
+    sight: "historical sight / landmark",
+    restaurant: "restaurant",
+    cafe: "café",
+    experience: "experience / activity",
+  }[spot.type] || "place";
+  const notesLine = spot.notes ? `\nContext from trip notes: ${spot.notes}` : "";
+
+  const prompt = `You are an exceptionally passionate and knowledgeable walking tour guide — the kind who knows which stone Napoleon tripped on and why the architect was fired. You write with infectious enthusiasm, weave in nerdy historical facts and pop culture references naturally, and always give the kind of insider tips only someone who's been there a hundred times would know.
+
+Write a travel guide for the following:
+Name: ${spot.name}
+Type: ${typeLabel}
+Location: ${townName}, ${country}${notesLine}
+
+Respond ONLY with valid JSON — no markdown, no prose outside the JSON. Use exactly this structure:
+{
+  "overview": "2-3 punchy sentences. Hook the reader immediately. What makes this place unmissable? Walking tour energy — present tense, vivid.",
+  "history": "3-5 sentences. When was it built/founded and by whom? Key historical moments. Notable people connected to it. Any references in literature, film, or pop culture. Be specific: real dates, real names, real stories.",
+  "highlights": [
+    "Specific must-do or must-see — be concrete, not generic",
+    "Specific must-do or must-see",
+    "Specific must-do or must-see"
+  ],
+  "gettingThere": "Specific metro lines and stop names, tram/bus options, walking distance from a recognisable nearby landmark. One or two sentences, practically useful.",
+  "practicalTips": "Entry fees (exact if known), whether booking ahead is needed, best time of day to beat crowds, any dress code, photography restrictions, or other gotchas a first-timer would wish they'd known.",
+  "nearby": [
+    "Nearby place worth combining in the same half-day — name + one-line reason why it pairs well"
+  ],
+  "eatAndDrink": "1-2 specific recommendations. Value spots popular with locals. Include the name, what to order, and a one-liner on why. Don't be afraid to mention somewhere slightly further if it's genuinely worth the walk."
+}`;
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_CONFIG.model}:generateContent?key=${GEMINI_CONFIG.apiKey}`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generation_config: { temperature: 0.75, response_mime_type: "application/json" },
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `Gemini API error ${res.status}`);
+  }
+
+  const data = await res.json();
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error("No guide content returned.");
+  const clean = text.replace(/^```json\s*/i, "").replace(/```\s*$/, "").trim();
+  return JSON.parse(clean);
+}
+
+async function generateSpotGuide(spotId, spotData) {
+  await updateDoc(spotDocRef(spotId), { guide: { status: "pending" } }).catch(() => {});
+  try {
+    const town = state.towns.find(t => t.id === spotData.townId);
+    const content = await callGeminiGuide(spotData, town);
+    await updateDoc(spotDocRef(spotId), {
+      guide: { status: "ready", content, generatedAt: serverTimestamp() },
+    });
+  } catch (err) {
+    console.error("Guide generation error:", err);
+    await updateDoc(spotDocRef(spotId), {
+      guide: { status: "error", errorMessage: err.message },
+    }).catch(() => {});
+  }
+}
+
+function guideCardHTML(spot) {
+  const color = TYPE_COLORS[spot.type] || "#888";
+  const typeLabel = { sight: "Sight", restaurant: "Restaurant", cafe: "Café", experience: "Experience" }[spot.type] || spot.type;
+  const guide = spot.guide;
+  const status = guide?.status;
+  const content = guide?.content;
+  const hasGuide = status === "ready" && content;
+
+  const chevron = hasGuide ? `
+    <button class="guide-card-chevron" aria-label="Expand guide">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="15" height="15"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>` : "";
+
+  let stateHTML = "";
+  if (!guide || status === undefined || status === "error") {
+    stateHTML = `
+      <div class="guide-pending-state">
+        ${status === "error" ? `<span class="guide-error-msg">Generation failed —&nbsp;</span>` : ""}
+        <button class="guide-generate-btn" data-spot-id="${escapeHtml(spot.id)}">${status === "error" ? "Retry" : "✦ Generate guide"}</button>
+      </div>`;
+  } else if (status === "pending") {
+    stateHTML = `
+      <div class="guide-skeleton">
+        <div class="guide-skeleton-line" style="width:88%"></div>
+        <div class="guide-skeleton-line" style="width:74%"></div>
+        <div class="guide-skeleton-line" style="width:60%"></div>
+      </div>`;
+  } else if (hasGuide) {
+    stateHTML = `<div class="guide-card-overview clamped">${escapeHtml(content.overview || "")}</div>`;
+  }
+
+  let bodyHTML = "";
+  if (hasGuide) {
+    const sections = [
+      { key: "history",       label: "History",            list: false },
+      { key: "highlights",    label: "What to see & do",   list: true  },
+      { key: "gettingThere",  label: "Getting there",      list: false },
+      { key: "practicalTips", label: "Practical tips",     list: false },
+      { key: "nearby",        label: "Nearby",             list: true  },
+      { key: "eatAndDrink",   label: "Eat & drink nearby", list: false },
+    ];
+
+    const sectionsHTML = sections.map(({ key, label, list }) => {
+      const val = content[key];
+      if (!val || (Array.isArray(val) && !val.length)) return "";
+      const inner = list && Array.isArray(val)
+        ? `<ul class="guide-highlights">${val.map(item => `<li><span class="guide-highlight-bullet">→</span>${escapeHtml(item)}</li>`).join("")}</ul>`
+        : `<div class="guide-section-text">${escapeHtml(String(val))}</div>`;
+      return `<div class="guide-section"><div class="guide-section-label">${label}</div>${inner}</div>`;
+    }).join("");
+
+    bodyHTML = `
+      <div class="guide-card-body">
+        ${sectionsHTML}
+        <div class="guide-regen-row">
+          <button class="guide-regen-btn" data-spot-id="${escapeHtml(spot.id)}">↻ Regenerate</button>
+        </div>
+      </div>`;
+  }
+
+  return `
+    <div class="guide-card" data-spot-id="${escapeHtml(spot.id)}">
+      <div class="guide-card-header${hasGuide ? "" : " no-guide"}">
+        <div class="guide-type-bar" style="background:${color}"></div>
+        <div class="guide-card-title-group">
+          <div class="guide-card-name">${escapeHtml(spot.name)}</div>
+          <div class="guide-card-meta">${escapeHtml(typeLabel)}</div>
+        </div>
+        ${chevron}
+      </div>
+      ${stateHTML}
+      ${bodyHTML}
+    </div>`;
+}
+
+function renderGuides() {
+  const container = document.getElementById("guides-content");
   if (!container) return;
 
-  const foodSpots = state.spots.filter(s => s.type === "restaurant" || s.type === "cafe");
+  const spots = state.spots.filter(s => s.type !== "transport");
 
-  if (foodSpots.length === 0) {
+  if (spots.length === 0) {
     container.innerHTML = `
       <div class="itinerary-empty">
-        <p style="font-family:var(--font-display);font-style:italic;font-size:1.75rem;color:var(--text-3);margin-bottom:12px">Bon appétit.</p>
-        <p>Save restaurants and cafés here — scheduled meals and your wishlist in one place.</p>
+        <p style="font-family:var(--font-display);font-style:italic;font-size:1.75rem;color:var(--text-3);margin-bottom:12px">Your guides await.</p>
+        <p>Add sights, experiences, and restaurants to your itinerary — a guide will be generated for each one.</p>
       </div>`;
     return;
   }
 
-  const scheduled = foodSpots.filter(s => s.scheduledDate).sort((a, b) => {
-    if (a.scheduledDate !== b.scheduledDate) return a.scheduledDate.localeCompare(b.scheduledDate);
-    return (a.scheduledTime || "").localeCompare(b.scheduledTime || "");
-  });
-  const wishlist = foodSpots.filter(s => !s.scheduledDate);
-
-  function buildSection(spots, title) {
-    if (!spots.length) return "";
-    const byTown = {};
-    for (const town of state.towns) {
-      const ts = spots.filter(s => s.townId === town.id);
-      if (ts.length) byTown[town.id] = { town, spots: ts };
-    }
-    return `
-      <div class="food-section">
-        <div class="food-section-header">
-          <div class="food-section-title">${escapeHtml(title)}</div>
-          <div class="food-section-count">${spots.length} place${spots.length !== 1 ? "s" : ""}</div>
-        </div>
-        ${Object.values(byTown).map(({ town, spots: ts }) => {
-          const byHood = {};
-          for (const s of ts) {
-            const hood = s.neighborhood || "_none";
-            (byHood[hood] = byHood[hood] || []).push(s);
-          }
-          return `
-            <div class="food-town-group">
-              <div class="food-town-label">${escapeHtml(town.name)}</div>
-              ${Object.entries(byHood).map(([hood, hs]) => `
-                <div class="food-hood-group">
-                  ${hood !== "_none" ? `<div class="food-hood-label">${escapeHtml(hood)}</div>` : ""}
-                  <div class="spot-list">${hs.map(s => spotCardHTML(s)).join("")}</div>
-                </div>`).join("")}
-            </div>`;
-        }).join("")}
+  let html = "";
+  for (const town of state.towns) {
+    const townSpots = spots.filter(s => s.townId === town.id);
+    if (!townSpots.length) continue;
+    html += `
+      <div class="guides-town-group">
+        <div class="guides-town-label">${escapeHtml(town.name)}</div>
+        ${townSpots.map(s => guideCardHTML(s)).join("")}
       </div>`;
   }
 
-  container.innerHTML = buildSection(scheduled, "Scheduled meals") + buildSection(wishlist, "Wishlist");
+  container.innerHTML = html;
 
-  container.querySelectorAll(".spot-card").forEach(card => {
-    card.addEventListener("click", () => {
-      const spot = state.spots.find(s => s.id === card.dataset.spotId);
-      if (spot) openDrawer(spot);
+  container.querySelectorAll(".guide-card-header:not(.no-guide)").forEach(header => {
+    header.addEventListener("click", () => header.closest(".guide-card").classList.toggle("expanded"));
+  });
+
+  container.querySelectorAll(".guide-generate-btn, .guide-regen-btn").forEach(btn => {
+    btn.addEventListener("click", async e => {
+      e.stopPropagation();
+      const spotId = btn.dataset.spotId;
+      const spot = state.spots.find(s => s.id === spotId);
+      if (!spot) return;
+      if (!GEMINI_CONFIG.apiKey) {
+        showKeyEntryForm(() => generateSpotGuide(spotId, spot).catch(() => {}));
+        document.getElementById("ai-panel-overlay").classList.add("visible");
+        document.getElementById("ai-panel-title").textContent = "Add API key";
+        return;
+      }
+      btn.disabled = true;
+      btn.textContent = "Generating…";
+      generateSpotGuide(spotId, spot).catch(() => {});
     });
   });
 }
