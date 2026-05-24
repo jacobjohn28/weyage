@@ -823,6 +823,91 @@
     border-radius: 100px; transition: width 600ms var(--ease-out);
   }
 
+  /* Today / countdown card */
+  .today-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 20px 22px;
+    margin-bottom: 28px;
+  }
+  .today-card-header {
+    display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+  .today-card-day {
+    font-family: var(--font-display); font-size: 1.25rem; font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+  .today-card-city { font-size: 0.875rem; color: var(--text-3); }
+  .today-card-date { font-size: 0.8125rem; color: var(--text-3); margin-left: auto; }
+  .today-trip-bar {
+    height: 4px; background: var(--surface-2); border-radius: 100px;
+    overflow: hidden; margin-bottom: 16px;
+  }
+  .today-trip-fill {
+    height: 100%; background: var(--accent); border-radius: 100px;
+    transition: width 600ms var(--ease-out);
+  }
+  .today-spot-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 0; border-bottom: 1px solid var(--border);
+    cursor: pointer; user-select: none;
+    transition: opacity 140ms var(--ease);
+  }
+  .today-spot-row:last-child { border-bottom: none; }
+  .today-spot-row.visited { opacity: 0.42; }
+  .today-spot-check {
+    width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
+    border: 1.5px solid var(--border-strong);
+    display: flex; align-items: center; justify-content: center;
+    transition: background 140ms var(--ease), border-color 140ms var(--ease);
+  }
+  .today-spot-row.visited .today-spot-check {
+    background: var(--success); border-color: var(--success);
+  }
+  .today-spot-name { flex: 1; font-size: 0.9375rem; }
+  .today-spot-type { font-size: 0.75rem; color: var(--text-3); }
+  .today-spot-time { font-size: 0.8125rem; color: var(--text-3); flex-shrink: 0; }
+  .today-preview-days { display: flex; flex-direction: column; gap: 10px; }
+  .today-preview-day { }
+  .today-preview-date {
+    font-size: 0.6875rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--text-3); margin-bottom: 4px;
+  }
+  .today-preview-spots { display: flex; flex-wrap: wrap; gap: 6px; }
+  .today-preview-chip {
+    font-size: 0.8125rem; padding: 3px 9px;
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 100px; color: var(--text-2);
+  }
+
+  /* City briefings on spread cards */
+  .spread-briefing { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 6px; }
+  .spread-briefing-toggle {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 2px; cursor: pointer; user-select: none;
+    font-size: 0.6875rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--text-3);
+  }
+  .spread-briefing-chevron { transition: transform 180ms var(--ease); }
+  .spread-briefing.open .spread-briefing-chevron { transform: rotate(180deg); }
+  .spread-briefing-body { display: none; padding-bottom: 4px; }
+  .spread-briefing.open .spread-briefing-body { display: block; }
+  .spread-briefing-item {
+    display: flex; gap: 8px; align-items: flex-start;
+    padding: 5px 2px; font-size: 0.8125rem; line-height: 1.55; color: var(--text-2);
+  }
+  .spread-briefing-dot {
+    flex-shrink: 0; width: 5px; height: 5px; border-radius: 50%;
+    background: var(--accent); margin-top: 6px;
+  }
+  .spread-briefing-gen {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 0.75rem; color: var(--accent);
+    background: none; border: 1px solid var(--border); border-radius: 6px;
+    padding: 4px 8px; cursor: pointer; margin-top: 4px;
+  }
+  .spread-briefing-gen:disabled { opacity: 0.5; pointer-events: none; }
+
   /* Food view */
   .food-toolbar { display: flex; justify-content: flex-end; margin-bottom: 28px; }
   .food-section { margin-bottom: 40px; }
@@ -2057,13 +2142,13 @@
           </div>
         </div>
 
-        <!-- Live widgets: countdown, progress, next up -->
-        <div class="dash-widgets-row" id="dash-widgets"></div>
+        <!-- Contextual today / countdown card -->
+        <div id="dash-today"></div>
 
         <!-- Photo essay: each town as a magazine spread -->
         <div class="route-essay" id="dashboard-towns"></div>
 
-        <!-- Quiet stats footer band -->
+        <!-- Stats footer band -->
         <div class="stats-band">
           <div class="stat-cell">
             <div class="stat-label">Duration</div>
@@ -2076,13 +2161,13 @@
           </div>
           <div class="stat-divider"></div>
           <div class="stat-cell">
-            <div class="stat-label">Spots planned</div>
-            <div class="stat-value" id="stat-spots">0</div>
+            <div class="stat-label">Spots visited</div>
+            <div class="stat-value"><span id="stat-spots-visited">0</span><span class="stat-suffix" id="stat-spots-suffix"></span></div>
           </div>
           <div class="stat-divider"></div>
-          <div class="stat-cell">
-            <div class="stat-label">Budget · €</div>
-            <div class="stat-value">—</div>
+          <div class="stat-cell" id="stat-budget-cell">
+            <div class="stat-label" id="stat-budget-label">Budget</div>
+            <div class="stat-value"><span id="stat-budget">—</span></div>
           </div>
         </div>
       </section>
@@ -3092,6 +3177,124 @@ async function fetchWikipediaImage(article) {
   return promise;
 }
 
+function spreadBriefingHTML(town) {
+  const b = town.briefing;
+  if (!b || b.status === "idle") {
+    return `
+      <div class="spread-briefing">
+        <div class="spread-briefing-toggle">
+          Before you go
+          <svg class="spread-briefing-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="spread-briefing-body">
+          ${GEMINI_CONFIG.apiKey
+            ? `<button class="spread-briefing-gen" data-town-id="${escapeHtml(town.id)}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="12" height="12"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>
+                Generate briefing
+               </button>`
+            : `<p style="color:var(--text-3);font-size:0.8125rem;margin:0">Add a Gemini API key in settings to generate briefings.</p>`}
+        </div>
+      </div>`;
+  }
+  if (b.status === "pending") {
+    return `
+      <div class="spread-briefing open">
+        <div class="spread-briefing-toggle">
+          Before you go
+          <svg class="spread-briefing-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="18 15 12 9 6 15"/></svg>
+        </div>
+        <div class="spread-briefing-body">
+          <p style="color:var(--text-3);font-size:0.8125rem;margin:4px 0">Generating…</p>
+        </div>
+      </div>`;
+  }
+  if (b.status === "error") {
+    return `
+      <div class="spread-briefing">
+        <div class="spread-briefing-toggle">
+          Before you go
+          <svg class="spread-briefing-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="spread-briefing-body">
+          <p style="color:var(--danger);font-size:0.8125rem;margin:0 0 6px">Generation failed.</p>
+          <button class="spread-briefing-gen" data-town-id="${escapeHtml(town.id)}">Retry</button>
+        </div>
+      </div>`;
+  }
+  // ready
+  const items = (b.content || []).map(tip =>
+    `<div class="spread-briefing-item"><div class="spread-briefing-dot"></div><span>${escapeHtml(tip)}</span></div>`
+  ).join("");
+  return `
+    <div class="spread-briefing">
+      <div class="spread-briefing-toggle">
+        Before you go
+        <svg class="spread-briefing-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="spread-briefing-body">
+        ${items}
+        <button class="spread-briefing-gen" data-town-id="${escapeHtml(town.id)}" style="margin-top:8px;opacity:0.6">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="11" height="11"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+          Regenerate
+        </button>
+      </div>
+    </div>`;
+}
+
+async function callGeminiBriefing(town) {
+  const spots = state.spots
+    .filter(s => s.townId === town.id && s.type !== "transport")
+    .map(s => s.name);
+  const spotList = spots.length > 0 ? `\nPlanned spots: ${spots.join(", ")}` : "";
+  const tripDates = state.trip
+    ? `${state.trip.startDate} to ${state.trip.endDate}`
+    : "late May to mid-June 2026";
+
+  const prompt = `You are an expert travel advisor helping a couple plan their France trip (${tripDates}).
+
+Generate a "Before you go" briefing for ${town.name}, France. Focus on:
+- Things that must be pre-booked (tours, tickets, restaurants) with specific lead times
+- Seasonal considerations for late May / early June (crowds, weather, events)
+- Practical heads-up a first-time visitor would wish they'd known
+- Any closures, renovation notices, or gotchas specific to the planned spots${spotList}
+
+Respond ONLY with a JSON array of 5-6 concise, actionable tip strings. No markdown, no prose outside the JSON.
+Example format: ["Tip one here", "Tip two here"]
+
+Be specific: real names, real booking URLs (if well-known), real lead times. Avoid generic tourism clichés.`;
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_CONFIG.model}:generateContent?key=${GEMINI_CONFIG.apiKey}`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generation_config: { temperature: 0.6, response_mime_type: "application/json" },
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `Gemini error ${res.status}`);
+  }
+  const data = await res.json();
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error("No briefing content returned.");
+  const clean = text.replace(/^```json\s*/i, "").replace(/```\s*$/, "").trim();
+  return JSON.parse(clean);
+}
+
+async function generateCityBriefing(townId, town) {
+  const townRef = doc(db, "trips", TRIP_ID, "towns", townId);
+  await updateDoc(townRef, { briefing: { status: "pending" } }).catch(() => {});
+  try {
+    const content = await callGeminiBriefing(town);
+    await updateDoc(townRef, { briefing: { status: "ready", content, generatedAt: serverTimestamp() } });
+  } catch (err) {
+    console.error("Briefing generation error:", err);
+    await updateDoc(townRef, { briefing: { status: "error", errorMessage: err.message } }).catch(() => {});
+  }
+}
+
 function renderDashboardTowns() {
   const container = document.getElementById("dashboard-towns");
   const typeLabel = { sight: "Sights", restaurant: "Restaurants", cafe: "Cafés", experience: "Experiences", transport: "Transport" };
@@ -3137,16 +3340,39 @@ function renderDashboardTowns() {
             <span>${fmtSpreadDates(t.arrivalDate, t.departureDate)}</span>
             <span class="spread-nights">${nights} night${nights === 1 ? "" : "s"}</span>
           </div>
+          ${spreadBriefingHTML(t)}
         </div>
       </article>
     `;
   }).join("");
 
-  // 3c — clicking a town spread navigates to that town in the itinerary
+  // clicking a town spread navigates to that town in the itinerary
   container.querySelectorAll(".spread[data-town-id]").forEach(card => {
-    card.addEventListener("click", () => {
+    card.addEventListener("click", (e) => {
+      if (e.target.closest(".spread-briefing")) return;
       pendingScrollTownId = card.dataset.townId;
       setView("itinerary");
+    });
+  });
+
+  // Briefing toggle expand/collapse
+  container.querySelectorAll(".spread-briefing-toggle").forEach(toggle => {
+    toggle.addEventListener("click", e => {
+      e.stopPropagation();
+      toggle.closest(".spread-briefing").classList.toggle("open");
+    });
+  });
+
+  // Generate briefing buttons
+  container.querySelectorAll(".spread-briefing-gen").forEach(btn => {
+    btn.addEventListener("click", async e => {
+      e.stopPropagation();
+      const townId = btn.dataset.townId;
+      const town = state.towns.find(t => t.id === townId);
+      if (!town) return;
+      btn.disabled = true;
+      btn.textContent = "Generating…";
+      await generateCityBriefing(townId, town);
     });
   });
 
@@ -3186,7 +3412,41 @@ function renderDashboardMeta() {
     else if (days === 0) cd.textContent = `Bon voyage`;
     else cd.textContent = `In progress`;
   }
-  document.getElementById("stat-spots").textContent = state.spots.length;
+
+  // Spots visited stat
+  const total   = state.spots.filter(s => s.type !== "transport").length;
+  const visited = state.spots.filter(s => s.visited).length;
+  const spotsVisEl  = document.getElementById("stat-spots-visited");
+  const spotsSuffix = document.getElementById("stat-spots-suffix");
+  if (spotsVisEl) spotsVisEl.textContent = visited;
+  if (spotsSuffix) spotsSuffix.textContent = total > 0 ? ` / ${total}` : "";
+
+  // Budget remaining stat (EUR primary)
+  const entries = aggregateBudget();
+  const fmt = n => n.toLocaleString("en-GB", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  const eurEntries = entries.filter(e => e.currency === "EUR");
+  const budgetTargets = { ...(state.trip?.budgetTargets || {}) };
+  if (state.trip?.totalBudget && !budgetTargets.EUR) budgetTargets.EUR = state.trip.totalBudget;
+  const eurBudget  = budgetTargets.EUR || 0;
+  const eurPlanned = eurEntries.reduce((s, e) => s + e.amount, 0);
+  const remaining  = eurBudget ? eurBudget - eurPlanned : null;
+  const budgetEl   = document.getElementById("stat-budget");
+  const budgetLabel = document.getElementById("stat-budget-label");
+  if (budgetEl) {
+    if (remaining !== null) {
+      budgetEl.textContent = `€${fmt(Math.abs(remaining))}`;
+      budgetEl.style.color = remaining < 0 ? "var(--danger)" : "";
+      if (budgetLabel) budgetLabel.textContent = remaining < 0 ? "Over budget" : "Budget left";
+    } else if (eurPlanned > 0) {
+      budgetEl.textContent = `€${fmt(eurPlanned)}`;
+      budgetEl.style.color = "";
+      if (budgetLabel) budgetLabel.textContent = "EUR planned";
+    } else {
+      budgetEl.textContent = "—";
+      budgetEl.style.color = "";
+      if (budgetLabel) budgetLabel.textContent = "Budget";
+    }
+  }
 }
 
 subscribe(() => {
@@ -3195,7 +3455,7 @@ subscribe(() => {
     renderDashboardTowns();
   }
   renderDashboardMeta();
-  renderDashboardWidgets();
+  renderDashboardToday();
   if (state.currentView === "itinerary") renderItinerary();
   if (state.currentView === "guides") renderGuides();
   if (state.currentView === "budget") renderBudget();
@@ -4742,57 +5002,122 @@ async function unlinkSpot(spotId) {
 /* ─────────────────────────────────────────────────────────────
    DASHBOARD WIDGETS (3g)
    ───────────────────────────────────────────────────────────── */
-function renderDashboardWidgets() {
-  const container = document.getElementById("dash-widgets");
-  if (!container) return;
+function renderDashboardToday() {
+  const container = document.getElementById("dash-today");
+  if (!container || !state.trip) return;
 
   const today = new Date().toISOString().slice(0, 10);
-  const days = state.trip ? daysUntil(state.trip.startDate) : null;
-  const total = state.spots.length;
-  const visited = state.spots.filter(s => s.visited).length;
-  const pct = total > 0 ? Math.round((visited / total) * 100) : 0;
+  const tripStart = state.trip.startDate;
+  const tripEnd   = state.trip.endDate;
+  const days = daysUntil(tripStart);
 
-  const nextSpot = state.spots
-    .filter(s => s.scheduledDate && s.scheduledDate >= today && !s.visited)
-    .sort((a, b) => {
-      if (a.scheduledDate !== b.scheduledDate) return a.scheduledDate.localeCompare(b.scheduledDate);
-      return (a.scheduledTime || "").localeCompare(b.scheduledTime || "");
-    })[0] || null;
-  const nextTown = nextSpot ? state.towns.find(t => t.id === nextSpot.townId) : null;
-  const nextDate = nextSpot
-    ? new Date(nextSpot.scheduledDate + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" })
-    : "";
+  // Compute trip-day number and total length
+  const startMs = new Date(tripStart + "T00:00:00").getTime();
+  const endMs   = new Date(tripEnd   + "T00:00:00").getTime();
+  const nowMs   = new Date(today     + "T00:00:00").getTime();
+  const totalDays   = Math.round((endMs - startMs) / 86400000);
+  const tripDayNum  = Math.max(1, Math.round((nowMs - startMs) / 86400000) + 1);
+  const tripPct     = totalDays > 0 ? Math.min(Math.round((Math.min(tripDayNum - 1, totalDays) / totalDays) * 100), 100) : 0;
 
-  let countdownContent;
-  if (days === null) {
-    countdownContent = `<span class="dash-countdown-num">—</span>`;
-  } else if (days > 0) {
-    countdownContent = `<span class="dash-countdown-num">${days}</span><div class="dash-widget-sub">days to go</div>`;
-  } else if (days === 0) {
-    countdownContent = `<span class="dash-countdown-num" style="font-size:1.75rem;line-height:1.2">Bon<br>voyage</span>`;
+  const progressBar = `<div class="today-trip-bar"><div class="today-trip-fill" style="width:${tripPct}%"></div></div>`;
+
+  if (days > 0) {
+    /* ── PRE-TRIP: countdown + first-days preview ── */
+    const startLabel = new Date(tripStart + "T00:00:00")
+      .toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+
+    // Collect first 3 scheduled days worth of spots
+    const spotsAhead = [...state.spots]
+      .filter(s => s.scheduledDate && s.scheduledDate >= tripStart && s.type !== "transport")
+      .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate) || (a.scheduledTime||"").localeCompare(b.scheduledTime||""));
+
+    const dayMap = new Map();
+    spotsAhead.forEach(s => {
+      if (!dayMap.has(s.scheduledDate)) dayMap.set(s.scheduledDate, []);
+      dayMap.get(s.scheduledDate).push(s);
+    });
+    const previewDays = [...dayMap.entries()].slice(0, 3);
+
+    const previewHTML = previewDays.length > 0 ? `
+      <div class="today-preview-days">
+        ${previewDays.map(([date, spots]) => {
+          const label = new Date(date + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+          const chips = spots.slice(0, 4).map(s => `<span class="today-preview-chip">${escapeHtml(s.name)}</span>`).join("");
+          const more = spots.length > 4 ? `<span class="today-preview-chip" style="color:var(--text-3)">+${spots.length - 4} more</span>` : "";
+          return `<div class="today-preview-day">
+            <div class="today-preview-date">${label}</div>
+            <div class="today-preview-spots">${chips}${more}</div>
+          </div>`;
+        }).join("")}
+      </div>` : `<p style="color:var(--text-3);font-size:0.875rem;margin:0">No spots scheduled yet for the first days.</p>`;
+
+    container.innerHTML = `
+      <div class="today-card">
+        <div class="today-card-header">
+          <span class="today-card-day">${days} day${days === 1 ? "" : "s"} to go</span>
+          <span class="today-card-city">· France · from ${startLabel}</span>
+        </div>
+        <div class="today-trip-bar"><div class="today-trip-fill" style="width:0%"></div></div>
+        ${previewHTML}
+      </div>`;
+
+  } else if (today > tripEnd) {
+    /* ── POST-TRIP ── */
+    const visited = state.spots.filter(s => s.visited).length;
+    const total   = state.spots.filter(s => s.type !== "transport").length;
+    container.innerHTML = `
+      <div class="today-card">
+        <div class="today-card-header">
+          <span class="today-card-day">Trip complete</span>
+          <span class="today-card-city">· ${visited} of ${total} spots visited</span>
+        </div>
+        <div class="today-trip-bar"><div class="today-trip-fill" style="width:100%;background:var(--success)"></div></div>
+      </div>`;
+
   } else {
-    countdownContent = `<span class="dash-countdown-num">${Math.abs(days)}</span><div class="dash-widget-sub">days in</div>`;
-  }
+    /* ── IN-TRIP: today's schedule ── */
+    const currentTown = state.towns.find(t => t.arrivalDate <= today && today < t.departureDate)
+      || state.towns.find(t => t.arrivalDate <= today);
+    const dateLabel = new Date(today + "T00:00:00")
+      .toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
 
-  container.innerHTML = `
-    <div class="dash-widget">
-      <div class="dash-widget-label">Departure</div>
-      ${countdownContent}
-    </div>
-    <div class="dash-widget">
-      <div class="dash-widget-label">Spots planned</div>
-      <div class="dash-widget-value">${total}</div>
-      <div class="dash-widget-sub">${visited} visited${total > 0 ? ` · ${pct}%` : ""}</div>
-      ${total > 0 ? `<div class="dash-progress-bar"><div class="dash-progress-fill" style="width:${pct}%"></div></div>` : ""}
-    </div>
-    <div class="dash-widget is-next-up">
-      <div class="dash-widget-label">Next up${nextTown ? ` · ${escapeHtml(nextTown.name)}` : ""}${nextDate ? ` · ${escapeHtml(nextDate)}` : ""}</div>
-      ${nextSpot
-        ? `<div class="dash-widget-value">${escapeHtml(nextSpot.name)}</div>
-           ${nextSpot.scheduledTime ? `<div class="dash-widget-sub">at ${fmtTime12(nextSpot.scheduledTime)}</div>` : ""}`
-        : `<div class="dash-widget-value" style="font-size:0.9375rem;color:var(--text-3);font-family:var(--font-body);font-weight:400">Nothing scheduled yet</div>`
-      }
-    </div>`;
+    const todaySpots = state.spots
+      .filter(s => s.scheduledDate === today && s.type !== "transport")
+      .sort((a, b) => (a.scheduledTime || "ZZ").localeCompare(b.scheduledTime || "ZZ"));
+
+    const spotsHTML = todaySpots.length > 0
+      ? todaySpots.map(s => `
+          <div class="today-spot-row${s.visited ? " visited" : ""}" data-spot-id="${escapeHtml(s.id)}">
+            <div class="today-spot-check">
+              ${s.visited ? `<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" width="10" height="10"><path d="M20 6L9 17l-5-5"/></svg>` : ""}
+            </div>
+            <span class="today-spot-name">${escapeHtml(s.name)}</span>
+            ${s.scheduledTime ? `<span class="today-spot-time">${fmtTime12(s.scheduledTime)}</span>` : ""}
+          </div>`).join("")
+      : `<p style="color:var(--text-3);font-size:0.875rem;margin:4px 0">Nothing scheduled — enjoy some spontaneous exploration.</p>`;
+
+    container.innerHTML = `
+      <div class="today-card">
+        <div class="today-card-header">
+          <span class="today-card-day">Day ${Math.min(tripDayNum, totalDays)} of ${totalDays}</span>
+          ${currentTown ? `<span class="today-card-city">· ${escapeHtml(currentTown.name)}</span>` : ""}
+          <span class="today-card-date">${dateLabel}</span>
+        </div>
+        ${progressBar}
+        <div id="today-spots-list">${spotsHTML}</div>
+      </div>`;
+
+    container.querySelectorAll(".today-spot-row").forEach(row => {
+      row.addEventListener("click", async () => {
+        const spot = state.spots.find(s => s.id === row.dataset.spotId);
+        if (!spot) return;
+        await updateDoc(spotDocRef(spot.id), {
+          visited: !spot.visited,
+          visitedAt: !spot.visited ? serverTimestamp() : null,
+        });
+      });
+    });
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────
