@@ -2,24 +2,17 @@
    Weyage Service Worker
    Deployed at: /weyage/ subdirectory on GitHub Pages
    ============================================================ */
-const CACHE_NAME = "weyage-v2";
+const CACHE_NAME = "weyage-v3";
 
-// App shell — adjust if the repo name changes
-const SHELL_URLS = [
-  "/weyage/",
-  "/weyage/index.html",
+// Static assets that rarely change — cache-first
+const STATIC_ASSETS = [
   "/weyage/manifest.json",
   "/weyage/icon.svg",
+  "/weyage/icon-192.png",
+  "/weyage/icon-512.png",
 ];
 
-// CDN assets — cache on first fetch
-const CDN_ORIGINS = [
-  "https://cdn.jsdelivr.net",
-  "https://fonts.googleapis.com",
-  "https://fonts.gstatic.com",
-];
-
-// Firebase / live API — always network-first
+// Firebase / live API — always network-first, fall back to cache if offline
 const NETWORK_FIRST_PREFIXES = [
   "https://www.gstatic.com/firebasejs",
   "https://firestore.googleapis.com",
@@ -28,9 +21,16 @@ const NETWORK_FIRST_PREFIXES = [
   "https://generativelanguage.googleapis.com",
 ];
 
+// CDN assets — cache on first fetch (versioned, never change)
+const CDN_ORIGINS = [
+  "https://cdn.jsdelivr.net",
+  "https://fonts.googleapis.com",
+  "https://fonts.gstatic.com",
+];
+
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(SHELL_URLS))
+    caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS))
   );
   self.skipWaiting();
 });
@@ -56,6 +56,24 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // Network-first for the app shell (index.html) — ensures every deploy is picked up immediately
+  if (url.origin === self.location.origin &&
+      (url.pathname === "/weyage/" || url.pathname === "/weyage/index.html")) {
+    event.respondWith(
+      caches.open(CACHE_NAME).then(async cache => {
+        try {
+          const response = await fetch(request);
+          if (response.ok) cache.put(request, response.clone());
+          return response;
+        } catch {
+          const cached = await cache.match(request);
+          return cached || fetch(request);
+        }
+      })
+    );
+    return;
+  }
+
   // Cache-first for CDN assets
   if (CDN_ORIGINS.some(o => request.url.startsWith(o))) {
     event.respondWith(
@@ -70,7 +88,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Cache-first for same-origin shell (index.html, manifest, icon)
+  // Cache-first for all other same-origin assets (icons, manifest)
   if (url.origin === self.location.origin) {
     event.respondWith(
       caches.open(CACHE_NAME).then(async cache => {
