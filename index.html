@@ -1858,6 +1858,13 @@
     font-size: 0.9375rem; color: var(--text-2);
     line-height: 1.6;
   }
+  .address-map-link {
+    color: inherit; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 2px;
+    border-bottom: 1px dashed var(--border-strong);
+    transition: color 140ms var(--ease), border-color 140ms var(--ease);
+  }
+  .address-map-link:hover { color: var(--accent); border-bottom-color: var(--accent); }
   .phone-link {
     color: var(--accent); text-decoration: none; font-weight: 500;
     border-bottom: 1px dashed color-mix(in srgb, var(--accent) 50%, transparent);
@@ -3306,6 +3313,15 @@ function escapeHtml(s) {
   })[c]);
 }
 
+// Returns an anchor that opens the address in Google Maps (redirects to Apple Maps on iOS)
+function mapsLink(address) {
+  const url = "https://maps.google.com/?q=" + encodeURIComponent(address);
+  return `<a class="address-map-link" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">
+    ${escapeHtml(address)}
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="12" height="12" style="flex-shrink:0;margin-left:3px;vertical-align:middle;opacity:0.7"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+  </a>`;
+}
+
 // Phone number detection patterns:
 // 1. International: +countrycode followed by digits/spaces/dashes (e.g. +33 1 23 45 67 89)
 // 2. French-style local: 5 pairs of 2 digits (e.g. 01 23 45 67 89 or 0123456789)
@@ -4282,7 +4298,7 @@ function openAccomDrawer(town) {
         <div class="drawer-section-label">Location</div>
         <div class="drawer-meta-row">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-          ${escapeHtml(a.address)}
+          ${mapsLink(a.address)}
         </div>
       </div>`);
   }
@@ -4436,7 +4452,7 @@ function openDrawer(spot) {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
             ${escapeHtml(spot.neighborhood)}
           </div>` : ""}
-          ${spot.address ? `<div class="drawer-meta-sub">${escapeHtml(spot.address)}</div>` : ""}
+          ${spot.address ? `<div class="drawer-meta-sub">${mapsLink(spot.address)}</div>` : ""}
         </div>`);
     }
     if (spot.scheduledDate || spot.scheduledTime) {
