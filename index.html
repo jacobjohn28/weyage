@@ -1415,7 +1415,6 @@
   body.share-mode .spot-drag-handle { display: none !important; }
   body.share-mode .spot-guide-link { display: none !important; }
   body.share-mode .town-edit-btn { display: none !important; }
-  body.share-mode .accom-card { pointer-events: none; }
   body.share-mode #drawer-edit-btn,
   body.share-mode #drawer-delete-btn,
   body.share-mode #drawer-visited-btn { display: none !important; }
@@ -1772,6 +1771,9 @@
   }
   .drawer-type-badge[data-type="experience"] {
     color: var(--tint-experience); background: rgba(111,139,104,0.1);
+  }
+  .drawer-type-badge[data-type="accommodation"] {
+    color: #7B6BAA; background: rgba(123,107,170,0.1);
   }
   .drawer-header-actions { display: flex; gap: 4px; margin-left: auto; }
   .drawer-title {
@@ -3601,6 +3603,11 @@ subscribe(() => {
     if (updated) openDrawer(updated);
     else closeDrawer();
   }
+  if (currentDrawerAccomTownId) {
+    const updatedTown = state.towns.find(t => t.id === currentDrawerAccomTownId);
+    if (updatedTown?.accommodation?.name) openAccomDrawer(updatedTown);
+    else closeDrawer();
+  }
 });
 
 /* ─────────────────────────────────────────────────────────────
@@ -3918,11 +3925,16 @@ function renderItinerary() {
 
   container.innerHTML = html.join("");
 
-  // Accommodation card + add-accom-link → open accom modal
-  container.querySelectorAll(".accom-card, .add-accom-link").forEach(el => {
+  // Accommodation card → open read-only drawer; add-accom-link → open edit modal
+  container.querySelectorAll(".accom-card").forEach(el => {
     el.addEventListener("click", () => {
-      const townId = el.dataset.townId;
-      const town = state.towns.find(t => t.id === townId);
+      const town = state.towns.find(t => t.id === el.dataset.townId);
+      if (town) openAccomDrawer(town);
+    });
+  });
+  container.querySelectorAll(".add-accom-link").forEach(el => {
+    el.addEventListener("click", () => {
+      const town = state.towns.find(t => t.id === el.dataset.townId);
       if (town) openAccomModal(town);
     });
   });
@@ -4044,6 +4056,90 @@ function renderItinerary() {
    DETAIL DRAWER
    ───────────────────────────────────────────────────────────── */
 let currentDrawerSpot = null;
+let currentDrawerAccomTownId = null;
+
+function openAccomDrawer(town) {
+  currentDrawerSpot = null;
+  currentDrawerAccomTownId = town.id;
+  const a = town.accommodation || {};
+
+  // Badge
+  const badge = document.getElementById("drawer-type-badge");
+  badge.textContent = "Accommodation";
+  badge.dataset.type = "accommodation";
+
+  // Title
+  document.getElementById("drawer-spot-name").textContent = a.name || "Accommodation";
+
+  const rows = [];
+  const fmtD = iso => iso
+    ? new Date(iso + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })
+    : null;
+
+  if (a.address) {
+    rows.push(`
+      <div class="drawer-section">
+        <div class="drawer-section-label">Location</div>
+        <div class="drawer-meta-row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          ${escapeHtml(a.address)}
+        </div>
+      </div>`);
+  }
+
+  const checkinDate  = fmtD(a.checkinDate);
+  const checkoutDate = fmtD(a.checkoutDate);
+  const checkinTime  = fmtTime12(a.checkinTime);
+  const checkoutTime = fmtTime12(a.checkoutTime);
+  if (checkinDate || checkinTime || checkoutDate || checkoutTime) {
+    const ciLine = [checkinDate,  checkinTime ].filter(Boolean).join(" · ");
+    const coLine = [checkoutDate, checkoutTime].filter(Boolean).join(" · ");
+    rows.push(`
+      <div class="drawer-section">
+        <div class="drawer-section-label">Stay</div>
+        ${ciLine ? `<div class="drawer-meta-row" style="margin-bottom:4px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <span style="color:var(--text-3);font-size:0.8125rem;flex-shrink:0">Check-in</span>
+          ${escapeHtml(ciLine)}
+        </div>` : ""}
+        ${coLine ? `<div class="drawer-meta-row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <span style="color:var(--text-3);font-size:0.8125rem;flex-shrink:0">Check-out</span>
+          ${escapeHtml(coLine)}
+        </div>` : ""}
+      </div>`);
+  }
+
+  if (a.booked || a.bookingRef) {
+    rows.push(`
+      <div class="drawer-section">
+        <div class="drawer-section-label">Booking</div>
+        ${a.booked
+          ? `<div class="drawer-meta-row" style="color:var(--success)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+              Booked${a.bookingRef ? ` · Ref: ${escapeHtml(a.bookingRef)}` : ""}
+            </div>`
+          : `<div class="drawer-meta-sub">Ref: ${escapeHtml(a.bookingRef)}</div>`}
+      </div>`);
+  }
+
+  if (a.notes) {
+    rows.push(`
+      <div class="drawer-section">
+        <div class="drawer-section-label">Notes</div>
+        <div class="drawer-notes">${escapeHtml(a.notes)}</div>
+      </div>`);
+  }
+
+  document.getElementById("drawer-body").innerHTML = rows.join("") ||
+    `<p class="drawer-empty">No details yet — tap edit to add accommodation info.</p>`;
+
+  // Hide the visited footer button (doesn't apply to accommodation)
+  document.getElementById("drawer-visited-btn").style.display = "none";
+
+  document.getElementById("spot-drawer-overlay").classList.add("visible");
+  document.body.style.overflow = "hidden";
+}
 
 function openDrawer(spot) {
   currentDrawerSpot = spot;
@@ -4312,11 +4408,20 @@ function closeDrawer() {
   document.getElementById("spot-drawer-overlay").classList.remove("visible");
   document.body.style.overflow = "";
   currentDrawerSpot = null;
+  currentDrawerAccomTownId = null;
+  // Restore visited button for next spot drawer open
+  document.getElementById("drawer-visited-btn").style.display = "";
 }
 
 document.getElementById("drawer-close-btn").addEventListener("click", closeDrawer);
 document.getElementById("drawer-backdrop").addEventListener("click", closeDrawer);
 document.getElementById("drawer-edit-btn").addEventListener("click", () => {
+  if (currentDrawerAccomTownId) {
+    const town = state.towns.find(t => t.id === currentDrawerAccomTownId);
+    closeDrawer();
+    if (town) openAccomModal(town);
+    return;
+  }
   if (!currentDrawerSpot) return;
   const spot = currentDrawerSpot;
   closeDrawer();
