@@ -1045,6 +1045,13 @@
     text-align: center; padding: 48px 20px;
     font-size: 0.875rem; color: var(--text-3); font-style: italic;
   }
+  .guides-section-divider {
+    font-size: 0.6875rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.12em; color: var(--text-3);
+    padding: 14px 0 6px;
+    border-top: 1px solid var(--border);
+    margin-top: 6px;
+  }
   .spot-guide-link {
     background: none; border: none; cursor: pointer;
     color: var(--text-3); padding: 6px 10px 6px 4px;
@@ -3041,7 +3048,14 @@ function setView(viewName) {
   });
   const titles = { dashboard: "Overview", itinerary: "Itinerary", guides: "Guides", map: "Map", budget: "Budget", documents: "Documents" };
   document.getElementById("topbar-title").textContent = titles[viewName] || "Dashboard";
-  if (viewName === "itinerary") renderItinerary();
+  if (viewName === "itinerary") {
+    const todayIso = new Date().toISOString().slice(0, 10);
+    const { startDate, endDate } = state.trip || {};
+    if (startDate && endDate && todayIso >= startDate && todayIso <= endDate) {
+      pendingScrollToToday = true;
+    }
+    renderItinerary();
+  }
   if (viewName === "guides") renderGuides();
   if (viewName === "budget") renderBudget();
   if (viewName === "documents") renderDocuments();
@@ -4179,6 +4193,22 @@ function renderItinerary() {
     }));
   }
 
+  // Auto-scroll to today's date section when opening the tab mid-trip
+  if (pendingScrollToToday) {
+    pendingScrollToToday = false;
+    const todayIso = new Date().toISOString().slice(0, 10);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const todayList = container.querySelector(`.spot-list[data-date="${todayIso}"]`);
+      if (!todayList) return;
+      const dayGroup = todayList.closest(".day-group") || todayList.parentElement;
+      const main = document.querySelector(".main");
+      if (dayGroup && main) {
+        const top = dayGroup.getBoundingClientRect().top - main.getBoundingClientRect().top + main.scrollTop - 16;
+        main.scrollTo({ top, behavior: "smooth" });
+      }
+    }));
+  }
+
   // Async: fetch any missing Wikipedia images, then re-render once when all are ready.
   // We do a single re-render (not per-town injection) to avoid stale-DOM races where
   // a concurrent renderItinerary() call replaces the container before injection lands.
@@ -4580,6 +4610,7 @@ document.getElementById("drawer-visited-btn").addEventListener("click", async ()
    ADD / EDIT MODAL
    ───────────────────────────────────────────────────────────── */
 let pendingScrollTownId = null;
+let pendingScrollToToday = false;
 let pendingGuideSpotId = null;
 let modalEditId = null;
 let selectedType = "sight";
@@ -5975,14 +6006,46 @@ function renderGuides() {
     return;
   }
 
+  const todayKey = new Date().toISOString().slice(0, 10);
+
+  // Priority bucket: 0 = upcoming (scheduled & future & not visited),
+  //                  1 = wishlist (unscheduled & not visited),
+  //                  2 = done (visited OR past date)
+  function guidePriority(s) {
+    if (s.visited || (s.scheduledDate && s.scheduledDate < todayKey)) return 2;
+    if (!s.scheduledDate) return 1;
+    return 0;
+  }
+
   let html = "";
   for (const town of state.towns) {
     const townSpots = spots.filter(s => s.townId === town.id);
     if (!townSpots.length) continue;
+
+    const upcoming = townSpots
+      .filter(s => guidePriority(s) === 0)
+      .sort((a, b) => (a.scheduledDate || "").localeCompare(b.scheduledDate || "") || (a.order ?? 9999) - (b.order ?? 9999));
+    const wishlist = townSpots
+      .filter(s => guidePriority(s) === 1)
+      .sort((a, b) => (a.order ?? 9999) - (b.order ?? 9999));
+    const done = townSpots
+      .filter(s => guidePriority(s) === 2)
+      .sort((a, b) => (b.scheduledDate || "").localeCompare(a.scheduledDate || "") || (a.order ?? 9999) - (b.order ?? 9999));
+
+    let sections = upcoming.map(s => guideCardHTML(s)).join("");
+    if (wishlist.length) {
+      if (upcoming.length) sections += `<div class="guides-section-divider">Wishlist</div>`;
+      sections += wishlist.map(s => guideCardHTML(s)).join("");
+    }
+    if (done.length) {
+      if (upcoming.length || wishlist.length) sections += `<div class="guides-section-divider">Done</div>`;
+      sections += done.map(s => guideCardHTML(s)).join("");
+    }
+
     html += `
       <div class="guides-town-group">
         <div class="guides-town-label">${escapeHtml(town.name)}</div>
-        ${townSpots.map(s => guideCardHTML(s)).join("")}
+        ${sections}
       </div>`;
   }
 
