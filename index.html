@@ -1865,6 +1865,16 @@
     transition: color 140ms var(--ease), border-color 140ms var(--ease);
   }
   .address-map-link:hover { color: var(--accent); border-bottom-color: var(--accent); }
+  .maps-search-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    margin-top: 6px;
+    padding: 4px 10px; font-size: 0.75rem;
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text-2); text-decoration: none;
+    font-family: inherit; cursor: pointer;
+    transition: background 140ms var(--ease), color 140ms var(--ease), border-color 140ms var(--ease);
+  }
+  .maps-search-btn:hover { background: var(--border); color: var(--accent); border-color: var(--accent); }
   .phone-link {
     color: var(--accent); text-decoration: none; font-weight: 500;
     border-bottom: 1px dashed color-mix(in srgb, var(--accent) 50%, transparent);
@@ -3313,12 +3323,22 @@ function escapeHtml(s) {
   })[c]);
 }
 
-// Returns an anchor that opens the address in Google Maps (redirects to Apple Maps on iOS)
+// Returns an anchor that opens an exact address in Google Maps
 function mapsLink(address) {
   const url = "https://maps.google.com/?q=" + encodeURIComponent(address);
   return `<a class="address-map-link" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">
     ${escapeHtml(address)}
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="12" height="12" style="flex-shrink:0;margin-left:3px;vertical-align:middle;opacity:0.7"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+  </a>`;
+}
+
+// Returns a "Find on Maps" search button using spot name + city as the query
+function mapsSearchBtn(spotName, townName) {
+  const query = spotName + (townName ? ", " + townName : "");
+  const url = "https://maps.google.com/?q=" + encodeURIComponent(query);
+  return `<a class="maps-search-btn" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="12" height="12"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+    Find on Maps
   </a>`;
 }
 
@@ -4292,14 +4312,17 @@ function openAccomDrawer(town) {
     ? new Date(iso + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })
     : null;
 
-  if (a.address) {
+  {
+    const accomTownName = town?.name || "";
+    const accomName = a.name || "Accommodation";
     rows.push(`
       <div class="drawer-section">
         <div class="drawer-section-label">Location</div>
         <div class="drawer-meta-row">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-          ${mapsLink(a.address)}
+          ${a.address ? mapsLink(a.address) : escapeHtml(accomTownName)}
         </div>
+        ${!a.address ? `<div>${mapsSearchBtn(accomName, accomTownName)}</div>` : ""}
       </div>`);
   }
 
@@ -4444,17 +4467,19 @@ function openDrawer(spot) {
 
   } else {
     /* ── Regular spot sections ── */
-    if (spot.neighborhood || spot.address) {
-      rows.push(`
-        <div class="drawer-section">
-          <div class="drawer-section-label">Location</div>
-          ${spot.neighborhood ? `<div class="drawer-meta-row">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-            ${escapeHtml(spot.neighborhood)}
-          </div>` : ""}
-          ${spot.address ? `<div class="drawer-meta-sub">${mapsLink(spot.address)}</div>` : ""}
-        </div>`);
-    }
+    const spotTown = state.towns.find(t => t.id === spot.townId);
+    const spotTownName = spotTown?.name || "";
+    rows.push(`
+      <div class="drawer-section">
+        <div class="drawer-section-label">Location</div>
+        ${spot.neighborhood ? `<div class="drawer-meta-row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          ${escapeHtml(spot.neighborhood)}
+        </div>` : ""}
+        ${spot.address
+          ? `<div class="drawer-meta-sub">${mapsLink(spot.address)}</div>`
+          : `<div>${mapsSearchBtn(spot.name, spotTownName)}</div>`}
+      </div>`);
     if (spot.scheduledDate || spot.scheduledTime) {
       const dateLine = spot.scheduledDate
         ? new Date(spot.scheduledDate + "T00:00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })
