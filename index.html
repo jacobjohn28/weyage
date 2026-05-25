@@ -1412,7 +1412,8 @@
   body.share-mode .day-ai-btn,
   body.share-mode .add-accom-link,
   body.share-mode .day-empty .add-spot-inline { display: none !important; }
-  body.share-mode .spot-drag-handle { display: none !important; }
+  body.share-mode .spot-card { cursor: default !important; }
+  body.share-mode .spot-card::after { display: none !important; }
   body.share-mode .spot-guide-link { display: none !important; }
   body.share-mode .town-edit-btn { display: none !important; }
   body.share-mode #drawer-edit-btn,
@@ -1430,18 +1431,25 @@
   /* Spot card */
   .spot-card {
     display: flex; align-items: stretch;
+    position: relative;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     overflow: hidden;
     cursor: pointer;
-    transition: box-shadow 140ms var(--ease), border-color 140ms var(--ease), opacity 200ms var(--ease);
+    transition: box-shadow 140ms var(--ease), border-color 140ms var(--ease), opacity 200ms var(--ease), outline 100ms var(--ease);
     user-select: none;
   }
   .spot-card:hover { box-shadow: var(--shadow-md); border-color: var(--border-strong); }
   .spot-card.visited { opacity: 0.5; }
-  .spot-card.sortable-ghost { opacity: 0.3; }
-  .spot-card.sortable-chosen { box-shadow: var(--shadow-lg); z-index: 50; }
+  .spot-card.sortable-ghost { opacity: 0.25; }
+  .spot-card.sortable-chosen {
+    box-shadow: var(--shadow-lg); z-index: 50;
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    cursor: grabbing !important;
+  }
+  .spot-card.sortable-drag { cursor: grabbing !important; }
 
   /* Type accent left bar */
   .spot-type-bar {
@@ -1551,18 +1559,23 @@
     width: 11px; height: 11px; color: var(--accent); flex-shrink: 0;
   }
 
-  /* Drag handle */
-  .spot-drag-handle {
-    width: 30px; flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center;
-    color: var(--text-3);
-    cursor: grab;
-    opacity: 0;
-    transition: opacity 140ms var(--ease);
+  /* Long-press drag affordance */
+  .spot-drag-handle { display: none; } /* hidden — kept for arrival-view guard */
+  .spot-card:not([data-draggable="false"]) { cursor: grab; user-select: none; }
+  .spot-card:not([data-draggable="false"]):active { cursor: grabbing; }
+  /* Subtle desktop grip hint — 3 dots top-right, only on hover */
+  @media (hover: hover) {
+    .spot-card:not([data-draggable="false"])::after {
+      content: "⠿";
+      position: absolute; top: 7px; right: 8px;
+      font-size: 11px; line-height: 1;
+      color: var(--text-3);
+      opacity: 0;
+      transition: opacity 140ms var(--ease);
+      pointer-events: none;
+    }
+    .spot-card:not([data-draggable="false"]):hover::after { opacity: 0.5; }
   }
-  .spot-card:hover .spot-drag-handle { opacity: 1; }
-  .spot-drag-handle:active { cursor: grabbing; }
-  .spot-drag-handle svg { width: 13px; height: 13px; }
 
   /* Buttons */
   .btn-primary {
@@ -3813,9 +3826,6 @@ function transportCardHTML(spot) {
         </div>
         ${meta.length ? `<div class="spot-card-row2">${meta.join("")}</div>` : ""}
       </div>
-      ${isArrival ? "" : `<div class="spot-drag-handle" title="Drag to reorder">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="9" cy="7" r="1" fill="currentColor"/><circle cx="9" cy="12" r="1" fill="currentColor"/><circle cx="9" cy="17" r="1" fill="currentColor"/><circle cx="15" cy="7" r="1" fill="currentColor"/><circle cx="15" cy="12" r="1" fill="currentColor"/><circle cx="15" cy="17" r="1" fill="currentColor"/></svg>
-      </div>`}
     </div>`;
 }
 
@@ -3859,9 +3869,6 @@ function spotCardHTML(spot) {
         ${(row2Parts.length || tags) ? `<div class="spot-card-row2">${row2Parts.join("")}${tags}</div>` : ""}
       </div>
       ${guideLink}
-      <div class="spot-drag-handle" title="Drag to reorder">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="9" cy="7" r="1" fill="currentColor"/><circle cx="9" cy="12" r="1" fill="currentColor"/><circle cx="9" cy="17" r="1" fill="currentColor"/><circle cx="15" cy="7" r="1" fill="currentColor"/><circle cx="15" cy="12" r="1" fill="currentColor"/><circle cx="15" cy="17" r="1" fill="currentColor"/></svg>
-      </div>
     </div>`;
 }
 
@@ -4043,7 +4050,6 @@ function renderItinerary() {
   // Spot card → drawer
   container.querySelectorAll(".spot-card").forEach(card => {
     card.addEventListener("click", (e) => {
-      if (e.target.closest(".spot-drag-handle")) return;
       if (e.target.closest(".spot-guide-link")) return;
       const spot = state.spots.find(s => s.id === card.dataset.spotId);
       if (spot) openDrawer(spot);
@@ -4058,16 +4064,18 @@ function renderItinerary() {
     });
   });
 
-  // SortableJS — global group enables cross-day and cross-town drag
-  if (typeof Sortable !== "undefined") {
+  // SortableJS — global group enables cross-day and cross-town drag (skip in share mode)
+  if (typeof Sortable !== "undefined" && !document.body.classList.contains("share-mode")) {
     container.querySelectorAll(".spot-list").forEach(list => {
       const inst = Sortable.create(list, {
         animation: 150,
-        handle: ".spot-drag-handle",
-        delay: 150,
-        delayOnTouchOnly: true,
+        draggable: ".spot-card:not([data-draggable='false'])",
+        delay: 500,
+        delayOnTouchOnly: false,
+        touchStartThreshold: 4,
         ghostClass: "sortable-ghost",
         chosenClass: "sortable-chosen",
+        dragClass: "sortable-drag",
         group: "spots",
         onEnd: async (evt) => {
           const batch = writeBatch(db);
