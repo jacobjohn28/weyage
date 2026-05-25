@@ -1374,12 +1374,16 @@
     background: var(--accent-bg); color: var(--accent);
     border-radius: 20px; padding: 2px 8px;
   }
+  .ai-reco-actions {
+    display: flex; align-items: center; gap: 8px;
+    flex-wrap: wrap; margin-top: 10px;
+  }
+  .ai-reco-actions .maps-search-btn { margin-top: 0; }
   .ai-reco-add-btn {
-    align-self: flex-start;
     background: var(--accent); color: #fff;
     border: none; border-radius: 8px;
     padding: 7px 14px; font-size: 0.8125rem; font-weight: 600;
-    cursor: pointer; margin-top: 2px;
+    cursor: pointer; margin-left: auto;
     transition: opacity 0.15s;
   }
   .ai-reco-add-btn:hover { opacity: 0.85; }
@@ -6475,6 +6479,8 @@ function renderRecommendationCards(result, townId, date) {
     contextEl.style.display = "";
   }
 
+  const townName = state.towns.find(t => t.id === townId)?.name || "";
+
   const cards = (result.spots || []).map(spot => {
     const color = TYPE_COLORS[spot.type] || "#888";
     const metaChips = [
@@ -6497,9 +6503,12 @@ function renderRecommendationCards(result, townId, date) {
         ${spot.logistics ? `<div class="ai-reco-logistics">${escapeHtml(spot.logistics)}</div>` : ""}
         ${tags ? `<div class="ai-reco-tags">${tags}</div>` : ""}
         ${spot.notes ? `<div class="ai-reco-logistics" style="font-style:italic">${escapeHtml(spot.notes)}</div>` : ""}
-        <button class="ai-reco-add-btn" data-date="${escapeHtml(date)}" data-town-id="${escapeHtml(townId)}">
-          + Add to ${new Date(date + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}
-        </button>
+        <div class="ai-reco-actions">
+          ${mapsSearchBtn(spot.name, townName)}
+          <button class="ai-reco-add-btn" data-date="${escapeHtml(date)}" data-town-id="${escapeHtml(townId)}">
+            + Add to ${new Date(date + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}
+          </button>
+        </div>
       </div>`;
   }).join("");
 
