@@ -1443,6 +1443,11 @@
   .spot-card:hover { box-shadow: var(--shadow-md); border-color: var(--border-strong); }
   .spot-card.visited { opacity: 0.5; }
   .spot-card.sortable-ghost { opacity: 0.25; }
+  .spot-card.drag-linked-peer {
+    outline: 2px dashed var(--accent);
+    outline-offset: 2px;
+    opacity: 0.65;
+  }
   .spot-card.sortable-chosen {
     box-shadow: var(--shadow-lg); z-index: 50;
     outline: 2px solid var(--accent);
@@ -4077,13 +4082,33 @@ function renderItinerary() {
         chosenClass: "sortable-chosen",
         dragClass: "sortable-drag",
         group: "spots",
+        onChoose: (evt) => {
+          // Highlight linked peer cards while long-press drag is active
+          const spotId = evt.item.dataset.spotId;
+          const spot = state.spots.find(s => s.id === spotId);
+          if (spot?.groupId) {
+            container.querySelectorAll(".spot-card").forEach(card => {
+              const peer = state.spots.find(s => s.id === card.dataset.spotId);
+              if (peer?.groupId === spot.groupId && peer.id !== spotId) {
+                card.classList.add("drag-linked-peer");
+              }
+            });
+          }
+        },
+        onUnchoose: () => {
+          container.querySelectorAll(".drag-linked-peer").forEach(el => el.classList.remove("drag-linked-peer"));
+        },
         onEnd: async (evt) => {
+          // Clear peer highlights
+          container.querySelectorAll(".drag-linked-peer").forEach(el => el.classList.remove("drag-linked-peer"));
+
           const batch = writeBatch(db);
           const spotId = evt.item.dataset.spotId;
           const spot = state.spots.find(s => s.id === spotId);
           const newDateKey = evt.to.dataset.date;
           const newTownId = evt.to.dataset.townId;
 
+          // Update dragged spot's date/town if changed
           if (spot) {
             const updates = {};
             const oldDateKey = spot.scheduledDate || "unscheduled";
@@ -4096,7 +4121,37 @@ function renderItinerary() {
             if (Object.keys(updates).length) batch.update(spotDocRef(spotId), updates);
           }
 
-          for (const l of new Set([evt.from, evt.to])) {
+          // Move linked peers in DOM right after the dropped card, preserving relative order
+          const affectedLists = new Set([evt.from, evt.to]);
+          if (spot?.groupId) {
+            const peers = state.spots
+              .filter(s => s.groupId === spot.groupId && s.id !== spotId)
+              .sort((a, b) => (a.order ?? 9999) - (b.order ?? 9999));
+
+            let insertRef = evt.item.nextSibling;
+            for (const peer of peers) {
+              const peerCard = container.querySelector(`.spot-card[data-spot-id="${peer.id}"]`);
+              if (!peerCard) continue;
+              const fromList = peerCard.parentElement;
+              if (fromList) affectedLists.add(fromList);
+              evt.to.insertBefore(peerCard, insertRef);
+              insertRef = peerCard.nextSibling;
+
+              // Update peer's date/town to match dragged spot
+              const peerUpdates = {};
+              const peerDateKey = peer.scheduledDate || "unscheduled";
+              if (newDateKey !== peerDateKey) {
+                peerUpdates.scheduledDate = (!newDateKey || newDateKey === "unscheduled") ? null : newDateKey;
+              }
+              if (newTownId && newTownId !== peer.townId) {
+                peerUpdates.townId = newTownId;
+              }
+              if (Object.keys(peerUpdates).length) batch.update(spotDocRef(peer.id), peerUpdates);
+            }
+          }
+
+          // Re-index all affected lists by reading their current DOM order
+          for (const l of affectedLists) {
             [...l.querySelectorAll(".spot-card")].forEach((card, idx) => {
               batch.update(spotDocRef(card.dataset.spotId), { order: idx });
             });
