@@ -1809,8 +1809,24 @@
   .drawer-meta-sub { font-size: 0.875rem; color: var(--text-2); padding-left: 24px; }
   .drawer-notes {
     font-size: 0.9375rem; color: var(--text-2);
-    line-height: 1.6; white-space: pre-wrap;
+    line-height: 1.6;
   }
+  .phone-link {
+    color: var(--accent); text-decoration: none; font-weight: 500;
+    border-bottom: 1px dashed color-mix(in srgb, var(--accent) 50%, transparent);
+    transition: border-color 140ms var(--ease);
+  }
+  .phone-link:hover { border-bottom-color: var(--accent); }
+  .phone-copy-btn {
+    display: inline-flex; align-items: center; gap: 3px;
+    margin-left: 5px; padding: 1px 7px; font-size: 0.75rem;
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 5px; cursor: pointer; color: var(--text-2);
+    vertical-align: middle; transition: background 140ms var(--ease), color 140ms var(--ease);
+    font-family: inherit; line-height: 1.5;
+  }
+  .phone-copy-btn:hover { background: var(--border); color: var(--text); }
+  .phone-copy-btn.copied { background: var(--success-bg, rgba(76,175,80,0.12)); color: var(--success); border-color: var(--success); }
   .drawer-tags { display: flex; flex-wrap: wrap; gap: 6px; }
   .drawer-empty { color: var(--text-3); font-size: 0.9375rem; }
 
@@ -3236,6 +3252,66 @@ function escapeHtml(s) {
   })[c]);
 }
 
+// Phone number detection patterns:
+// 1. International: +countrycode followed by digits/spaces/dashes (e.g. +33 1 23 45 67 89)
+// 2. French-style local: 5 pairs of 2 digits (e.g. 01 23 45 67 89 or 0123456789)
+const PHONE_RE = /(\+[\d][\d\s\-().]{6,18}[\d]|\b0[\d][\s\-.]?\d{2}[\s\-.]?\d{2}[\s\-.]?\d{2}[\s\-.]?\d{2}\b)/g;
+
+function linkifyNotes(raw) {
+  if (!raw) return "";
+  // First escape the whole string, then re-linkify phone numbers.
+  // We work on the raw string to detect phones, then escape each part separately.
+  const parts = [];
+  let last = 0;
+  let m;
+  PHONE_RE.lastIndex = 0;
+  while ((m = PHONE_RE.exec(raw)) !== null) {
+    // Push text before this match (escaped)
+    if (m.index > last) parts.push(escapeHtml(raw.slice(last, m.index)));
+    const phone = m[0];
+    const dialable = phone.replace(/[\s\-().]/g, "");
+    parts.push(
+      `<a class="phone-link" href="tel:${escapeHtml(dialable)}">${escapeHtml(phone)}</a>` +
+      `<button class="phone-copy-btn" data-phone="${escapeHtml(phone)}" title="Copy number">` +
+      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>` +
+      `Copy</button>`
+    );
+    last = m.index + phone.length;
+  }
+  if (last < raw.length) parts.push(escapeHtml(raw.slice(last)));
+  // Replace newlines with <br> for display (raw text is pre-wrap in CSS, but we're using innerHTML now)
+  return parts.join("").replace(/\n/g, "<br>");
+}
+
+function wirePhoneCopyBtns(container) {
+  container.querySelectorAll(".phone-copy-btn").forEach(btn => {
+    btn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const phone = btn.dataset.phone;
+      try {
+        await navigator.clipboard.writeText(phone);
+        btn.classList.add("copied");
+        btn.textContent = "Copied!";
+        setTimeout(() => {
+          btn.classList.remove("copied");
+          btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy`;
+        }, 2000);
+      } catch {
+        // Fallback: select text in a temp input
+        const inp = document.createElement("input");
+        inp.value = phone; inp.style.position = "fixed"; inp.style.opacity = "0";
+        document.body.appendChild(inp); inp.select(); document.execCommand("copy");
+        document.body.removeChild(inp);
+        btn.classList.add("copied"); btn.textContent = "Copied!";
+        setTimeout(() => {
+          btn.classList.remove("copied");
+          btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy`;
+        }, 2000);
+      }
+    });
+  });
+}
+
 function renderSidebarTowns() {
   const container = document.getElementById("sidebar-towns");
   container.innerHTML = state.towns.map(t => `
@@ -4127,12 +4203,14 @@ function openAccomDrawer(town) {
     rows.push(`
       <div class="drawer-section">
         <div class="drawer-section-label">Notes</div>
-        <div class="drawer-notes">${escapeHtml(a.notes)}</div>
+        <div class="drawer-notes">${linkifyNotes(a.notes)}</div>
       </div>`);
   }
 
-  document.getElementById("drawer-body").innerHTML = rows.join("") ||
+  const accomBodyEl = document.getElementById("drawer-body");
+  accomBodyEl.innerHTML = rows.join("") ||
     `<p class="drawer-empty">No details yet — tap edit to add accommodation info.</p>`;
+  wirePhoneCopyBtns(accomBodyEl);
 
   // Hide the visited footer button (doesn't apply to accommodation)
   document.getElementById("drawer-visited-btn").style.display = "none";
@@ -4265,7 +4343,7 @@ function openDrawer(spot) {
     rows.push(`
       <div class="drawer-section">
         <div class="drawer-section-label">Notes</div>
-        <div class="drawer-notes">${escapeHtml(spot.notes)}</div>
+        <div class="drawer-notes">${linkifyNotes(spot.notes)}</div>
       </div>`);
   }
   // Booking section (price intentionally omitted — see Budget tab)
@@ -4346,6 +4424,7 @@ function openDrawer(spot) {
   const bodyEl = document.getElementById("drawer-body");
   bodyEl.innerHTML = rows.join("") ||
     `<p class="drawer-empty">No details yet — tap edit to add notes, schedule, or tags.</p>`;
+  wirePhoneCopyBtns(bodyEl);
 
   // Wire attach upload
   bodyEl.querySelector("#drawer-upload-row")?.addEventListener("click", () => {
