@@ -1236,7 +1236,7 @@
   .day-group { margin-bottom: 20px; }
   .day-header {
     display: flex; align-items: center; gap: 10px;
-    margin-bottom: 8px;
+    margin-bottom: 8px; cursor: pointer; user-select: none;
   }
   .day-label {
     font-size: 0.6875rem;
@@ -1253,6 +1253,19 @@
     white-space: nowrap;
   }
   .day-rule { flex: 1; height: 1px; background: var(--border); }
+  .day-spot-count {
+    font-size: 0.6875rem; color: var(--text-3);
+    white-space: nowrap; display: none;
+  }
+  .day-group.collapsed .day-spot-count { display: inline; }
+  .day-chevron {
+    flex-shrink: 0; color: var(--text-3);
+    display: flex; align-items: center;
+    transition: transform 200ms var(--ease);
+  }
+  .day-group.collapsed .day-chevron { transform: rotate(-90deg); }
+  .day-body { display: block; }
+  .day-group.collapsed .day-body { display: none; }
   .day-ai-btn {
     flex-shrink: 0;
     background: none; border: none; padding: 0 2px; cursor: pointer;
@@ -3457,6 +3470,13 @@ function saveImgCache(cache) {
 const imgCache = loadImgCache();
 const inflightFetches = new Map(); // de-dupe concurrent fetches
 
+// Day collapse overrides — keyed "townId:dateKey", value true=collapsed false=expanded
+// Only entries where the user explicitly clicked are stored; auto-rule applies to the rest.
+const DAY_COLLAPSE_KEY = "day-collapse-overrides";
+function loadDayCollapse() { try { return new Map(Object.entries(JSON.parse(localStorage.getItem(DAY_COLLAPSE_KEY) || "{}"))); } catch { return new Map(); } }
+function saveDayCollapse(map) { try { localStorage.setItem(DAY_COLLAPSE_KEY, JSON.stringify(Object.fromEntries(map))); } catch {} }
+const dayCollapseOverrides = loadDayCollapse();
+
 // Guides city collapse state — persisted so re-renders respect user's choices
 const GUIDES_COLLAPSE_KEY = "guides-city-collapsed";
 const GUIDES_EXPAND_KEY   = "guides-city-expanded";
@@ -4065,27 +4085,42 @@ function renderItinerary() {
           ${showPhoto ? "" : addBtn}
         </div>
         ${renderAccomCard(town)}
-        ${days.map(dk => {
-          const daySpots = byDate[dk] || [];
-          const { dow, full } = fmtDayHeader(dk);
-          const isEmpty = daySpots.length === 0;
-          return `
-            <div class="day-group">
-              <div class="day-header">
-                <span class="day-label">${dow}</span>
-                <span class="day-date-full">${full}</span>
-                <div class="day-rule"></div>
-                <button class="day-ai-btn" data-date="${dk}" data-town-id="${escapeHtml(town.id)}" title="AI suggestions for this day">✨</button>
-              </div>
-              <div class="spot-list" data-date="${dk}" data-town-id="${escapeHtml(town.id)}">
-                ${daySpots.map(s => spotCardHTML(s)).join("")}
-              </div>
-              ${isEmpty
-                ? `<div class="day-empty"><span>Drop a spot here</span><button class="add-spot-inline" data-town-id="${escapeHtml(town.id)}" data-date="${dk}">+ Add</button></div>`
-                : `<button class="add-spot-inline" data-town-id="${escapeHtml(town.id)}" data-date="${dk}" style="margin-top:5px">+ Add to this day</button>`
-              }
-            </div>`;
-        }).join("")}
+        ${(() => {
+          const todayKey = new Date().toISOString().slice(0, 10);
+          return days.map(dk => {
+            const daySpots = byDate[dk] || [];
+            const { dow, full } = fmtDayHeader(dk);
+            const isEmpty = daySpots.length === 0;
+            const key = `${town.id}:${dk}`;
+            const override = dayCollapseOverrides.get(key);
+            // Auto-collapse past days; respect explicit user overrides
+            const isPast = dk < todayKey;
+            const isCollapsed = override !== undefined ? override : isPast;
+            const spotSummary = daySpots.length === 0 ? "No spots" : `${daySpots.length} spot${daySpots.length !== 1 ? "s" : ""}`;
+            return `
+              <div class="day-group${isCollapsed ? " collapsed" : ""}" data-day-key="${escapeHtml(key)}">
+                <div class="day-header">
+                  <span class="day-label">${dow}</span>
+                  <span class="day-date-full">${full}</span>
+                  <span class="day-spot-count">${spotSummary}</span>
+                  <div class="day-rule"></div>
+                  <button class="day-ai-btn" data-date="${dk}" data-town-id="${escapeHtml(town.id)}" title="AI suggestions for this day">✨</button>
+                  <span class="day-chevron">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="6 9 12 15 18 9"/></svg>
+                  </span>
+                </div>
+                <div class="day-body">
+                  <div class="spot-list" data-date="${dk}" data-town-id="${escapeHtml(town.id)}">
+                    ${daySpots.map(s => spotCardHTML(s)).join("")}
+                  </div>
+                  ${isEmpty
+                    ? `<div class="day-empty"><span>Drop a spot here</span><button class="add-spot-inline" data-town-id="${escapeHtml(town.id)}" data-date="${dk}">+ Add</button></div>`
+                    : `<button class="add-spot-inline" data-town-id="${escapeHtml(town.id)}" data-date="${dk}" style="margin-top:5px">+ Add to this day</button>`
+                  }
+                </div>
+              </div>`;
+          }).join("");
+        })()}
         ${state.shareMode ? "" : `<div class="day-group">
           <div class="day-header">
             <span class="day-label" style="color:var(--text-3);font-style:italic;font-family:var(--font-display)">Wishlist</span>
@@ -4126,8 +4161,21 @@ function renderItinerary() {
 
   // AI ✨ button handlers
   container.querySelectorAll(".day-ai-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation(); // don't let header collapse toggle fire
       openRecommendationsPanel(btn.dataset.townId, btn.dataset.date);
+    });
+  });
+
+  // Day collapse toggle — click header (anywhere except AI button) to expand/collapse
+  container.querySelectorAll(".day-header").forEach(header => {
+    header.addEventListener("click", (e) => {
+      if (e.target.closest(".day-ai-btn")) return; // handled above
+      const group = header.closest(".day-group");
+      if (!group?.dataset.dayKey) return;
+      const nowCollapsed = group.classList.toggle("collapsed");
+      dayCollapseOverrides.set(group.dataset.dayKey, nowCollapsed);
+      saveDayCollapse(dayCollapseOverrides);
     });
   });
 
