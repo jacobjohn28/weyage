@@ -6124,7 +6124,11 @@ function renderDashboardToday() {
     // Collect first 3 scheduled days worth of spots
     const spotsAhead = [...state.spots]
       .filter(s => s.scheduledDate && s.scheduledDate >= tripStart && s.type !== "transport")
-      .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate) || (a.scheduledTime||"").localeCompare(b.scheduledTime||""));
+      .sort((a, b) =>
+        a.scheduledDate.localeCompare(b.scheduledDate) ||
+        (a.scheduledTime || "").localeCompare(b.scheduledTime || "") ||
+        (a.order ?? 9999) - (b.order ?? 9999)
+      );
 
     const dayMap = new Map();
     spotsAhead.forEach(s => {
@@ -6178,7 +6182,10 @@ function renderDashboardToday() {
 
     const todaySpots = state.spots
       .filter(s => s.scheduledDate === today && s.type !== "transport")
-      .sort((a, b) => (a.scheduledTime || "ZZ").localeCompare(b.scheduledTime || "ZZ"));
+      .sort((a, b) =>
+        (a.scheduledTime || "ZZ").localeCompare(b.scheduledTime || "ZZ") ||
+        (a.order ?? 9999) - (b.order ?? 9999)
+      );
 
     const spotsHTML = todaySpots.length > 0
       ? todaySpots.map(s => `
