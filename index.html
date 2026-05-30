@@ -5103,14 +5103,22 @@ document.getElementById("visited-toggle").addEventListener("click", () => {
   }
 });
 
-// Estimated / Booked toggles
+// Estimated / Booked toggles — mutually exclusive
 document.getElementById("estimated-toggle").addEventListener("click", () => {
   priceEstimatedState = !priceEstimatedState;
   document.getElementById("estimated-switch").classList.toggle("on", priceEstimatedState);
+  if (priceEstimatedState) {
+    bookedState = false;
+    document.getElementById("booked-switch").classList.remove("on");
+  }
 });
 document.getElementById("booked-toggle").addEventListener("click", () => {
   bookedState = !bookedState;
   document.getElementById("booked-switch").classList.toggle("on", bookedState);
+  if (bookedState) {
+    priceEstimatedState = false;
+    document.getElementById("estimated-switch").classList.remove("on");
+  }
 });
 
 // Modal close
