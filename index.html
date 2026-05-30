@@ -5224,8 +5224,17 @@ document.getElementById("drawer-edit-btn").addEventListener("click", () => {
 document.getElementById("drawer-visited-btn").addEventListener("click", async () => {
   if (!currentDrawerSpot) return;
   const spot = currentDrawerSpot;
-  closeDrawer();  // close first so the price prompt isn't buried under the drawer
-  await toggleSpotVisited(spot);
+  if (!spot.visited) {
+    // Marking as visited: show price prompt ON TOP of the open drawer (z-index 8500 > 600),
+    // then close the drawer after the prompt resolves — avoids a race between
+    // closeDrawer()'s history.back() and the prompt's pushModalHistory().
+    await toggleSpotVisited(spot);
+    closeDrawer();
+  } else {
+    // Unmarking as visited: no prompt needed, close first is fine
+    closeDrawer();
+    await toggleSpotVisited(spot);
+  }
 });
 
 /* ─────────────────────────────────────────────────────────────
@@ -5695,6 +5704,10 @@ function showTransitSheet(townId, date) {
     noteInput.value = "";
     // Default currency to the town's accommodation currency or EUR
     currSel.value = town?.accommodation?.priceCurrency || "EUR";
+    // Reset save button in case it was left disabled from a previous save
+    const saveBtn = document.getElementById("transit-save");
+    saveBtn.disabled = false;
+    saveBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add expense`;
 
     // Reset type selection — default to metro
     let selectedType = "metro";
