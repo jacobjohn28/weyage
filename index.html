@@ -1826,6 +1826,35 @@
   .drawer-type-badge[data-type="accommodation"] {
     color: #7B6BAA; background: rgba(123,107,170,0.1);
   }
+  .drawer-type-badge[data-type="budget-cat"] {
+    color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent);
+  }
+
+  /* Budget category expense drawer */
+  .budget-expense-list { display: flex; flex-direction: column; }
+  .budget-expense-row {
+    display: flex; align-items: baseline; gap: 10px;
+    padding: 13px 0; border-bottom: 1px solid var(--border);
+  }
+  .budget-expense-row:last-child { border-bottom: none; }
+  .budget-expense-info { flex: 1; min-width: 0; }
+  .budget-expense-name { font-size: 0.9375rem; color: var(--text); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .budget-expense-meta { display: flex; gap: 8px; margin-top: 3px; flex-wrap: wrap; }
+  .budget-expense-town { font-size: 0.75rem; color: var(--text-3); }
+  .budget-expense-date { font-size: 0.75rem; color: var(--text-3); }
+  .budget-expense-est  { font-size: 0.6875rem; color: var(--text-3); background: var(--surface-2); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; }
+  .budget-expense-amount {
+    font-size: 0.9375rem; font-weight: 600; color: var(--text);
+    flex-shrink: 0; text-align: right;
+  }
+  .budget-expense-amount.estimated { color: var(--text-2); }
+  .budget-cat-drawer-total {
+    font-family: var(--font-display); font-size: 1.75rem; font-weight: 500;
+    letter-spacing: -0.03em; color: var(--text); margin-bottom: 20px;
+    padding-bottom: 16px; border-bottom: 1px solid var(--border);
+  }
+  .budget-cat-drawer-total-sub { font-size: 0.8125rem; color: var(--text-3); font-weight: 400; margin-top: 2px; font-family: var(--font-body); letter-spacing: 0; }
+
   .drawer-header-actions { display: flex; gap: 4px; margin-left: auto; }
   .drawer-title {
     font-family: var(--font-display);
@@ -5125,6 +5154,7 @@ function aggregateBudget() {
       currency: s.priceCurrency || "EUR",
       isEstimated: s.priceEstimated ?? true,
       isBooked: s.booked ?? false,
+      scheduledDate: s.scheduledDate || null,
     });
   });
   state.towns.forEach(t => {
@@ -5136,6 +5166,7 @@ function aggregateBudget() {
       currency: t.accommodation.priceCurrency || "EUR",
       isEstimated: t.accommodation.priceEstimated ?? false,
       isBooked: t.accommodation.booked ?? false,
+      scheduledDate: t.accommodation.checkinDate || null,
     });
   });
   return entries;
@@ -5355,6 +5386,7 @@ function renderBudget() {
             </div>
             <div class="budget-chart-block">
               <div class="budget-chart-label">By category</div>
+              <div class="budget-chart-label" style="font-size:0.6875rem;opacity:0.55;margin-top:-6px">tap a bar to see breakdown</div>
               <canvas id="budget-chart-${escapeHtml(cur)}-cat"></canvas>
             </div>
           </div>
@@ -5397,11 +5429,13 @@ function renderBudget() {
     });
   });
 
-  // Draw charts after DOM is painted
-  requestAnimationFrame(() => renderBudgetCharts(byCurrency, fmt));
+  // Chart bar clicks handled inside renderBudgetCharts via onClick option
+
+  // Draw charts after DOM is painted, passing full entries for click handler
+  requestAnimationFrame(() => renderBudgetCharts(byCurrency, fmt, entries));
 }
 
-function renderBudgetCharts(byCurrency, fmt) {
+function renderBudgetCharts(byCurrency, fmt, allEntries) {
   if (typeof Chart === "undefined") return;
   Object.entries(byCurrency).forEach(([cur, ces]) => {
     const sym = currencySymbol(cur);
@@ -5436,7 +5470,7 @@ function renderBudgetCharts(byCurrency, fmt) {
       });
     }
 
-    // By category
+    // By category — bars are clickable to open expense drawer
     const catCtx = document.getElementById(`budget-chart-${cur}-cat`);
     if (catCtx) {
       const byCat = {};
@@ -5447,11 +5481,87 @@ function renderBudgetCharts(byCurrency, fmt) {
       budgetChartInstances[`${cur}-cat`] = new Chart(catCtx, {
         type: "bar",
         data: { labels, datasets: [{ data, backgroundColor: colors, borderRadius: 4, borderSkipped: false }] },
-        options: baseOpts,
+        options: {
+          ...baseOpts,
+          onHover: (event, elements) => {
+            catCtx.style.cursor = elements.length ? "pointer" : "default";
+          },
+          onClick: (event, elements) => {
+            if (!elements.length) return;
+            const category = labels[elements[0].index];
+            openBudgetCategoryDrawer(category, cur, allEntries);
+          },
+        },
       });
     }
   });
 }
+
+function openBudgetCategoryDrawer(category, currency, allEntries) {
+  const sym = currencySymbol(currency);
+  const fmt = n => n.toLocaleString("en-GB", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+
+  // Filter to this category + currency, sort reverse-chronological (no date → bottom)
+  const entries = allEntries
+    .filter(e => e.category === category && e.currency === currency)
+    .sort((a, b) => {
+      if (!a.scheduledDate && !b.scheduledDate) return 0;
+      if (!a.scheduledDate) return 1;
+      if (!b.scheduledDate) return -1;
+      return b.scheduledDate.localeCompare(a.scheduledDate);
+    });
+
+  const total    = entries.reduce((s, e) => s + e.amount, 0);
+  const paidOnly = entries.filter(e => !e.isEstimated).reduce((s, e) => s + e.amount, 0);
+  const estCount = entries.filter(e => e.isEstimated).length;
+
+  document.getElementById("budget-cat-badge").textContent = currency;
+  document.getElementById("budget-cat-title").textContent = category;
+
+  const body = document.getElementById("budget-cat-body");
+  body.innerHTML = `
+    <div class="budget-cat-drawer-total">
+      ${sym}${fmt(total)}
+      <div class="budget-cat-drawer-total-sub">
+        ${sym}${fmt(paidOnly)} paid
+        ${estCount ? ` · ${sym}${fmt(total - paidOnly)} estimated (${estCount} item${estCount > 1 ? "s" : ""})` : ""}
+        · ${entries.length} expense${entries.length !== 1 ? "s" : ""}
+      </div>
+    </div>
+    <div class="budget-expense-list">
+      ${entries.map(e => {
+        const town = state.towns.find(t => t.id === e.townId);
+        const dateStr = e.scheduledDate
+          ? new Date(e.scheduledDate + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })
+          : "";
+        return `
+          <div class="budget-expense-row">
+            <div class="budget-expense-info">
+              <span class="budget-expense-name">${escapeHtml(e.name)}</span>
+              <div class="budget-expense-meta">
+                ${town ? `<span class="budget-expense-town">${escapeHtml(town.name)}</span>` : ""}
+                ${dateStr ? `<span class="budget-expense-date">${dateStr}</span>` : ""}
+                ${e.isEstimated ? `<span class="budget-expense-est">estimated</span>` : ""}
+              </div>
+            </div>
+            <div class="budget-expense-amount${e.isEstimated ? " estimated" : ""}">${sym}${fmt(e.amount)}</div>
+          </div>`;
+      }).join("")}
+    </div>`;
+
+  document.getElementById("budget-cat-overlay").classList.add("visible");
+  document.body.style.overflow = "hidden";
+}
+
+function closeBudgetCategoryDrawer() {
+  document.getElementById("budget-cat-overlay").classList.remove("visible");
+  document.body.style.overflow = "";
+}
+
+document.getElementById("budget-cat-close-btn")?.addEventListener("click", closeBudgetCategoryDrawer);
+document.getElementById("budget-cat-overlay")?.addEventListener("click", e => {
+  if (e.target === document.getElementById("budget-cat-overlay")) closeBudgetCategoryDrawer();
+});
 
 /* ─────────────────────────────────────────────────────────────
    ATTACHMENTS (5)
@@ -6871,5 +6981,21 @@ if ("serviceWorker" in navigator) {
   });
 }
 </script>
+
+<!-- Budget category expense drawer -->
+<div class="drawer-overlay" id="budget-cat-overlay">
+  <div class="drawer-panel" id="budget-cat-panel">
+    <div class="drawer-header">
+      <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:0">
+        <div class="drawer-type-badge" id="budget-cat-badge" data-type="budget-cat">Category</div>
+        <div class="drawer-spot-name" id="budget-cat-title">Expenses</div>
+      </div>
+      <button class="drawer-close-btn" id="budget-cat-close-btn" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="drawer-body" id="budget-cat-body"></div>
+  </div>
+</div>
 </body>
 </html>
