@@ -3583,7 +3583,7 @@ function setView(viewName) {
   const titles = { dashboard: "Overview", itinerary: "Itinerary", guides: "Guides", map: "Map", budget: "Budget", documents: "Documents" };
   document.getElementById("topbar-title").textContent = titles[viewName] || "Dashboard";
   if (viewName === "itinerary") {
-    const todayIso = new Date().toISOString().slice(0, 10);
+    const todayIso = localDateStr(new Date());
     const { startDate, endDate } = state.trip || {};
     if (startDate && endDate && todayIso >= startDate && todayIso <= endDate) {
       pendingScrollToToday = true;
@@ -4619,7 +4619,7 @@ function renderItinerary() {
         </div>
         ${renderAccomCard(town)}
         ${(() => {
-          const todayKey = new Date().toISOString().slice(0, 10);
+          const todayKey = localDateStr(new Date());
           return days.map(dk => {
             const daySpots = byDate[dk] || [];
             const { dow, full } = fmtDayHeader(dk);
@@ -4858,7 +4858,7 @@ function renderItinerary() {
   // Auto-scroll to today's date section when opening the tab mid-trip
   if (pendingScrollToToday) {
     pendingScrollToToday = false;
-    const todayIso = new Date().toISOString().slice(0, 10);
+    const todayIso = localDateStr(new Date());
     requestAnimationFrame(() => requestAnimationFrame(() => {
       const todayList = container.querySelector(`.spot-list[data-date="${todayIso}"]`);
       if (!todayList) return;
@@ -5848,7 +5848,7 @@ function showTransitSheet(townId, date, existingEntry = null) {
         amount,
         currency: currSel.value,
         note: noteInput.value.trim() || null,
-        date: existingEntry?.date || date || new Date().toISOString().slice(0, 10),
+        date: existingEntry?.date || date || localDateStr(new Date()),
       };
       saveBtn.disabled = true;
       saveBtn.textContent = "Saving…";
@@ -6829,7 +6829,7 @@ function renderDashboardToday() {
   const container = document.getElementById("dash-today");
   if (!container || !state.trip) return;
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDateStr(new Date());
   const tripStart = state.trip.startDate;
   const tripEnd   = state.trip.endDate;
   const days = daysUntil(tripStart);
@@ -7147,7 +7147,7 @@ function renderGuides() {
     return;
   }
 
-  const todayKey = new Date().toISOString().slice(0, 10);
+  const todayKey = localDateStr(new Date());
 
   // Priority bucket: 0 = upcoming (scheduled & future & not visited),
   //                  1 = wishlist (unscheduled & not visited),
