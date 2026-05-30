@@ -2239,6 +2239,194 @@
     .town-group { margin-bottom: 36px; }
   }
 
+/* ── Transit expense sheet ───────────────────────────────── */
+#transit-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 8500;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 220ms var(--ease);
+}
+#transit-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+#transit-sheet {
+  width: 100%;
+  max-width: 480px;
+  background: var(--surface);
+  border-radius: 20px 20px 0 0;
+  padding: 24px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+  transform: translateY(100%);
+  transition: transform 280ms var(--ease);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+#transit-overlay.open #transit-sheet { transform: translateY(0); }
+#transit-sheet-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-1);
+}
+#transit-sheet-city {
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  margin-top: 2px;
+}
+#transit-type-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.transit-type-btn {
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: background 120ms, color 120ms, border-color 120ms;
+}
+.transit-type-btn.selected {
+  background: var(--accent-bg);
+  color: var(--accent);
+  border-color: var(--accent-soft);
+  font-weight: 500;
+}
+#transit-amount-row { display: flex; gap: 8px; }
+#transit-actions { display: flex; gap: 10px; }
+
+/* Transit chip in itinerary day */
+.transit-day-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--text-3);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: color 120ms, border-color 120ms, background 120ms;
+}
+.transit-day-chip:hover {
+  color: var(--accent);
+  border-color: var(--accent-soft);
+  background: var(--accent-bg);
+}
+body.share-mode .transit-day-chip { display: none !important; }
+
+/* Transit log in budget tab */
+.transit-log-section {
+  margin-top: 28px;
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+}
+.transit-log-heading {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 12px;
+}
+.transit-city-block {
+  margin-bottom: 16px;
+}
+.transit-city-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+}
+.transit-city-name {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-1);
+  flex: 1;
+}
+.transit-city-total {
+  font-size: 0.875rem;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.transit-city-add-btn {
+  padding: 4px 11px;
+  border-radius: 16px;
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--text-3);
+  font-size: 0.8rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 120ms, border-color 120ms, background 120ms;
+}
+.transit-city-add-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent-soft);
+  background: var(--accent-bg);
+}
+body.share-mode .transit-city-add-btn { display: none !important; }
+.transit-entry-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 0;
+  border-top: 1px solid var(--border);
+  font-size: 0.875rem;
+}
+.transit-entry-type {
+  flex-shrink: 0;
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  min-width: 68px;
+}
+.transit-entry-note {
+  flex: 1;
+  color: var(--text-2);
+  font-size: 0.8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.transit-entry-date {
+  font-size: 0.75rem;
+  color: var(--text-3);
+  flex-shrink: 0;
+}
+.transit-entry-amount {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-1);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+.transit-entry-del {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 120ms, color 120ms;
+}
+.transit-entry-del:hover { background: var(--danger-bg, #fee2e2); color: var(--danger); }
+body.share-mode .transit-entry-del { display: none !important; }
+
 /* ── Visit price prompt ──────────────────────────────────── */
 #visit-price-overlay {
   position: fixed;
@@ -3004,6 +3192,43 @@
 </div>
 
 <!-- ============================================================
+     TRANSIT EXPENSE SHEET
+     ============================================================ -->
+<div id="transit-overlay">
+  <div id="transit-sheet" role="dialog" aria-modal="true">
+    <div id="transit-sheet-header">
+      <div id="transit-sheet-title">Add transit expense</div>
+      <div id="transit-sheet-city"></div>
+    </div>
+    <div id="transit-type-row">
+      <button class="transit-type-btn selected" data-type="metro">🚇 Metro</button>
+      <button class="transit-type-btn" data-type="bus">🚌 Bus</button>
+      <button class="transit-type-btn" data-type="taxi">🚕 Taxi</button>
+      <button class="transit-type-btn" data-type="tram">🚋 Tram</button>
+      <button class="transit-type-btn" data-type="other">✦ Other</button>
+    </div>
+    <div id="transit-amount-row">
+      <select id="transit-currency" class="form-input" style="width:84px;flex-shrink:0;padding-left:8px">
+        <option value="EUR">€ EUR</option>
+        <option value="SGD">S$ SGD</option>
+        <option value="USD">$ USD</option>
+        <option value="GBP">£ GBP</option>
+        <option value="AUD">A$ AUD</option>
+      </select>
+      <input id="transit-amount" class="form-input" type="number" min="0" step="0.01" placeholder="0.00" style="flex:1">
+    </div>
+    <input id="transit-note" class="form-input" type="text" maxlength="80" placeholder="Note — optional (e.g. airport → hotel)">
+    <div id="transit-actions">
+      <button id="transit-cancel" class="btn-secondary">Cancel</button>
+      <button id="transit-save" class="btn-primary" style="flex:1;justify-content:center">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add expense
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
      TOWN EDIT MODAL
      ============================================================ -->
 <div class="modal-overlay" id="town-edit-overlay">
@@ -3093,7 +3318,7 @@ const FIREBASE_BASE = `https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}`;
 
 let initializeApp, getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, signInAnonymously;
 let initializeFirestore, persistentLocalCache, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs;
-let onSnapshot, writeBatch, serverTimestamp;
+let onSnapshot, writeBatch, serverTimestamp, arrayUnion;
 
 /* ─────────────────────────────────────────────────────────────
    FIREBASE CONFIG
@@ -3321,7 +3546,7 @@ async function initFirebase() {
   initializeApp = appMod.initializeApp;
   ({ getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, signInAnonymously } = authMod);
   ({ initializeFirestore, persistentLocalCache, doc, getDoc, setDoc, updateDoc, deleteDoc,
-     collection, getDocs, onSnapshot, writeBatch, serverTimestamp } = fsMod);
+     collection, getDocs, onSnapshot, writeBatch, serverTimestamp, arrayUnion } = fsMod);
 
   app = initializeApp(FIREBASE_CONFIG);
   auth = getAuth(app);
@@ -4333,6 +4558,7 @@ function renderItinerary() {
                     ? `<div class="day-empty"><span>Drop a spot here</span><button class="add-spot-inline" data-town-id="${escapeHtml(town.id)}" data-date="${dk}">+ Add</button></div>`
                     : `<button class="add-spot-inline" data-town-id="${escapeHtml(town.id)}" data-date="${dk}" style="margin-top:5px">+ Add to this day</button>`
                   }
+                  <button class="transit-day-chip" data-town-id="${escapeHtml(town.id)}" data-date="${dk}">🚌 Transit</button>
                 </div>
               </div>`;
           }).join("");
@@ -4401,6 +4627,13 @@ function renderItinerary() {
       const townId = btn.dataset.townId;
       const date = "date" in btn.dataset ? (btn.dataset.date || null) : null;
       openModal(null, { townId, scheduledDate: date });
+    });
+  });
+
+  // Transit chips
+  container.querySelectorAll(".transit-day-chip").forEach(btn => {
+    btn.addEventListener("click", () => {
+      showTransitSheet(btn.dataset.townId, btn.dataset.date);
     });
   });
 
@@ -4960,9 +5193,15 @@ function popModalHistory() {
 window.addEventListener("popstate", () => {
   _handlingPopstate = true;
   try {
-    // Close the topmost open layer — order matters (lightbox > drawer)
+    // Close the topmost open layer — order matters (lightbox > transit > visit price > drawer)
     const lb = document.getElementById("lightbox-overlay");
     if (lb?.classList.contains("open")) { lbClose(); return; }
+
+    const transit = document.getElementById("transit-overlay");
+    if (transit?.classList.contains("open")) { transit.classList.remove("open"); return; }
+
+    const visitPrice = document.getElementById("visit-price-overlay");
+    if (visitPrice?.classList.contains("open")) { visitPrice.classList.remove("open"); return; }
 
     const drawer = document.getElementById("spot-drawer-overlay");
     if (drawer?.classList.contains("visible")) { closeDrawer(); return; }
@@ -5418,12 +5657,94 @@ document.getElementById("delete-spot-btn").addEventListener("click", async () =>
 const CATEGORY_COLORS = {
   "Accommodation": "#6B7DB3",
   "Transport":     "#8999C9",
+  "Transit":       "#7BB3A8",
   "Food":          "#B36B6B",
   "Experiences":   "#6BAA8D",
   "Sights & Other":"#B39E6B",
 };
 
 const CITY_PALETTE = ["#6B7DB3","#6BAA8D","#B36B6B","#B39E6B","#8999C9","#9B8DB3","#6BB3B3","#B3836B"];
+
+/* ─────────────────────────────────────────────────────────────
+   CITY TRANSIT EXPENSES
+   ───────────────────────────────────────────────────────────── */
+const TRANSIT_TYPES = { taxi: "🚕 Taxi", metro: "🚇 Metro", bus: "🚌 Bus", tram: "🚋 Tram", other: "✦ Other" };
+
+function addTransitExpense(townId, entry) {
+  return updateDoc(doc(db, "trips", TRIP_ID, "towns", townId), { transitExpenses: arrayUnion(entry) });
+}
+
+function deleteTransitExpense(townId, entryId) {
+  const town = state.towns.find(t => t.id === townId);
+  if (!town) return Promise.resolve();
+  const updated = (town.transitExpenses || []).filter(e => e.id !== entryId);
+  return updateDoc(doc(db, "trips", TRIP_ID, "towns", townId), { transitExpenses: updated });
+}
+
+function showTransitSheet(townId, date) {
+  return new Promise(resolve => {
+    const overlay   = document.getElementById("transit-overlay");
+    const cityEl    = document.getElementById("transit-sheet-city");
+    const amtInput  = document.getElementById("transit-amount");
+    const noteInput = document.getElementById("transit-note");
+    const currSel   = document.getElementById("transit-currency");
+
+    const town = state.towns.find(t => t.id === townId);
+    cityEl.textContent = town?.name || "";
+    amtInput.value  = "";
+    noteInput.value = "";
+    // Default currency to the town's accommodation currency or EUR
+    currSel.value = town?.accommodation?.priceCurrency || "EUR";
+
+    // Reset type selection — default to metro
+    let selectedType = "metro";
+    overlay.querySelectorAll(".transit-type-btn").forEach(btn => {
+      btn.classList.toggle("selected", btn.dataset.type === selectedType);
+    });
+
+    overlay.classList.add("open");
+    pushModalHistory();
+    setTimeout(() => amtInput.focus(), 300);
+
+    function close(result) {
+      overlay.classList.remove("open");
+      document.getElementById("transit-save").onclick   = null;
+      document.getElementById("transit-cancel").onclick = null;
+      overlay.onclick = null;
+      overlay.querySelectorAll(".transit-type-btn").forEach(b => { b.onclick = null; });
+      popModalHistory();
+      resolve(result);
+    }
+
+    overlay.querySelectorAll(".transit-type-btn").forEach(btn => {
+      btn.onclick = () => {
+        selectedType = btn.dataset.type;
+        overlay.querySelectorAll(".transit-type-btn").forEach(b => b.classList.toggle("selected", b === btn));
+      };
+    });
+
+    document.getElementById("transit-save").onclick = async () => {
+      const amount = parseFloat(amtInput.value);
+      if (!(amount > 0)) { amtInput.focus(); return; }
+      const entry = {
+        id: crypto.randomUUID(),
+        type: selectedType,
+        amount,
+        currency: currSel.value,
+        note: noteInput.value.trim() || null,
+        date: date || new Date().toISOString().slice(0, 10),
+      };
+      const saveBtn = document.getElementById("transit-save");
+      saveBtn.disabled = true;
+      saveBtn.textContent = "Saving…";
+      await addTransitExpense(townId, entry);
+      close(entry);
+    };
+
+    document.getElementById("transit-cancel").onclick = () => close(null);
+    overlay.onclick = e => { if (e.target === overlay) close(null); };
+  });
+}
 
 function getBudgetCategory(spot) {
   const validCats = ["Accommodation","Transport","Food","Experiences","Sights & Other"];
@@ -5463,6 +5784,22 @@ function aggregateBudget() {
       isEstimated: t.accommodation.priceEstimated ?? false,
       isBooked: t.accommodation.booked ?? false,
       scheduledDate: t.accommodation.checkinDate || null,
+      scheduledTime: null,
+      order: 9999,
+    });
+    (t.transitExpenses || []).forEach(e => {
+      entries.push({
+        source: "transit", id: e.id, townId: t.id,
+        name: (TRANSIT_TYPES[e.type] || e.type) + (e.note ? ` · ${e.note}` : ""),
+        category: "Transit",
+        amount: e.amount,
+        currency: e.currency || "EUR",
+        isEstimated: false,
+        isBooked: false,
+        scheduledDate: e.date || null,
+        scheduledTime: null,
+        order: 99998,
+      });
     });
   });
   return entries;
@@ -5699,7 +6036,44 @@ function renderBudget() {
         <span class="budget-unbooked-amount">~${currencySymbol(e.currency)}${fmt(e.amount)}</span>
       </div>`).join("")}` : "";
 
-  content.innerHTML = sgdSummary + sectionsHTML + unbookedHTML;
+  // Transit log section — one block per city
+  const fmtAmt = n => n.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const transitBlocksHTML = state.towns.map(t => {
+    const tEntries = [...(t.transitExpenses || [])]
+      .sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+    // City total per currency
+    const byCur = {};
+    tEntries.forEach(e => { byCur[e.currency] = (byCur[e.currency] || 0) + e.amount; });
+    const totalStr = Object.entries(byCur)
+      .map(([cur, amt]) => `${currencySymbol(cur)}${fmtAmt(amt)}`).join(" · ");
+    const entriesHTML = tEntries.map(e => `
+      <div class="transit-entry-row">
+        <span class="transit-entry-type">${escapeHtml(TRANSIT_TYPES[e.type] || e.type)}</span>
+        ${e.note ? `<span class="transit-entry-note">${escapeHtml(e.note)}</span>` : `<span class="transit-entry-note"></span>`}
+        <span class="transit-entry-date">${e.date ? new Date(e.date + "T00:00:00").toLocaleDateString("en-GB", { day:"numeric", month:"short" }) : ""}</span>
+        <span class="transit-entry-amount">${currencySymbol(e.currency)}${fmtAmt(e.amount)}</span>
+        <button class="transit-entry-del" data-town-id="${escapeHtml(t.id)}" data-entry-id="${escapeHtml(e.id)}" aria-label="Delete">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>`).join("");
+    return `
+      <div class="transit-city-block">
+        <div class="transit-city-bar">
+          <span class="transit-city-name">${escapeHtml(t.name)}</span>
+          ${totalStr ? `<span class="transit-city-total">${totalStr}</span>` : ""}
+          <button class="transit-city-add-btn" data-town-id="${escapeHtml(t.id)}">+ Add</button>
+        </div>
+        ${entriesHTML}
+      </div>`;
+  }).join("");
+
+  const transitLogHTML = `
+    <div class="transit-log-section">
+      <div class="transit-log-heading">City transit</div>
+      ${transitBlocksHTML}
+    </div>`;
+
+  content.innerHTML = sgdSummary + sectionsHTML + unbookedHTML + transitLogHTML;
 
   // Refresh exchange rates
   document.getElementById("budget-refresh-rates-btn")?.addEventListener("click", e => {
@@ -5710,6 +6084,17 @@ function renderBudget() {
   content.querySelectorAll(".budget-currency-header").forEach(header => {
     header.addEventListener("click", () => {
       header.closest(".budget-currency-section").classList.toggle("expanded");
+    });
+  });
+
+  // Transit log: add + delete
+  content.querySelectorAll(".transit-city-add-btn").forEach(btn => {
+    btn.addEventListener("click", () => showTransitSheet(btn.dataset.townId, null));
+  });
+  content.querySelectorAll(".transit-entry-del").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      btn.disabled = true;
+      await deleteTransitExpense(btn.dataset.townId, btn.dataset.entryId);
     });
   });
 
