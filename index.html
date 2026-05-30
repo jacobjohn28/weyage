@@ -7952,9 +7952,13 @@ if ("serviceWorker" in navigator) {
       .catch(err => console.warn("SW registration failed:", err));
   });
 
-  // Show a refresh prompt when the SW has cached a fresh version in the background
+  // Show a refresh prompt when the SW has cached a fresh version in the background.
+  // Ignore messages that arrive within 20 s of page load — that's just the SW
+  // confirming the version we already loaded (happens on every fresh load/refresh).
+  const _pageLoadTime = Date.now();
   navigator.serviceWorker.addEventListener("message", event => {
     if (event.data?.type !== "APP_UPDATED") return;
+    if (Date.now() - _pageLoadTime < 20_000) return;   // grace period — suppress post-refresh noise
     const banner = document.getElementById("update-banner");
     if (!banner) return;
     banner.classList.add("visible");
