@@ -4386,6 +4386,7 @@ function openAccomDrawer(town) {
   // Hide the visited footer button (doesn't apply to accommodation)
   document.getElementById("drawer-visited-btn").style.display = "none";
 
+  pushModalHistory();
   document.getElementById("spot-drawer-overlay").classList.add("visible");
   document.body.style.overflow = "hidden";
 }
@@ -4652,6 +4653,7 @@ function openDrawer(spot) {
     visitedBtn.style.background = "";
   }
 
+  pushModalHistory();
   document.getElementById("spot-drawer-overlay").classList.add("visible");
   document.body.style.overflow = "hidden";
 }
@@ -4665,10 +4667,45 @@ function closeDrawer() {
   // Restore edit + visited buttons for next spot/accom drawer open
   document.getElementById("drawer-edit-btn").style.display = "";
   document.getElementById("drawer-visited-btn").style.display = "";
+  popModalHistory();
 }
 
 document.getElementById("drawer-close-btn").addEventListener("click", closeDrawer);
 document.getElementById("drawer-backdrop").addEventListener("click", closeDrawer);
+
+// ── Back-gesture interception ────────────────────────────────────────────────
+// On Android (Pixel edge-swipe) the browser fires a popstate event before
+// navigating back. We push a synthetic history entry whenever an overlay
+// opens; popstate then closes that overlay instead of leaving the app.
+//
+// _handlingPopstate prevents closeX() → history.back() → popstate → closeX()
+// infinite loops when the user taps an explicit close button.
+let _handlingPopstate = false;
+
+function pushModalHistory() {
+  history.pushState({ weyageModal: true }, "");
+}
+
+function popModalHistory() {
+  // Only navigate back if the current state is one we pushed
+  if (!_handlingPopstate && history.state?.weyageModal) {
+    history.back();
+  }
+}
+
+window.addEventListener("popstate", () => {
+  _handlingPopstate = true;
+  try {
+    // Close the topmost open layer — order matters (lightbox > drawer)
+    const lb = document.getElementById("lightbox-overlay");
+    if (lb?.classList.contains("open")) { lbClose(); return; }
+
+    const drawer = document.getElementById("spot-drawer-overlay");
+    if (drawer?.classList.contains("visible")) { closeDrawer(); return; }
+  } finally {
+    _handlingPopstate = false;
+  }
+});
 document.getElementById("drawer-edit-btn").addEventListener("click", () => {
   if (currentDrawerAccomTownId) {
     const town = state.towns.find(t => t.id === currentDrawerAccomTownId);
@@ -5547,6 +5584,7 @@ function openBudgetDrawer(groupLabel, currency, entries) {
         </div>`;
     }).join("")}`;
 
+  pushModalHistory();
   document.getElementById("spot-drawer-overlay").classList.add("visible");
   document.body.style.overflow = "hidden";
 }
@@ -6799,6 +6837,7 @@ function openLightbox(attachments, startIndex, spotName) {
   if (!lbSlides.length) return;
   lbIdx = Math.max(0, Math.min(startIndex ?? 0, lbSlides.length - 1));
   lbZoom = 1; lbPan = { x: 0, y: 0 }; lbDrag = null;
+  pushModalHistory();
   document.getElementById("lightbox-overlay").classList.add("open");
   document.body.style.overflow = "hidden";
   lbRender();
@@ -6808,6 +6847,7 @@ function lbClose() {
   document.getElementById("lightbox-overlay").classList.remove("open");
   document.body.style.overflow = "";
   lbZoom = 1; lbPan = { x: 0, y: 0 }; lbDrag = null;
+  popModalHistory();
 }
 
 function lbRender() {
