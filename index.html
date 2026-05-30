@@ -2239,6 +2239,61 @@
     .town-group { margin-bottom: 36px; }
   }
 
+/* ── Visit price prompt ──────────────────────────────────── */
+#visit-price-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 8500;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 220ms var(--ease);
+}
+#visit-price-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+#visit-price-sheet {
+  width: 100%;
+  max-width: 480px;
+  background: var(--surface);
+  border-radius: 20px 20px 0 0;
+  padding: 24px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+  transform: translateY(100%);
+  transition: transform 280ms var(--ease);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+#visit-price-overlay.open #visit-price-sheet {
+  transform: translateY(0);
+}
+#visit-price-header {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+#visit-price-label {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-1);
+}
+#visit-price-spot {
+  font-size: 0.875rem;
+  color: var(--text-2);
+}
+#visit-price-inputs {
+  display: flex;
+  gap: 8px;
+}
+#visit-price-actions {
+  display: flex;
+  gap: 10px;
+}
+
 /* ── Update-available banner ─────────────────────────────── */
 #update-banner {
   position: fixed;
@@ -2912,6 +2967,35 @@
     <div class="drawer-body" id="drawer-body"></div>
     <div class="drawer-footer">
       <button class="btn-primary" id="drawer-visited-btn" style="flex:1;justify-content:center">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M20 6L9 17l-5-5"/></svg>
+        Mark visited
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     VISIT PRICE PROMPT
+     ============================================================ -->
+<div id="visit-price-overlay">
+  <div id="visit-price-sheet" role="dialog" aria-modal="true">
+    <div id="visit-price-header">
+      <div id="visit-price-label">How much did it cost?</div>
+      <div id="visit-price-spot"></div>
+    </div>
+    <div id="visit-price-inputs">
+      <select id="visit-price-currency" class="form-input" style="width:84px;flex-shrink:0;padding-left:8px">
+        <option value="EUR">€ EUR</option>
+        <option value="SGD">S$ SGD</option>
+        <option value="USD">$ USD</option>
+        <option value="GBP">£ GBP</option>
+        <option value="AUD">A$ AUD</option>
+      </select>
+      <input id="visit-price-input" class="form-input" type="number" min="0" step="0.01" placeholder="0.00" style="flex:1">
+    </div>
+    <div id="visit-price-actions">
+      <button id="visit-price-skip" class="btn-secondary">Skip</button>
+      <button id="visit-price-save" class="btn-primary" style="flex:1;justify-content:center">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M20 6L9 17l-5-5"/></svg>
         Mark visited
       </button>
@@ -3916,17 +4000,68 @@ async function removeSpot(id) {
   await deleteDoc(spotDocRef(id));
 }
 
+/**
+ * Show the "how much did it cost?" prompt when marking a spot as visited.
+ * Returns a Promise that resolves to { price, currency } or null (skipped).
+ * Only shown when actually marking visited (not un-visiting).
+ */
+function showVisitPricePrompt(spot) {
+  return new Promise(resolve => {
+    const overlay = document.getElementById("visit-price-overlay");
+    const spotEl  = document.getElementById("visit-price-spot");
+    const input   = document.getElementById("visit-price-input");
+    const currSel = document.getElementById("visit-price-currency");
+
+    // Pre-fill with existing price/currency if set
+    spotEl.textContent = spot.name || "";
+    input.value = spot.price ? spot.price.toFixed(2) : "";
+    currSel.value = spot.priceCurrency || "EUR";
+
+    overlay.classList.add("open");
+    // Focus the price input after the sheet animates in
+    setTimeout(() => input.focus(), 300);
+
+    function close(result) {
+      overlay.classList.remove("open");
+      document.getElementById("visit-price-save").onclick = null;
+      document.getElementById("visit-price-skip").onclick = null;
+      overlay.onclick = null;
+      resolve(result);
+    }
+
+    document.getElementById("visit-price-save").onclick = () => {
+      const price = parseFloat(input.value);
+      close(price > 0 ? { price, currency: currSel.value } : null);
+    };
+
+    document.getElementById("visit-price-skip").onclick = () => close(null);
+
+    // Tap backdrop to skip
+    overlay.onclick = e => { if (e.target === overlay) close(null); };
+  });
+}
+
 async function toggleSpotVisited(spot) {
   const markingVisited = !spot.visited;
   const update = {
     visited: markingVisited,
     visitedAt: markingVisited ? serverTimestamp() : null,
   };
-  // Auto-mark as booked/paid when visiting a spot that has a price
-  if (markingVisited && spot.price) {
-    update.booked = true;
-    update.priceEstimated = false;
+
+  if (markingVisited) {
+    const priceData = await showVisitPricePrompt(spot);
+    if (priceData) {
+      update.price = priceData.price;
+      update.priceCurrency = priceData.currency;
+      update.booked = true;
+      update.priceEstimated = false;
+    } else if (spot.price) {
+      // No new price entered but spot already had one — still mark booked/paid
+      update.booked = true;
+      update.priceEstimated = false;
+    }
   }
+
   await updateDoc(spotDocRef(spot.id), update);
 }
 
@@ -4849,8 +4984,9 @@ document.getElementById("drawer-edit-btn").addEventListener("click", () => {
 });
 document.getElementById("drawer-visited-btn").addEventListener("click", async () => {
   if (!currentDrawerSpot) return;
-  await toggleSpotVisited(currentDrawerSpot);
-  closeDrawer();
+  const spot = currentDrawerSpot;
+  closeDrawer();  // close first so the price prompt isn't buried under the drawer
+  await toggleSpotVisited(spot);
 });
 
 /* ─────────────────────────────────────────────────────────────
@@ -6213,10 +6349,7 @@ function renderDashboardToday() {
       row.addEventListener("click", async () => {
         const spot = state.spots.find(s => s.id === row.dataset.spotId);
         if (!spot) return;
-        await updateDoc(spotDocRef(spot.id), {
-          visited: !spot.visited,
-          visitedAt: !spot.visited ? serverTimestamp() : null,
-        });
+        await toggleSpotVisited(spot);
       });
     });
   }
