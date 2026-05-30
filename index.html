@@ -1878,6 +1878,22 @@
     font-size: 0.9375rem; color: var(--text-2);
     line-height: 1.6;
   }
+  .budget-sort-row {
+    display: flex; align-items: center; gap: 6px;
+    margin-top: 10px; flex-wrap: wrap;
+  }
+  .budget-sort-label { font-size: 0.6875rem; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.1em; margin-right: 2px; }
+  .budget-sort-btn {
+    display: inline-flex; align-items: center; gap: 3px;
+    padding: 3px 10px; font-size: 0.75rem; font-family: inherit;
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 100px; cursor: pointer; color: var(--text-2);
+    transition: background 140ms var(--ease), color 140ms var(--ease), border-color 140ms var(--ease);
+  }
+  .budget-sort-btn.active {
+    background: var(--accent); color: #fff; border-color: var(--accent);
+  }
+  .budget-sort-btn:not(.active):hover { background: var(--border); }
   .address-map-link {
     color: inherit; text-decoration: none;
     display: inline-flex; align-items: center; gap: 2px;
@@ -5217,6 +5233,8 @@ function aggregateBudget() {
       isEstimated: s.priceEstimated ?? true,
       isBooked: s.booked ?? false,
       scheduledDate: s.scheduledDate || null,
+      scheduledTime: s.scheduledTime || null,
+      order: s.order ?? 9999,
     });
   });
   state.towns.forEach(t => {
@@ -5570,67 +5588,119 @@ function renderBudgetCharts(byCurrency, fmt, allEntries) {
 }
 
 /* ── Budget expense drawer ───────────────────────────────── */
+// Budget drawer sort state
+let _bdEntries = [];
+let _bdCurrency = "";
+let _bdSort = "date";   // "date" | "value"
+let _bdDir  = "desc";   // "desc" | "asc"
+
+function _sortBudgetEntries(entries) {
+  return [...entries].sort((a, b) => {
+    if (_bdSort === "value") {
+      return _bdDir === "desc" ? b.amount - a.amount : a.amount - b.amount;
+    }
+    // date + time sort: combine date + time + itinerary order for stable, meaningful ordering
+    const aKey = (a.scheduledDate || "9999-99-99") + "T" + (a.scheduledTime || "99:99") + String(a.order ?? 9999).padStart(6, "0");
+    const bKey = (b.scheduledDate || "9999-99-99") + "T" + (b.scheduledTime || "99:99") + String(b.order ?? 9999).padStart(6, "0");
+    return _bdDir === "desc" ? bKey.localeCompare(aKey) : aKey.localeCompare(bKey);
+  });
+}
+
+function _renderBudgetDrawerList() {
+  const sym = currencySymbol(_bdCurrency);
+  const fmt = n => n.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const sorted = _sortBudgetEntries(_bdEntries);
+  const list = document.getElementById("budget-drawer-list");
+  if (!list) return;
+
+  // Update sort button active states
+  document.querySelectorAll(".budget-sort-btn[data-sort]").forEach(btn => {
+    const isActive = btn.dataset.sort === _bdSort;
+    btn.classList.toggle("active", isActive);
+    if (isActive) {
+      btn.querySelector(".sort-arrow").textContent = _bdDir === "desc" ? " ↓" : " ↑";
+    } else {
+      btn.querySelector(".sort-arrow").textContent = "";
+    }
+  });
+
+  list.innerHTML = sorted.map(e => {
+    const town = state.towns.find(t => t.id === e.townId);
+    const dateStr = e.scheduledDate
+      ? new Date(e.scheduledDate + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })
+      : "";
+    const timeStr = e.scheduledTime ? ` · ${e.scheduledTime}` : "";
+    return `
+      <div style="padding:10px 0;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:flex-start;gap:8px">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:0.9375rem;color:var(--text);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(e.name)}</div>
+            <div style="display:flex;gap:8px;margin-top:3px;flex-wrap:wrap">
+              ${town ? `<span style="font-size:0.75rem;color:var(--text-3)">${escapeHtml(town.name)}</span>` : ""}
+              ${dateStr ? `<span style="font-size:0.75rem;color:var(--text-3)">${dateStr}${timeStr}</span>` : ""}
+              ${e.isEstimated ? `<span style="font-size:0.6875rem;color:var(--text-3);background:var(--surface-2);border:1px solid var(--border);border-radius:4px;padding:1px 5px">est.</span>` : ""}
+            </div>
+          </div>
+          <div style="font-size:0.9375rem;font-weight:600;color:${e.isEstimated ? "var(--text-2)" : "var(--text)"};flex-shrink:0;font-variant-numeric:tabular-nums">${sym}${fmt(e.amount)}</div>
+        </div>
+      </div>`;
+  }).join("");
+}
+
 function openBudgetDrawer(groupLabel, currency, entries) {
   currentDrawerSpot = null;
   currentDrawerAccomTownId = null;
   currentDrawerBudgetMode = true;
 
-  const sym = currencySymbol(currency);
-  const fmt = n => n.toLocaleString("en-GB", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  _bdEntries  = entries;
+  _bdCurrency = currency;
+  _bdSort     = "date";
+  _bdDir      = "desc";
 
-  // Sort reverse-chronological; undated entries go to the bottom
-  const sorted = [...entries].sort((a, b) => {
-    if (!a.scheduledDate && !b.scheduledDate) return 0;
-    if (!a.scheduledDate) return 1;
-    if (!b.scheduledDate) return -1;
-    return b.scheduledDate.localeCompare(a.scheduledDate);
-  });
+  const sym   = currencySymbol(currency);
+  const fmt2  = n => n.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const total    = entries.reduce((s, e) => s + e.amount, 0);
+  const paidOnly = entries.filter(e => !e.isEstimated).reduce((s, e) => s + e.amount, 0);
+  const estCount = entries.filter(e => e.isEstimated).length;
 
-  const total    = sorted.reduce((s, e) => s + e.amount, 0);
-  const paidOnly = sorted.filter(e => !e.isEstimated).reduce((s, e) => s + e.amount, 0);
-  const estCount = sorted.filter(e => e.isEstimated).length;
-
-  // Populate shared drawer
   const badge = document.getElementById("drawer-type-badge");
   badge.textContent = currency;
   badge.dataset.type = "budget";
-
   document.getElementById("drawer-spot-name").textContent = groupLabel;
-
-  // Hide action buttons that don't apply to budget view
   document.getElementById("drawer-edit-btn").style.display = "none";
   document.getElementById("drawer-visited-btn").style.display = "none";
 
   const body = document.getElementById("drawer-body");
   body.innerHTML = `
-    <div class="drawer-section" style="padding-bottom:16px;margin-bottom:4px;border-bottom:1px solid var(--border)">
-      <div style="font-family:var(--font-display);font-size:1.75rem;font-weight:500;letter-spacing:-0.03em;line-height:1">${sym}${fmt(total)}</div>
+    <div style="padding-bottom:14px;margin-bottom:4px;border-bottom:1px solid var(--border)">
+      <div style="font-family:var(--font-display);font-size:1.75rem;font-weight:500;letter-spacing:-0.03em;line-height:1;font-variant-numeric:tabular-nums">${sym}${fmt2(total)}</div>
       <div style="font-size:0.8125rem;color:var(--text-3);margin-top:4px">
-        ${sym}${fmt(paidOnly)} paid
-        ${estCount ? ` · ${sym}${fmt(total - paidOnly)} estimated` : ""}
-        · ${sorted.length} expense${sorted.length !== 1 ? "s" : ""}
+        ${sym}${fmt2(paidOnly)} paid
+        ${estCount ? ` · ${sym}${fmt2(total - paidOnly)} estimated` : ""}
+        · ${entries.length} expense${entries.length !== 1 ? "s" : ""}
+      </div>
+      <div class="budget-sort-row">
+        <span class="budget-sort-label">Sort</span>
+        <button class="budget-sort-btn active" data-sort="date">Date / time<span class="sort-arrow"> ↓</span></button>
+        <button class="budget-sort-btn" data-sort="value">Value<span class="sort-arrow"></span></button>
       </div>
     </div>
-    ${sorted.map(e => {
-      const town = state.towns.find(t => t.id === e.townId);
-      const dateStr = e.scheduledDate
-        ? new Date(e.scheduledDate + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })
-        : "";
-      return `
-        <div class="drawer-section" style="padding:10px 0;border-bottom:1px solid var(--border)">
-          <div style="display:flex;align-items:flex-start;gap:8px">
-            <div style="flex:1;min-width:0">
-              <div class="drawer-meta-row" style="font-size:0.9375rem;color:var(--text);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(e.name)}</div>
-              <div style="display:flex;gap:8px;margin-top:3px;flex-wrap:wrap">
-                ${town ? `<span style="font-size:0.75rem;color:var(--text-3)">${escapeHtml(town.name)}</span>` : ""}
-                ${dateStr ? `<span style="font-size:0.75rem;color:var(--text-3)">${dateStr}</span>` : ""}
-                ${e.isEstimated ? `<span style="font-size:0.6875rem;color:var(--text-3);background:var(--surface-2);border:1px solid var(--border);border-radius:4px;padding:1px 5px">est.</span>` : ""}
-              </div>
-            </div>
-            <div style="font-size:0.9375rem;font-weight:600;color:${e.isEstimated ? "var(--text-2)" : "var(--text)"};flex-shrink:0">${sym}${fmt(e.amount)}</div>
-          </div>
-        </div>`;
-    }).join("")}`;
+    <div id="budget-drawer-list"></div>`;
+
+  // Wire sort buttons — toggle direction if same sort, switch sort otherwise
+  body.querySelectorAll(".budget-sort-btn[data-sort]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      if (btn.dataset.sort === _bdSort) {
+        _bdDir = _bdDir === "desc" ? "asc" : "desc";
+      } else {
+        _bdSort = btn.dataset.sort;
+        _bdDir  = btn.dataset.sort === "value" ? "desc" : "desc";
+      }
+      _renderBudgetDrawerList();
+    });
+  });
+
+  _renderBudgetDrawerList();
 
   pushModalHistory();
   document.getElementById("spot-drawer-overlay").classList.add("visible");
