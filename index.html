@@ -2707,7 +2707,7 @@
           </div>
           <div class="visited-toggle" id="booked-toggle" role="button" tabindex="0" style="flex:1">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="16" height="16"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-            <span class="visited-toggle-label" style="font-size:0.875rem">Booked</span>
+            <span class="visited-toggle-label" style="font-size:0.875rem">Booked / paid</span>
             <div class="toggle-switch" id="booked-switch"></div>
           </div>
         </div>
@@ -3859,10 +3859,17 @@ async function removeSpot(id) {
 }
 
 async function toggleSpotVisited(spot) {
-  await updateDoc(spotDocRef(spot.id), {
-    visited: !spot.visited,
-    visitedAt: !spot.visited ? serverTimestamp() : null,
-  });
+  const markingVisited = !spot.visited;
+  const update = {
+    visited: markingVisited,
+    visitedAt: markingVisited ? serverTimestamp() : null,
+  };
+  // Auto-mark as booked/paid when visiting a spot that has a price
+  if (markingVisited && spot.price) {
+    update.booked = true;
+    update.priceEstimated = false;
+  }
+  await updateDoc(spotDocRef(spot.id), update);
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -3950,7 +3957,7 @@ function transportCardHTML(spot) {
         <div class="spot-card-row1">
           ${typeIconSVG("transport")}
           <span class="spot-name">${escapeHtml(spot.name || subtype)}</span>
-          ${spot.booked && !isArrival ? `<span class="spot-booked-pill">Booked</span>` : ""}
+          ${spot.booked && !isArrival ? `<span class="spot-booked-pill">Booked / paid</span>` : ""}
           ${isArrival ? `<span class="spot-tag-pill" style="margin-left:auto;font-size:0.625rem;opacity:0.7">arrival</span>` : ""}
         </div>
         ${meta.length ? `<div class="spot-card-row2">${meta.join("")}</div>` : ""}
@@ -3968,7 +3975,7 @@ function spotCardHTML(spot) {
     .map(t => `<span class="spot-tag-pill">${escapeHtml(t)}</span>`).join("");
 
   const bookedBadge = spot.booked && !spot.visited
-    ? `<span class="spot-booked-pill">Booked</span>`
+    ? `<span class="spot-booked-pill">Booked / paid</span>`
     : "";
   const chainIcon = spot.groupId
     ? `<svg class="spot-chain-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`
@@ -4027,7 +4034,7 @@ function renderAccomCard(town) {
         ${dateRange ? `<div class="accom-meta">${dateRange}</div>` : ""}
         ${a.bookingRef ? `<div class="accom-meta" style="font-size:0.75rem">Ref: ${escapeHtml(a.bookingRef)}</div>` : ""}
       </div>
-      ${a.booked ? `<span class="accom-booked">Booked</span>` : ""}
+      ${a.booked ? `<span class="accom-booked">Booked / paid</span>` : ""}
     </div>`;
 }
 
@@ -4428,7 +4435,7 @@ function openAccomDrawer(town) {
         ${a.booked
           ? `<div class="drawer-meta-row" style="color:var(--success)">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-              Booked${a.bookingRef ? ` · Ref: ${escapeHtml(a.bookingRef)}` : ""}
+              Booked / paid${a.bookingRef ? ` · Ref: ${escapeHtml(a.bookingRef)}` : ""}
             </div>`
           : `<div class="drawer-meta-sub">Ref: ${escapeHtml(a.bookingRef)}</div>`}
       </div>`);
@@ -4591,7 +4598,7 @@ function openDrawer(spot) {
         <div class="drawer-section-label">Booking</div>
         ${spot.booked ? `<div class="drawer-meta-row" style="color:var(--success)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-          Booked${spot.bookingRef ? ` · Ref: ${escapeHtml(spot.bookingRef)}` : ""}
+          Booked / paid${spot.bookingRef ? ` · Ref: ${escapeHtml(spot.bookingRef)}` : ""}
         </div>` : spot.bookingRef ? `<div class="drawer-meta-sub">Ref: ${escapeHtml(spot.bookingRef)}</div>` : ""}
       </div>`);
   }
@@ -5087,6 +5094,13 @@ document.getElementById("subtype-selector").addEventListener("click", e => {
 document.getElementById("visited-toggle").addEventListener("click", () => {
   visitedState = !visitedState;
   document.getElementById("visited-switch").classList.toggle("on", visitedState);
+  // Auto-set booked/paid when marking visited and a price is entered
+  if (visitedState && parseFloat(document.getElementById("spot-price").value)) {
+    bookedState = true;
+    priceEstimatedState = false;
+    document.getElementById("booked-switch").classList.add("on");
+    document.getElementById("estimated-switch").classList.remove("on");
+  }
 });
 
 // Estimated / Booked toggles
@@ -5152,7 +5166,7 @@ document.getElementById("modal-save-btn").addEventListener("click", async () => 
       price:             parseFloat(document.getElementById("spot-price").value) || null,
       priceCurrency:     document.getElementById("spot-price-currency").value || "EUR",
       priceEstimated:    priceEstimatedState,
-      booked:            bookedState,
+      booked:            bookedState,  // transport spots are never auto-visited
       bookingRef:        document.getElementById("spot-booking-ref").value.trim() || null,
     };
   } else {
@@ -5170,8 +5184,8 @@ document.getElementById("modal-save-btn").addEventListener("click", async () => 
       visited: visitedState,
       price:          parseFloat(document.getElementById("spot-price").value) || null,
       priceCurrency:  document.getElementById("spot-price-currency").value || "EUR",
-      priceEstimated: priceEstimatedState,
-      booked:         bookedState,
+      priceEstimated: visitedState && parseFloat(document.getElementById("spot-price").value) ? false : priceEstimatedState,
+      booked:         visitedState && parseFloat(document.getElementById("spot-price").value) ? true  : bookedState,
       bookingRef:     document.getElementById("spot-booking-ref").value.trim() || null,
     };
   }
