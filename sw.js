@@ -2,7 +2,7 @@
    Weyage Service Worker
    Deployed at: /weyage/ subdirectory on GitHub Pages
    ============================================================ */
-const CACHE_NAME = "weyage-v3";
+const CACHE_NAME = "weyage-v5";
 
 // Static assets that rarely change — cache-first
 const STATIC_ASSETS = [
@@ -56,19 +56,29 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Network-first for the app shell (index.html) — ensures every deploy is picked up immediately
+  // Stale-while-revalidate for the app shell (index.html):
+  // Serve the cached version immediately so the app appears instantly,
+  // then fetch a fresh copy in the background and update the cache.
+  // The user gets the new version on their next load.
   if (url.origin === self.location.origin &&
       (url.pathname === "/weyage/" || url.pathname === "/weyage/index.html")) {
     event.respondWith(
       caches.open(CACHE_NAME).then(async cache => {
-        try {
-          const response = await fetch(request);
-          if (response.ok) cache.put(request, response.clone());
+        const cached = await cache.match(request);
+        // Always kick off a background refresh
+        const networkFetch = fetch(request).then(async response => {
+          if (response.ok) {
+            await cache.put(request, response.clone());
+            // If we served a cached version, tell the page a fresh one is now ready
+            if (cached) {
+              const clients = await self.clients.matchAll({ type: "window" });
+              clients.forEach(c => c.postMessage({ type: "APP_UPDATED" }));
+            }
+          }
           return response;
-        } catch {
-          const cached = await cache.match(request);
-          return cached || fetch(request);
-        }
+        }).catch(() => null);
+        // Return cached instantly if available; wait for network only on first visit
+        return cached || networkFetch;
       })
     );
     return;
