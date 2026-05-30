@@ -2360,13 +2360,39 @@ body.share-mode .transit-day-chip { display: none !important; }
 /* Transit date groups inside the city section */
 .transit-date-group { margin-bottom: 2px; }
 .transit-date-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--text-3);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   padding: 8px 0 4px;
+  cursor: pointer;
+  user-select: none;
 }
+.transit-date-chevron {
+  flex-shrink: 0;
+  transition: transform 180ms var(--ease);
+}
+.transit-date-group.collapsed .transit-date-chevron { transform: rotate(-90deg); }
+.transit-date-group.collapsed .transit-date-rows { display: none; }
+.bd-filter-clear {
+  margin-left: auto;
+  padding: 3px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-3);
+  font-size: 0.75rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 120ms, border-color 120ms;
+  display: none;
+}
+.bd-filter-clear.visible { display: inline-block; }
+.bd-filter-clear:hover { color: var(--text-1); border-color: var(--text-2); }
 .transit-city-chevron {
   flex-shrink: 0;
   transition: transform 200ms var(--ease);
@@ -6164,8 +6190,11 @@ function renderBudget() {
           </button>
         </div>`).join("");
       return `<div class="transit-date-group">
-        <div class="transit-date-header">${escapeHtml(dateLabel)}</div>
-        ${rowsHTML}
+        <div class="transit-date-header">
+          <svg class="transit-date-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="11" height="11"><polyline points="6 9 12 15 18 9"/></svg>
+          ${escapeHtml(dateLabel)}
+        </div>
+        <div class="transit-date-rows">${rowsHTML}</div>
       </div>`;
     }).join("");
 
@@ -6201,7 +6230,10 @@ function renderBudget() {
     });
   });
 
-  // Transit log: collapse city, add, edit, delete
+  // Transit log: collapse city, collapse date, add, edit, delete
+  content.querySelectorAll(".transit-date-header").forEach(hdr => {
+    hdr.addEventListener("click", () => hdr.closest(".transit-date-group").classList.toggle("collapsed"));
+  });
   content.querySelectorAll(".transit-city-bar").forEach(bar => {
     bar.addEventListener("click", e => {
       if (e.target.closest(".transit-city-add-btn")) return;
@@ -6349,10 +6381,12 @@ function _renderBudgetDrawerList() {
     btn.querySelector(".sort-arrow").textContent = isActive ? (_bdDir === "desc" ? " ↓" : " ↑") : "";
   });
 
-  // Update pill active states
+  // Update pill active states + clear button visibility
   document.querySelectorAll(".bd-filter-pill").forEach(pill => {
     pill.classList.toggle("active", _bdActiveFilters.has(pill.dataset.value));
   });
+  const clearBtn = document.getElementById("bd-filter-clear-btn");
+  if (clearBtn) clearBtn.classList.toggle("visible", _bdActiveFilters.size > 0);
 
   // Apply filter
   const filtered = _bdActiveFilters.size === 0
@@ -6441,6 +6475,7 @@ function openBudgetDrawer(groupLabel, currency, entries, mode = "") {
         return `<div class="bd-filter-row">
           <span class="bd-filter-label">${label}</span>
           ${pillValues.map(v => `<button class="bd-filter-pill" data-value="${escapeHtml(v)}">${escapeHtml(v)}</button>`).join("")}
+          <button class="bd-filter-clear" id="bd-filter-clear-btn">Clear</button>
         </div>`;
       })()}
     </div>
@@ -6459,7 +6494,7 @@ function openBudgetDrawer(groupLabel, currency, entries, mode = "") {
     });
   });
 
-  // Wire filter pills
+  // Wire filter pills + clear button
   body.querySelectorAll(".bd-filter-pill").forEach(pill => {
     pill.addEventListener("click", () => {
       const val = pill.dataset.value;
@@ -6467,6 +6502,10 @@ function openBudgetDrawer(groupLabel, currency, entries, mode = "") {
       else _bdActiveFilters.add(val);
       _renderBudgetDrawerList();
     });
+  });
+  body.querySelector("#bd-filter-clear-btn")?.addEventListener("click", () => {
+    _bdActiveFilters.clear();
+    _renderBudgetDrawerList();
   });
 
   _renderBudgetDrawerList();
