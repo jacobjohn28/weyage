@@ -5504,21 +5504,10 @@ async function saveAccommodation() {
   btn.disabled = true;
   btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Saving…`;
 
-  try {
-    const townRef = doc(db, "trips", TRIP_ID, "towns", accomTownId);
-    await updateDoc(townRef, { accommodation: data });
-    setState({
-      towns: state.towns.map(t => t.id === accomTownId ? { ...t, accommodation: data } : t)
-    });
-    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="15" height="15"><polyline points="20 6 9 17 4 12"/></svg> Saved`;
-    setTimeout(() => closeAccomModal(), 800);
-  } catch (err) {
-    console.error("saveAccommodation:", err);
-    errEl.textContent = `Couldn't save — ${err.message || "check your connection and try again"}`;
-    errEl.style.display = "";
-    btn.disabled = false;
-    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save`;
-  }
+  // Close immediately, sync in background
+  closeAccomModal();
+  const townRef = doc(db, "trips", TRIP_ID, "towns", accomTownId);
+  updateDoc(townRef, { accommodation: data }).catch(err => console.error("saveAccommodation:", err));
 }
 
 // Accom modal events
@@ -5734,15 +5723,12 @@ document.getElementById("modal-save-btn").addEventListener("click", async () => 
   const btn = document.getElementById("modal-save-btn");
   btn.disabled = true;
   btn.textContent = "Saving…";
-  try {
-    await saveSpot(data, modalEditId);
-    closeModal();
-    setView("itinerary");
-  } catch (e) {
-    console.error(e);
-    btn.disabled = false;
-    btn.textContent = "Save spot";
-  }
+  // Close immediately — persistentLocalCache commits the write to IndexedDB right
+  // away and onSnapshot fires locally, so there's no need to wait for the server
+  // round-trip before dismissing the modal.
+  closeModal();
+  setView("itinerary");
+  saveSpot(data, modalEditId).catch(err => console.error("Save failed:", err));
 });
 
 // Delete
