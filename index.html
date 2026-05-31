@@ -6383,6 +6383,18 @@ function _renderBudgetDrawerList() {
         return _bdActiveFilters.has(cityName);
       });
 
+  // Update totals to reflect the current filtered set
+  const fTotal    = filtered.reduce((s, e) => s + e.amount, 0);
+  const fPaid     = filtered.filter(e => !e.isEstimated).reduce((s, e) => s + e.amount, 0);
+  const fEstCount = filtered.filter(e => e.isEstimated).length;
+  const totalEl = document.getElementById("bd-total-amount");
+  const subEl   = document.getElementById("bd-total-sub");
+  if (totalEl) totalEl.textContent = `${sym}${fmt(fTotal)}`;
+  if (subEl) subEl.innerHTML =
+    `${sym}${fmt(fPaid)} paid` +
+    (fEstCount ? ` · ${sym}${fmt(fTotal - fPaid)} estimated` : "") +
+    ` · ${filtered.length} expense${filtered.length !== 1 ? "s" : ""}`;
+
   const sorted = _sortBudgetEntries(filtered);
 
   list.innerHTML = sorted.map(e => {
@@ -6424,11 +6436,8 @@ function openBudgetDrawer(groupLabel, currency, entries, mode = "") {
   _bdMode         = mode;
   _bdActiveFilters = new Set();
 
-  const sym   = currencySymbol(currency);
-  const fmt2  = n => n.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const total    = entries.reduce((s, e) => s + e.amount, 0);
-  const paidOnly = entries.filter(e => !e.isEstimated).reduce((s, e) => s + e.amount, 0);
-  const estCount = entries.filter(e => e.isEstimated).length;
+  const sym  = currencySymbol(currency);
+  const fmt2 = n => n.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   const badge = document.getElementById("drawer-type-badge");
   badge.textContent = currency;
@@ -6440,12 +6449,8 @@ function openBudgetDrawer(groupLabel, currency, entries, mode = "") {
   const body = document.getElementById("drawer-body");
   body.innerHTML = `
     <div style="padding-bottom:14px;margin-bottom:4px;border-bottom:1px solid var(--border)">
-      <div style="font-family:var(--font-display);font-size:1.75rem;font-weight:500;letter-spacing:-0.03em;line-height:1;font-variant-numeric:tabular-nums">${sym}${fmt2(total)}</div>
-      <div style="font-size:0.8125rem;color:var(--text-3);margin-top:4px">
-        ${sym}${fmt2(paidOnly)} paid
-        ${estCount ? ` · ${sym}${fmt2(total - paidOnly)} estimated` : ""}
-        · ${entries.length} expense${entries.length !== 1 ? "s" : ""}
-      </div>
+      <div id="bd-total-amount" style="font-family:var(--font-display);font-size:1.75rem;font-weight:500;letter-spacing:-0.03em;line-height:1;font-variant-numeric:tabular-nums"></div>
+      <div id="bd-total-sub" style="font-size:0.8125rem;color:var(--text-3);margin-top:4px"></div>
       <div class="budget-sort-row">
         <span class="budget-sort-label">Sort</span>
         <button class="budget-sort-btn active" data-sort="date">Date / time<span class="sort-arrow"> ↓</span></button>
