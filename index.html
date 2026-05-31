@@ -4655,16 +4655,28 @@ function renderItinerary() {
               </div>`;
           }).join("");
         })()}
-        ${state.shareMode ? "" : `<div class="day-group">
-          <div class="day-header">
-            <span class="day-label" style="color:var(--text-3);font-style:italic;font-family:var(--font-display)">Wishlist</span>
-            <div class="day-rule"></div>
-          </div>
-          <div class="spot-list" data-date="unscheduled" data-town-id="${escapeHtml(town.id)}">
-            ${unscheduled.map(s => spotCardHTML(s)).join("")}
-          </div>
-          <button class="add-spot-inline" data-town-id="${escapeHtml(town.id)}" data-date="" style="margin-top:5px">+ Add to wishlist</button>
-        </div>`}
+        ${state.shareMode ? "" : (() => {
+          const wKey = `${town.id}:wishlist`;
+          const wOverride = dayCollapseOverrides.get(wKey);
+          const wCollapsed = wOverride !== undefined ? wOverride : false;
+          const wCount = unscheduled.length;
+          return `<div class="day-group${wCollapsed ? " collapsed" : ""}" data-day-key="${wKey}">
+            <div class="day-header">
+              <span class="day-label" style="color:var(--text-3);font-style:italic;font-family:var(--font-display)">Wishlist</span>
+              <span class="day-spot-count">${wCount} spot${wCount !== 1 ? "s" : ""}</span>
+              <div class="day-rule"></div>
+              <span class="day-chevron">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="6 9 12 15 18 9"/></svg>
+              </span>
+            </div>
+            <div class="day-body">
+              <div class="spot-list" data-date="unscheduled" data-town-id="${escapeHtml(town.id)}">
+                ${unscheduled.map(s => spotCardHTML(s)).join("")}
+              </div>
+              <button class="add-spot-inline" data-town-id="${escapeHtml(town.id)}" data-date="" style="margin-top:5px">+ Add to wishlist</button>
+            </div>
+          </div>`;
+        })()}
       </div>`);
   }
 
