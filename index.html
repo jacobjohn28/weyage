@@ -3398,7 +3398,6 @@ body.share-mode .transit-entry-del { display: none !important; }
      APPLICATION SCRIPT
      ============================================================ -->
 <input type="file" id="attach-file-input" accept="image/*,application/pdf,.pdf" style="display:none">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script type="module">
 // Firebase SDK is loaded via dynamic import inside initFirebase() rather than
@@ -6051,6 +6050,20 @@ function buildSgdSummaryHTML(entries, budgetTargets, fmt) {
 
 let budgetChartInstances = {};
 
+let _chartJsPromise = null;
+function loadChartJs() {
+  if (typeof Chart !== "undefined") return Promise.resolve();
+  if (_chartJsPromise) return _chartJsPromise;
+  _chartJsPromise = new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js";
+    s.onload = resolve;
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+  return _chartJsPromise;
+}
+
 function renderBudget() {
   const entries = aggregateBudget();
   const fmt = n => n.toLocaleString("en-GB", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
@@ -6268,8 +6281,8 @@ function renderBudget() {
 
   // Chart bar clicks are wired inside renderBudgetCharts
 
-  // Draw charts after DOM is painted, passing full entries for click handler
-  requestAnimationFrame(() => renderBudgetCharts(byCurrency, fmt, entries));
+  // Draw charts after DOM is painted — load Chart.js lazily on first visit
+  loadChartJs().then(() => requestAnimationFrame(() => renderBudgetCharts(byCurrency, fmt, entries)));
 }
 
 function renderBudgetCharts(byCurrency, fmt, allEntries) {
