@@ -6,6 +6,8 @@ const CACHE_NAME = "weyage-v5";
 
 // Static assets that rarely change — cache-first
 const STATIC_ASSETS = [
+  "/weyage/",
+  "/weyage/index.html",
   "/weyage/manifest.json",
   "/weyage/icon.svg",
   "/weyage/icon-192.png",
