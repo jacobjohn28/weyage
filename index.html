@@ -4838,9 +4838,11 @@ function renderItinerary() {
             }
           }
 
-          // Re-index all affected lists by reading their current DOM order
+          // Re-index all affected lists by reading their current DOM order.
+          // Skip arrival-view cards (data-draggable="false") — they belong to other
+          // towns and are purely decorative; including them corrupts order indices.
           for (const l of affectedLists) {
-            [...l.querySelectorAll(".spot-card")].forEach((card, idx) => {
+            [...l.querySelectorAll(".spot-card:not([data-draggable='false'])")].forEach((card, idx) => {
               batch.update(spotDocRef(card.dataset.spotId), { order: idx });
             });
           }
@@ -5515,9 +5517,11 @@ async function saveAccommodation() {
   btn.disabled = true;
   btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Saving…`;
 
+  // Capture townId before closeAccomModal() nulls it out
+  const townId = accomTownId;
   // Close immediately, sync in background
   closeAccomModal();
-  const townRef = doc(db, "trips", TRIP_ID, "towns", accomTownId);
+  const townRef = doc(db, "trips", TRIP_ID, "towns", townId);
   updateDoc(townRef, { accommodation: data }).catch(err => console.error("saveAccommodation:", err));
 }
 
