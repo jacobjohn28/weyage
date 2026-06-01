@@ -399,7 +399,12 @@
     font-size: 1.25rem; font-weight: 500;
     letter-spacing: -0.02em; margin-bottom: 4px;
   }
-  .trip-card-dates { font-size: 0.8125rem; color: var(--text-2); margin-bottom: 10px; }
+  .trip-card-dates { font-size: 0.8125rem; color: var(--text-2); margin-bottom: 4px; }
+  .trip-card-cities {
+    font-size: 0.75rem; color: var(--text-3);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    margin-bottom: 10px;
+  }
   .trip-card-meta {
     display: flex; gap: 12px;
     font-size: 0.75rem; color: var(--text-3);
@@ -4465,6 +4470,7 @@ function renderTripCards() {
         <div class="trip-card-body">
           <div class="trip-card-name">${escapeHtml(t.name)}</div>
           <div class="trip-card-dates">${t.startDate ? fmtDateRange(t.startDate, t.endDate) : "Dates TBD"}</div>
+          ${t.cityNames?.length ? `<div class="trip-card-cities">${t.cityNames.map(escapeHtml).join(" | ")}</div>` : ""}
           <div class="trip-card-meta">
             <span>${escapeHtml(t.currency || "")}</span>
           </div>
@@ -7412,6 +7418,7 @@ async function reorderTownsByDate(extraTown = null) {
   });
   const batch = writeBatch(db);
   all.forEach((t, i) => batch.update(doc(db, "trips", activeTripId, "towns", t.id), { order: i + 1 }));
+  batch.update(doc(db, "trips", activeTripId), { cityNames: all.map(t => t.name) });
   await batch.commit();
 }
 
@@ -7463,6 +7470,8 @@ async function deleteTownEdit() {
       .forEach(s => batch.delete(doc(db, "trips", activeTripId, "spots", s.id)));
     // Delete the town doc
     batch.delete(doc(db, "trips", activeTripId, "towns", editingTownId));
+    const remainingNames = state.towns.filter(t => t.id !== editingTownId).map(t => t.name);
+    batch.update(doc(db, "trips", activeTripId), { cityNames: remainingNames });
     await batch.commit();
     closeTownEditModal();
   } catch (err) {
