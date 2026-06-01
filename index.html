@@ -5734,12 +5734,14 @@ document.getElementById("modal-save-btn").addEventListener("click", async () => 
   const btn = document.getElementById("modal-save-btn");
   btn.disabled = true;
   btn.textContent = "Saving…";
+  // Capture editId before closeModal() nulls out modalEditId
+  const editId = modalEditId;
   // Close immediately — persistentLocalCache commits the write to IndexedDB right
   // away and onSnapshot fires locally, so there's no need to wait for the server
   // round-trip before dismissing the modal.
   closeModal();
   setView("itinerary");
-  saveSpot(data, modalEditId).catch(err => console.error("Save failed:", err));
+  saveSpot(data, editId).catch(err => console.error("Save failed:", err));
 });
 
 // Delete
