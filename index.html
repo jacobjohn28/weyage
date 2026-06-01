@@ -5242,7 +5242,19 @@ function renderItinerary() {
   sortableInstances.length = 0;
 
   if (state.towns.length === 0) {
-    container.innerHTML = `<div class="itinerary-empty"><p>Loading…</p></div>`;
+    if (!state.trip) {
+      container.innerHTML = `<div class="itinerary-empty"><p>Loading…</p></div>`;
+    } else {
+      container.innerHTML = `
+        <div class="itinerary-empty">
+          <p style="font-size:1.0625rem;font-weight:500;color:var(--text);margin-bottom:8px">No cities yet</p>
+          <p style="margin-bottom:28px">Add your first city to start planning your trip.</p>
+          <button class="btn-primary" onclick="openTownEditModal()" style="padding:10px 22px;font-size:0.9375rem">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="margin-right:6px;vertical-align:-2px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add a city
+          </button>
+        </div>`;
+    }
     return;
   }
 
