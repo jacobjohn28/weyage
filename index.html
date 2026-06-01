@@ -4249,6 +4249,13 @@ function listenToTrip(tripId) {
     const towns = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     towns.sort((a, b) => (a.order || 0) - (b.order || 0));
     setState({ towns });
+    // Sync cityNames onto the trip doc so the trips list can display them without extra fetches.
+    // This also backfills legacy trips that predate the cityNames field.
+    const names = towns.map(t => t.name);
+    const existing = state.allTrips.find(t => t.id === tripId);
+    if (!existing || JSON.stringify(existing.cityNames) !== JSON.stringify(names)) {
+      updateDoc(doc(db, "trips", tripId), { cityNames: names }).catch(() => {});
+    }
   });
   // Spots subcollection
   _spotsUnsub = onSnapshot(collection(db, "trips", tripId, "spots"), (snap) => {
