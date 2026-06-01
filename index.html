@@ -4493,10 +4493,16 @@ function renderTripCards() {
 
     let urls = [];
     if (imgNames.length) {
-      const fetched = await Promise.all(
+      // Fetch (populates both imgCache and thumbCache), then use thumbnail for small cells
+      await Promise.all(
         imgNames.map(n => fetchWikipediaImage(n.replace(/\s*\(.*\)$/, "").trim().replace(/\s+/g, "_")))
       );
-      urls = fetched.filter(Boolean);
+      urls = imgNames
+        .map(n => {
+          const article = n.replace(/\s*\(.*\)$/, "").trim().replace(/\s+/g, "_");
+          return thumbCache[article] || imgCache[article] || null;
+        })
+        .filter(Boolean);
     }
     if (!urls.length) {
       const url = await fetchTripCoverImage(t.id, t.name);
@@ -4648,13 +4654,14 @@ function saveImgCache(cache) {
   try { localStorage.setItem(IMG_CACHE_KEY, JSON.stringify(cache)); } catch {}
 }
 const imgCache = loadImgCache();
+const thumbCache = {}; // article → thumbnail URL (smaller, for collage cells — not persisted)
 const inflightFetches = new Map(); // de-dupe concurrent fetches
 
 // In-memory cache of town names per trip (for collage on trips screen)
 // Cleared on any town save/delete so the collage refreshes next visit.
 const tripTownsCache = {};
 async function fetchTripTownNames(tripId) {
-  if (tripTownsCache[tripId]) return tripTownsCache[tripId];
+  if (tripTownsCache[tripId] !== undefined) return tripTownsCache[tripId];
   try {
     const snap = await getDocs(collection(db, "trips", tripId, "towns"));
     const names = snap.docs.map(d => d.data().name || "").filter(Boolean);
@@ -4692,14 +4699,11 @@ async function fetchWikipediaImage(article) {
       if (!resp.ok) return null;
       const data = await resp.json();
       // Prefer original (high-res); fall back to thumbnail
-      const url = (data.originalimage && data.originalimage.source)
-                || (data.thumbnail && data.thumbnail.source)
-                || null;
-      if (url) {
-        imgCache[article] = url;
-        saveImgCache(imgCache);
-      }
-      return url;
+      const thumb = data.thumbnail?.source || null;
+      const full  = data.originalimage?.source || thumb || null;
+      if (thumb) thumbCache[article] = thumb;
+      if (full)  { imgCache[article] = full; saveImgCache(imgCache); }
+      return full;
     } catch (e) {
       console.warn("Wikipedia image fetch failed for", article, e);
       return null;
@@ -4911,31 +4915,14 @@ function renderDashboardTowns() {
     });
   });
 
-  // Async: fetch missing Wikipedia images (uses explicit article or falls back to town name)
-  state.towns.forEach(async (t) => {
-    if (t.customImage) return;
-    const article = townImgArticle(t);
-    if (imgCache[article]) return;
-    const url = await fetchWikipediaImage(article);
-    if (!url) return;
-    imgCache[article] = url;
-    saveImgCache(imgCache);
-    renderDashboardTowns();
-    if (state.currentView === "itinerary") renderItinerary();
-    const townArticle = container.querySelector(`[data-town-id="${CSS.escape(t.id)}"]`);
-    if (!townArticle) return;
-    const frame = townArticle.querySelector(".spread-img-frame");
-    if (!frame || frame.querySelector(".spread-img")) return;
-    const img = document.createElement("img");
-    img.className = "spread-img";
-    img.src = url;
-    img.alt = t.name;
-    img.loading = "lazy";
-    img.onload = () => img.classList.add("loaded");
-    img.onerror = () => img.remove();
-    const fallback = frame.querySelector(".spread-img-fallback");
-    fallback.after(img);
-  });
+  // Async: fetch all missing images then re-render once (avoids per-fetch cascade)
+  const missingImgs = state.towns.filter(t => !t.customImage && !imgCache[townImgArticle(t)]);
+  if (missingImgs.length) {
+    Promise.all(missingImgs.map(t => fetchWikipediaImage(townImgArticle(t)))).then(() => {
+      renderDashboardTowns();
+      if (state.currentView === "itinerary") renderItinerary();
+    });
+  }
 }
 
 function renderDashboardMeta() {
