@@ -404,6 +404,16 @@
     display: flex; gap: 12px;
     font-size: 0.75rem; color: var(--text-3);
   }
+  .trip-card-menu-btn {
+    position: absolute; top: 8px; right: 8px;
+    width: 32px; height: 32px; border-radius: 50%;
+    background: rgba(0,0,0,0.35); color: white;
+    border: none; cursor: pointer; z-index: 1;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.25rem; line-height: 1; letter-spacing: 0.02em;
+    transition: background 150ms var(--ease);
+  }
+  .trip-card-menu-btn:hover { background: rgba(0,0,0,0.58); }
   .trips-empty {
     grid-column: 1/-1;
     text-align: center; padding: 64px 24px;
@@ -491,15 +501,26 @@
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 16px 18px;
-    cursor: pointer; display: flex; flex-direction: column; gap: 4px;
+    padding: 14px 14px 14px 18px;
+    cursor: pointer; display: flex; flex-direction: row; align-items: center; gap: 12px;
     transition: background 140ms var(--ease);
   }
   .trips-mobile-card:active { background: var(--surface-2); }
+  .trips-mobile-card-info { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
   .trips-mobile-card-name {
     font-family: var(--font-display); font-size: 1.1rem; font-weight: 500;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .trips-mobile-card-dates { font-size: 0.8125rem; color: var(--text-2); }
+  .trips-mobile-card-menu-btn {
+    flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%;
+    background: transparent; color: var(--text-3);
+    border: 1px solid var(--border); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.125rem; line-height: 1; letter-spacing: 0.02em;
+    transition: background 140ms var(--ease), color 140ms var(--ease);
+  }
+  .trips-mobile-card-menu-btn:hover { background: var(--surface-2); color: var(--text); }
   .trips-mobile-footer {
     padding: 16px 20px;
     border-top: 1px solid var(--border);
@@ -2997,10 +3018,6 @@ body.share-mode .transit-entry-del { display: none !important; }
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="16" height="16"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
         Share itinerary
       </button>
-      <button class="nav-item" id="sidebar-manage-access-btn" style="margin:6px 0 0;font-size:0.8125rem;opacity:0.7">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="16" height="16"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        Manage access
-      </button>
       <div class="user-chip">
         <div class="user-avatar" id="user-avatar">·</div>
         <div class="user-name" id="user-name">Loading…</div>
@@ -3159,10 +3176,6 @@ body.share-mode .transit-entry-del { display: none !important; }
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
           Map
         </button>
-        <button class="bottom-nav-item" id="sheet-all-trips-btn" style="width:100%;flex-direction:row;gap:14px;padding:14px 24px;justify-content:flex-start;font-size:1rem">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-          All trips
-        </button>
         <button class="bottom-nav-item" id="sheet-add-city-btn" style="width:100%;flex-direction:row;gap:14px;padding:14px 24px;justify-content:flex-start;font-size:1rem">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
           New city
@@ -3170,6 +3183,11 @@ body.share-mode .transit-entry-del { display: none !important; }
         <button class="bottom-nav-item share-link-btn" id="sheet-share-btn" style="width:100%;flex-direction:row;gap:14px;padding:14px 24px;justify-content:flex-start;font-size:1rem">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
           Share itinerary
+        </button>
+        <div style="margin:6px 24px 0;border-top:1px solid var(--border)"></div>
+        <button class="bottom-nav-item" id="sheet-all-trips-btn" style="width:100%;flex-direction:row;gap:14px;padding:14px 24px;justify-content:flex-start;font-size:1rem;color:var(--accent)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><polyline points="15 18 9 12 15 6"/></svg>
+          All trips
         </button>
       </div>
     </div>
@@ -3227,33 +3245,76 @@ body.share-mode .transit-entry-del { display: none !important; }
 </div>
 
 <!-- ============================================================
-     MANAGE ACCESS MODAL
+     TRIP SETTINGS DRAWER
      ============================================================ -->
-<div class="modal-overlay" id="manage-access-overlay">
-  <div class="modal" style="max-width:480px">
-    <div class="modal-header">
-      <h3 class="modal-title">Manage access</h3>
-      <button class="icon-btn modal-close-btn" id="manage-access-close">
+<div class="drawer-overlay" id="trip-settings-overlay">
+  <div class="drawer-backdrop" id="trip-settings-backdrop"></div>
+  <div class="drawer" id="trip-settings-drawer">
+    <div class="drawer-handle-bar"></div>
+    <div class="drawer-header">
+      <span style="font-size:0.9375rem;font-weight:600;flex:1">Trip settings</span>
+      <button class="icon-btn" id="trip-settings-close" aria-label="Close">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
-    <div class="modal-body">
-      <div id="manage-access-list" style="margin-bottom:20px"></div>
-      <div class="field-group" id="manage-access-add-section">
-        <label class="field-label">Invite by email</label>
-        <div style="display:flex;gap:8px">
-          <input class="field-input" type="email" id="manage-access-email" placeholder="name@example.com" style="flex:1">
-          <button class="modal-btn-primary" id="manage-access-add-btn" style="flex-shrink:0">Add</button>
+    <div style="overflow-y:auto;flex:1;padding:20px;display:flex;flex-direction:column;gap:24px">
+
+      <!-- Trip details -->
+      <div>
+        <div style="font-size:0.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-3);margin-bottom:14px">Trip details</div>
+        <div class="field-group">
+          <label class="field-label">Trip name</label>
+          <input class="field-input" type="text" id="ts-name" placeholder="e.g. Japan Spring 2027" autocomplete="off">
         </div>
-        <div id="manage-access-error" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(184,83,66,0.08);border:1px solid rgba(184,83,66,0.2);color:var(--danger);border-radius:var(--radius-sm);font-size:0.8125rem"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="field-group">
+            <label class="field-label">Start date</label>
+            <input class="field-input" type="date" id="ts-start">
+          </div>
+          <div class="field-group">
+            <label class="field-label">End date</label>
+            <input class="field-input" type="date" id="ts-end">
+          </div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Primary currency</label>
+          <select class="field-input" id="ts-currency">
+            <option value="EUR">EUR — Euro</option>
+            <option value="GBP">GBP — British Pound</option>
+            <option value="USD">USD — US Dollar</option>
+            <option value="SGD">SGD — Singapore Dollar</option>
+            <option value="JPY">JPY — Japanese Yen</option>
+            <option value="AUD">AUD — Australian Dollar</option>
+            <option value="CAD">CAD — Canadian Dollar</option>
+            <option value="CHF">CHF — Swiss Franc</option>
+            <option value="THB">THB — Thai Baht</option>
+            <option value="MYR">MYR — Malaysian Ringgit</option>
+          </select>
+        </div>
+        <div id="ts-save-error" style="display:none;padding:8px 12px;background:rgba(184,83,66,0.08);border:1px solid rgba(184,83,66,0.2);color:var(--danger);border-radius:var(--radius-sm);font-size:0.8125rem;margin-bottom:10px"></div>
+        <button class="modal-btn-primary" id="ts-save-btn" style="width:100%">Save changes</button>
       </div>
-      <div id="manage-access-delete-section" style="display:none;margin-top:24px;padding-top:20px;border-top:1px solid var(--border)">
+
+      <!-- Collaborators -->
+      <div>
+        <div style="font-size:0.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-3);margin-bottom:14px">Collaborators</div>
+        <div id="ts-access-list" style="margin-bottom:16px"></div>
+        <div class="field-group">
+          <label class="field-label">Invite by email</label>
+          <div style="display:flex;gap:8px">
+            <input class="field-input" type="email" id="ts-email" placeholder="name@example.com" style="flex:1">
+            <button class="modal-btn-primary" id="ts-add-btn" style="flex-shrink:0">Add</button>
+          </div>
+          <div id="ts-add-error" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(184,83,66,0.08);border:1px solid rgba(184,83,66,0.2);color:var(--danger);border-radius:var(--radius-sm);font-size:0.8125rem"></div>
+        </div>
+      </div>
+
+      <!-- Danger zone (creator only) -->
+      <div id="ts-danger-section" style="display:none;padding-top:20px;border-top:1px solid var(--border)">
         <div style="font-size:0.875rem;color:var(--text-2);margin-bottom:12px">Danger zone</div>
-        <button class="modal-btn-danger" id="manage-access-delete-trip-btn">Delete this trip</button>
+        <button class="modal-btn-danger" id="ts-delete-btn" style="width:100%">Delete this trip</button>
       </div>
-    </div>
-    <div class="modal-footer">
-      <button class="modal-btn-secondary" id="manage-access-done">Done</button>
+
     </div>
   </div>
 </div>
@@ -3804,6 +3865,7 @@ const ALLOWED_EMAILS = [
 // activeTripId is a module-level variable (NOT in state) — mirrors pendingScrollTownId pattern
 // to avoid re-render loops. Set by switchTrip(), read by all Firestore helpers.
 let activeTripId = null;
+let _tripSettingsId = null; // trip whose settings drawer is currently open
 const TRIP_SEED = {
   name: "France, printemps",
   startDate: "2026-05-28",
@@ -4398,6 +4460,7 @@ function renderTripCards() {
       <div class="trip-card" data-trip-id="${escapeHtml(t.id)}">
         <div class="trip-card-img">
           <div class="trip-card-img-placeholder">${escapeHtml((t.name || "T").charAt(0))}</div>
+          <button class="trip-card-menu-btn" data-trip-id="${escapeHtml(t.id)}" title="Trip settings" aria-label="Trip settings">⋯</button>
         </div>
         <div class="trip-card-body">
           <div class="trip-card-name">${escapeHtml(t.name)}</div>
@@ -4411,6 +4474,9 @@ function renderTripCards() {
   grid.querySelectorAll(".trip-card").forEach(card => {
     card.addEventListener("click", () => switchTrip(card.dataset.tripId));
   });
+  grid.querySelectorAll(".trip-card-menu-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => { e.stopPropagation(); openTripSettings(btn.dataset.tripId); });
+  });
 }
 
 function renderMobileTripList() {
@@ -4423,14 +4489,24 @@ function renderMobileTripList() {
   }
   container.innerHTML = allTrips.map(t => `
     <div class="trips-mobile-card" data-trip-id="${escapeHtml(t.id)}">
-      <div class="trips-mobile-card-name">${escapeHtml(t.name)}</div>
-      <div class="trips-mobile-card-dates">${t.startDate ? fmtDateRange(t.startDate, t.endDate) : "Dates TBD"}</div>
+      <div class="trips-mobile-card-info">
+        <div class="trips-mobile-card-name">${escapeHtml(t.name)}</div>
+        <div class="trips-mobile-card-dates">${t.startDate ? fmtDateRange(t.startDate, t.endDate) : "Dates TBD"}</div>
+      </div>
+      <button class="trips-mobile-card-menu-btn" data-trip-id="${escapeHtml(t.id)}" title="Trip settings" aria-label="Trip settings">⋯</button>
     </div>
   `).join("");
   container.querySelectorAll(".trips-mobile-card").forEach(card => {
     card.addEventListener("click", () => {
       closeMobileTripOverlay();
       switchTrip(card.dataset.tripId);
+    });
+  });
+  container.querySelectorAll(".trips-mobile-card-menu-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      closeMobileTripOverlay();
+      openTripSettings(btn.dataset.tripId);
     });
   });
 }
@@ -5860,6 +5936,9 @@ window.addEventListener("popstate", () => {
 
     const visitPrice = document.getElementById("visit-price-overlay");
     if (visitPrice?.classList.contains("open")) { visitPrice.classList.remove("open"); return; }
+
+    const tripSettings = document.getElementById("trip-settings-overlay");
+    if (tripSettings?.classList.contains("visible")) { closeTripSettings(); return; }
 
     const drawer = document.getElementById("spot-drawer-overlay");
     if (drawer?.classList.contains("visible")) { closeDrawer(); return; }
@@ -7915,93 +7994,156 @@ document.getElementById("create-trip-overlay")?.addEventListener("click", (e) =>
 });
 
 /* ─────────────────────────────────────────────────────────────
-   MANAGE ACCESS
+   TRIP SETTINGS DRAWER
    ───────────────────────────────────────────────────────────── */
-function openManageAccess() {
-  if (!activeTripId || !state.trip) return;
-  renderAccessList();
-  const deleteSection = document.getElementById("manage-access-delete-section");
-  const isCreator = state.trip.createdBy === state.user?.email?.toLowerCase();
-  if (deleteSection) deleteSection.style.display = isCreator ? "block" : "none";
-  document.getElementById("manage-access-overlay").classList.add("visible");
-  document.getElementById("manage-access-error").style.display = "none";
-  document.getElementById("manage-access-email").value = "";
-  history.pushState({ weyageModal: true }, "");
+function openTripSettings(tripId) {
+  const trip = state.allTrips.find(t => t.id === tripId);
+  if (!trip) return;
+  _tripSettingsId = tripId;
+
+  // Populate edit fields
+  document.getElementById("ts-name").value = trip.name || "";
+  document.getElementById("ts-start").value = trip.startDate || "";
+  document.getElementById("ts-end").value = trip.endDate || "";
+  document.getElementById("ts-currency").value = trip.currency || "EUR";
+  document.getElementById("ts-save-error").style.display = "none";
+  const saveBtn = document.getElementById("ts-save-btn");
+  saveBtn.textContent = "Save changes"; saveBtn.disabled = false;
+
+  // Collaborators
+  renderTripSettingsCollaborators(trip);
+  document.getElementById("ts-email").value = "";
+  document.getElementById("ts-add-error").style.display = "none";
+
+  // Danger zone — creator only
+  const isCreator = trip.createdBy === state.user?.email?.toLowerCase();
+  document.getElementById("ts-danger-section").style.display = isCreator ? "block" : "none";
+
+  document.getElementById("trip-settings-overlay").classList.add("visible");
+  history.pushState({ weyageTripSettings: true }, "");
 }
 
-function closeManageAccess() {
-  document.getElementById("manage-access-overlay").classList.remove("visible");
+function closeTripSettings() {
+  document.getElementById("trip-settings-overlay").classList.remove("visible");
+  _tripSettingsId = null;
 }
 
-function renderAccessList() {
-  const container = document.getElementById("manage-access-list");
-  if (!container || !state.trip) return;
-  const users = state.trip.allowedUsers || [];
-  const isCreator = state.trip.createdBy === state.user?.email?.toLowerCase();
+function renderTripSettingsCollaborators(trip) {
+  const container = document.getElementById("ts-access-list");
+  if (!container || !trip) return;
+  const users = trip.allowedUsers || [];
+  const isCreator = trip.createdBy === state.user?.email?.toLowerCase();
   const currentEmail = state.user?.email?.toLowerCase();
+  if (!users.length) {
+    container.innerHTML = `<div style="font-size:0.875rem;color:var(--text-3);padding:8px 0">No collaborators yet.</div>`;
+    return;
+  }
   container.innerHTML = users.map(email => `
     <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
-      <div style="flex:1;font-size:0.875rem">${escapeHtml(email)}${email === currentEmail ? ' <span style="color:var(--text-3);font-size:0.75rem">(you)</span>' : ""}${email === state.trip.createdBy ? ' <span style="color:var(--accent);font-size:0.75rem">owner</span>' : ""}</div>
-      ${isCreator && email !== currentEmail ? `<button class="icon-btn remove-access-btn" data-email="${escapeHtml(email)}" title="Remove" style="color:var(--danger)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="16" height="16"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>` : ""}
+      <div style="flex:1;font-size:0.875rem">
+        ${escapeHtml(email)}
+        ${email === currentEmail ? ' <span style="color:var(--text-3);font-size:0.75rem">(you)</span>' : ""}
+        ${email === trip.createdBy ? ' <span style="color:var(--accent);font-size:0.75rem">owner</span>' : ""}
+      </div>
+      ${isCreator && email !== currentEmail
+        ? `<button class="icon-btn ts-remove-btn" data-email="${escapeHtml(email)}" title="Remove" style="color:var(--danger)">
+             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="16" height="16"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+           </button>`
+        : ""}
     </div>
   `).join("");
-  container.querySelectorAll(".remove-access-btn").forEach(btn => {
+  container.querySelectorAll(".ts-remove-btn").forEach(btn => {
     btn.addEventListener("click", async () => {
       const email = btn.dataset.email;
       if (!confirm(`Remove ${email} from this trip?`)) return;
-      await updateDoc(doc(db, "trips", activeTripId), { allowedUsers: arrayRemove(email) });
-      renderAccessList();
+      try {
+        await updateDoc(doc(db, "trips", _tripSettingsId), { allowedUsers: arrayRemove(email) });
+        const updated = { ...trip, allowedUsers: (trip.allowedUsers || []).filter(e => e !== email) };
+        renderTripSettingsCollaborators(updated);
+      } catch (err) {
+        alert("Failed to remove collaborator: " + (err.message || err.code));
+      }
     });
   });
 }
 
-async function addCollaborator() {
-  const email = document.getElementById("manage-access-email").value.trim().toLowerCase();
-  const errEl = document.getElementById("manage-access-error");
+async function saveTripSettings() {
+  if (!_tripSettingsId) return;
+  const name = document.getElementById("ts-name").value.trim();
+  const errEl = document.getElementById("ts-save-error");
+  if (!name) { errEl.textContent = "Trip name is required."; errEl.style.display = "block"; return; }
+  errEl.style.display = "none";
+  const btn = document.getElementById("ts-save-btn");
+  btn.disabled = true; btn.textContent = "Saving…";
+  try {
+    await updateDoc(doc(db, "trips", _tripSettingsId), {
+      name,
+      startDate: document.getElementById("ts-start").value || null,
+      endDate: document.getElementById("ts-end").value || null,
+      currency: document.getElementById("ts-currency").value,
+    });
+    btn.textContent = "Saved ✓";
+    setTimeout(() => { btn.textContent = "Save changes"; btn.disabled = false; }, 1800);
+    // Reflect in active trip sidebar label if this is the current trip
+    if (_tripSettingsId === activeTripId) {
+      const el = document.getElementById("sidebar-trip-name");
+      if (el) el.textContent = name;
+    }
+  } catch (err) {
+    errEl.textContent = "Failed to save: " + (err.message || err.code);
+    errEl.style.display = "block";
+    btn.textContent = "Save changes"; btn.disabled = false;
+  }
+}
+
+async function addTripCollaborator() {
+  const email = document.getElementById("ts-email").value.trim().toLowerCase();
+  const errEl = document.getElementById("ts-add-error");
+  const trip = state.allTrips.find(t => t.id === _tripSettingsId);
+  if (!trip) return;
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     errEl.textContent = "Enter a valid email address."; errEl.style.display = "block"; return;
   }
-  if ((state.trip.allowedUsers || []).includes(email)) {
+  if ((trip.allowedUsers || []).includes(email)) {
     errEl.textContent = "This person already has access."; errEl.style.display = "block"; return;
   }
-  // Check the invited email is also in ALLOWED_EMAILS (global gate)
   if (!isAllowed(email)) {
     errEl.textContent = "That email isn't on the app's access list. Ask the app owner to add it to ALLOWED_EMAILS first.";
     errEl.style.display = "block"; return;
   }
   errEl.style.display = "none";
   try {
-    await updateDoc(doc(db, "trips", activeTripId), { allowedUsers: arrayUnion(email) });
-    document.getElementById("manage-access-email").value = "";
-    renderAccessList();
+    await updateDoc(doc(db, "trips", _tripSettingsId), { allowedUsers: arrayUnion(email) });
+    document.getElementById("ts-email").value = "";
+    const updated = { ...trip, allowedUsers: [...(trip.allowedUsers || []), email] };
+    renderTripSettingsCollaborators(updated);
   } catch (err) {
     errEl.textContent = "Failed to add collaborator: " + (err.message || err.code);
     errEl.style.display = "block";
   }
 }
 
-async function deleteTrip() {
-  if (!activeTripId || !state.trip) return;
-  const isCreator = state.trip.createdBy === state.user?.email?.toLowerCase();
+async function deleteTripFromSettings() {
+  const tripId = _tripSettingsId;
+  const trip = state.allTrips.find(t => t.id === tripId);
+  if (!trip) return;
+  const isCreator = trip.createdBy === state.user?.email?.toLowerCase();
   if (!isCreator) return;
-  if (!confirm(`Delete "${state.trip.name}" permanently? This cannot be undone.`)) return;
+  if (!confirm(`Delete "${trip.name}" permanently? This cannot be undone.`)) return;
   try {
-    await deleteDoc(doc(db, "trips", activeTripId));
-    closeManageAccess();
-    exitToTripList();
+    closeTripSettings();
+    if (tripId === activeTripId) exitToTripList();
+    await deleteDoc(doc(db, "trips", tripId));
   } catch (err) {
     alert("Failed to delete trip: " + (err.message || err.code));
   }
 }
 
-document.getElementById("sidebar-manage-access-btn")?.addEventListener("click", openManageAccess);
-document.getElementById("manage-access-close")?.addEventListener("click", closeManageAccess);
-document.getElementById("manage-access-done")?.addEventListener("click", closeManageAccess);
-document.getElementById("manage-access-add-btn")?.addEventListener("click", addCollaborator);
-document.getElementById("manage-access-delete-trip-btn")?.addEventListener("click", deleteTrip);
-document.getElementById("manage-access-overlay")?.addEventListener("click", (e) => {
-  if (e.target === e.currentTarget) closeManageAccess();
-});
+document.getElementById("trip-settings-close")?.addEventListener("click", closeTripSettings);
+document.getElementById("ts-save-btn")?.addEventListener("click", saveTripSettings);
+document.getElementById("ts-add-btn")?.addEventListener("click", addTripCollaborator);
+document.getElementById("ts-delete-btn")?.addEventListener("click", deleteTripFromSettings);
+document.getElementById("trip-settings-backdrop")?.addEventListener("click", closeTripSettings);
 
 /* ─────────────────────────────────────────────────────────────
    SHARE LINK
