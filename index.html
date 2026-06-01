@@ -384,9 +384,17 @@
     background: var(--surface-2);
     overflow: hidden; position: relative;
   }
-  .trip-card-img img {
-    width: 100%; height: 100%; object-fit: cover;
+  .trip-card-collage {
+    position: absolute; inset: 0;
+    display: grid; gap: 2px; background: var(--bg);
+    opacity: 0; transition: opacity 400ms var(--ease);
   }
+  .trip-card-collage.loaded { opacity: 1; }
+  .trip-card-collage.count-2 { grid-template-columns: 1fr 1fr; }
+  .trip-card-collage.count-3 { grid-template-columns: 2fr 1fr; grid-template-rows: 1fr 1fr; }
+  .trip-card-collage.count-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+  .trip-card-collage > div { background-size: cover; background-position: center; }
+  .trip-card-collage.count-3 > div:first-child { grid-row: 1 / 3; }
   .trip-card-img-placeholder {
     width: 100%; height: 100%;
     display: flex; align-items: center; justify-content: center;
@@ -3047,13 +3055,13 @@ body.share-mode .transit-entry-del { display: none !important; }
 
         <!-- Title block: minimal, like a magazine cover -->
         <div class="hero">
-          <div class="hero-eyebrow">bon voyage en</div>
-          <h1 class="hero-title"><em>France</em></h1>
+          <h1 class="hero-title" id="hero-trip-name" style="font-size:clamp(2.75rem,10vw,7rem)"><em>…</em></h1>
+          <div id="hero-cities" style="font-size:0.8125rem;color:var(--text-3);letter-spacing:0.06em;margin-top:10px;min-height:1.1em"></div>
           <div class="hero-rule"></div>
           <div class="hero-meta">
-            <span id="trip-dates">28 May — 14 Jun 2026</span>
+            <span id="trip-dates">…</span>
             <span class="hero-meta-dot">·</span>
-            <span>5 towns</span>
+            <span id="hero-towns-count">…</span>
             <span class="hero-meta-dot">·</span>
             <span id="countdown">…</span>
           </div>
@@ -3069,12 +3077,12 @@ body.share-mode .transit-entry-del { display: none !important; }
         <div class="stats-band">
           <div class="stat-cell">
             <div class="stat-label">Duration</div>
-            <div class="stat-value">17<span class="stat-suffix">days</span></div>
+            <div class="stat-value"><span id="stat-duration">—</span><span class="stat-suffix" id="stat-duration-suffix"></span></div>
           </div>
           <div class="stat-divider"></div>
           <div class="stat-cell">
-            <div class="stat-label">Towns</div>
-            <div class="stat-value">5</div>
+            <div class="stat-label">Cities</div>
+            <div class="stat-value" id="stat-towns-count">—</div>
           </div>
           <div class="stat-divider"></div>
           <div class="stat-cell">
@@ -4477,6 +4485,39 @@ function renderTripCards() {
   grid.querySelectorAll(".trip-card-menu-btn").forEach(btn => {
     btn.addEventListener("click", (e) => { e.stopPropagation(); openTripSettings(btn.dataset.tripId); });
   });
+
+  // Async: build a city-photo collage (up to 4 cities), falling back to trip-name image
+  allTrips.forEach(async (t) => {
+    const names = await fetchTripTownNames(t.id);
+    const imgNames = names.slice(0, 4);
+
+    let urls = [];
+    if (imgNames.length) {
+      const fetched = await Promise.all(
+        imgNames.map(n => fetchWikipediaImage(n.replace(/\s*\(.*\)$/, "").trim().replace(/\s+/g, "_")))
+      );
+      urls = fetched.filter(Boolean);
+    }
+    if (!urls.length) {
+      const url = await fetchTripCoverImage(t.id, t.name);
+      if (url) urls = [url];
+    }
+    if (!urls.length) return;
+
+    const card = grid.querySelector(`[data-trip-id="${CSS.escape(t.id)}"]`);
+    if (!card || card.querySelector(".trip-card-collage")) return;
+    const frame = card.querySelector(".trip-card-img");
+    const count = Math.min(urls.length, 4);
+    const collage = document.createElement("div");
+    collage.className = `trip-card-collage count-${count}`;
+    urls.slice(0, 4).forEach(url => {
+      const div = document.createElement("div");
+      div.style.backgroundImage = `url(${JSON.stringify(url)})`;
+      collage.appendChild(div);
+    });
+    frame.appendChild(collage);
+    requestAnimationFrame(() => collage.classList.add("loaded"));
+  });
 }
 
 function renderMobileTripList() {
@@ -4540,6 +4581,40 @@ function renderSidebarTowns() {
    IMAGE FETCHING — Wikipedia REST API + localStorage cache
    ───────────────────────────────────────────────────────────── */
 // Fixed city images — keyed by base city name (parenthetical suffixes stripped)
+// Trip cover image cache — keyed by trip ID, fetched from Wikipedia by destination name
+const TRIP_IMG_CACHE_KEY = "trip-cover-img-v1";
+const tripImgCache = (() => { try { return JSON.parse(localStorage.getItem(TRIP_IMG_CACHE_KEY) || "{}"); } catch { return {}; } })();
+function saveTripImgCache() { try { localStorage.setItem(TRIP_IMG_CACHE_KEY, JSON.stringify(tripImgCache)); } catch {} }
+
+function extractTripDestination(name) {
+  const filler = new Set(["spring","summer","autumn","fall","winter","trip","tour","holiday","vacation","travel","adventure","my"]);
+  const words = name.split(/\s+/).filter(w => !/^\d+$/.test(w) && !filler.has(w.toLowerCase()));
+  return words.join(" ").trim() || name;
+}
+
+async function fetchTripCoverImage(tripId, tripName) {
+  if (tripImgCache[tripId]) return tripImgCache[tripId];
+  const dest = extractTripDestination(tripName);
+  if (!dest) return null;
+  // For multi-destination names like "Japan Korea 2026", try the full extracted
+  // string first, then fall back to just the first word ("Japan")
+  const firstWord = dest.split(/\s+/)[0];
+  const candidates = firstWord && firstWord !== dest ? [dest, firstWord] : [dest];
+  for (const candidate of candidates) {
+    try {
+      const resp = await fetch(
+        `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(candidate)}`,
+        { headers: { "Accept": "application/json" } }
+      );
+      if (!resp.ok) continue;
+      const data = await resp.json();
+      const url = data.originalimage?.source || data.thumbnail?.source || null;
+      if (url) { tripImgCache[tripId] = url; saveTripImgCache(); return url; }
+    } catch {}
+  }
+  return null;
+}
+
 const CITY_IMAGES = {
   "Paris":           "https://commons.wikimedia.org/wiki/Special:FilePath/Paris_from_the_Arc_de_Triomphe,_17_October_2019.jpg",
   "Annecy":          "https://commons.wikimedia.org/wiki/Special:FilePath/Annecy_vue_du_mont_Veyrier.jpg",
@@ -4549,12 +4624,19 @@ const CITY_IMAGES = {
   "Geneva":          "https://commons.wikimedia.org/wiki/Special:FilePath/Geneve_2005_001_Ork.ch.jpg",
 };
 
+function townImgArticle(town) {
+  if (town.wikipediaArticle) return town.wikipediaArticle;
+  // Fall back to town name as a Wikipedia article slug (works for most major cities)
+  return town.name.replace(/\s*\(.*\)$/, "").trim().replace(/\s+/g, "_");
+}
+
 function resolveTownImage(town) {
   if (town.customImage) return town.customImage;
   const baseName = town.name.replace(/\s*\(.*\)$/, "").trim();
   if (CITY_IMAGES[baseName]) return CITY_IMAGES[baseName];
   if (town.image) return town.image;
-  return (town.wikipediaArticle && imgCache[town.wikipediaArticle]) || "";
+  const article = townImgArticle(town);
+  return imgCache[article] || "";
 }
 
 const IMG_CACHE_KEY = "trip-wiki-img-cache";
@@ -4567,6 +4649,19 @@ function saveImgCache(cache) {
 }
 const imgCache = loadImgCache();
 const inflightFetches = new Map(); // de-dupe concurrent fetches
+
+// In-memory cache of town names per trip (for collage on trips screen)
+// Cleared on any town save/delete so the collage refreshes next visit.
+const tripTownsCache = {};
+async function fetchTripTownNames(tripId) {
+  if (tripTownsCache[tripId]) return tripTownsCache[tripId];
+  try {
+    const snap = await getDocs(collection(db, "trips", tripId, "towns"));
+    const names = snap.docs.map(d => d.data().name || "").filter(Boolean);
+    tripTownsCache[tripId] = names;
+    return names;
+  } catch { return []; }
+}
 
 // Day collapse overrides — keyed "townId:dateKey", value true=collapsed false=expanded
 // Only entries where the user explicitly clicked are stored; auto-rule applies to the rest.
@@ -4687,9 +4782,12 @@ async function callGeminiBriefing(town) {
     ? `${state.trip.startDate} to ${state.trip.endDate}`
     : "late May to mid-June 2026";
 
-  const prompt = `You are an expert travel advisor helping a couple plan their France trip (${tripDates}).
+  const tripLabel = state.trip?.name || "trip";
+  const townLocation = [town.name, town.country].filter(Boolean).join(", ");
 
-Generate a "Before you go" briefing for ${town.name}, France. Focus on:
+  const prompt = `You are an expert travel advisor helping travellers plan their ${tripLabel} (${tripDates}).
+
+Generate a "Before you go" briefing for ${townLocation}. Focus on:
 - Things that must be pre-booked (tours, tickets, restaurants) with specific lead times
 - Seasonal considerations for late May / early June (crowds, weather, events)
 - Practical heads-up a first-time visitor would wish they'd known
@@ -4813,19 +4911,20 @@ function renderDashboardTowns() {
     });
   });
 
-  // Async: fetch missing Wikipedia images
+  // Async: fetch missing Wikipedia images (uses explicit article or falls back to town name)
   state.towns.forEach(async (t) => {
-    if (t.customImage) return; // custom image always wins, no Wikipedia needed
-    if (!t.wikipediaArticle || imgCache[t.wikipediaArticle]) return;
-    const url = await fetchWikipediaImage(t.wikipediaArticle);
+    if (t.customImage) return;
+    const article = townImgArticle(t);
+    if (imgCache[article]) return;
+    const url = await fetchWikipediaImage(article);
     if (!url) return;
-    imgCache[t.wikipediaArticle] = url;
+    imgCache[article] = url;
     saveImgCache(imgCache);
     renderDashboardTowns();
     if (state.currentView === "itinerary") renderItinerary();
-    const article = container.querySelector(`[data-town-id="${CSS.escape(t.id)}"]`);
-    if (!article) return;
-    const frame = article.querySelector(".spread-img-frame");
+    const townArticle = container.querySelector(`[data-town-id="${CSS.escape(t.id)}"]`);
+    if (!townArticle) return;
+    const frame = townArticle.querySelector(".spread-img-frame");
     if (!frame || frame.querySelector(".spread-img")) return;
     const img = document.createElement("img");
     img.className = "spread-img";
@@ -4841,6 +4940,25 @@ function renderDashboardTowns() {
 
 function renderDashboardMeta() {
   if (state.trip) {
+    // Hero title — trip name
+    const heroName = document.getElementById("hero-trip-name");
+    if (heroName) heroName.innerHTML = `<em>${escapeHtml(state.trip.name || "")}</em>`;
+
+    // Cities subtitle
+    const heroCities = document.getElementById("hero-cities");
+    if (heroCities) {
+      heroCities.textContent = state.towns.length
+        ? state.towns.map(t => t.name).join("  ·  ")
+        : "";
+    }
+
+    // Towns count in meta row
+    const townsCountEl = document.getElementById("hero-towns-count");
+    if (townsCountEl) {
+      const n = state.towns.length;
+      townsCountEl.textContent = n ? `${n} ${n === 1 ? "city" : "cities"}` : "";
+    }
+
     document.getElementById("trip-dates").textContent =
       fmtDateRange(state.trip.startDate, state.trip.endDate);
     const days = daysUntil(state.trip.startDate);
@@ -4848,6 +4966,24 @@ function renderDashboardMeta() {
     if (days > 0) cd.textContent = `${days} days to go`;
     else if (days === 0) cd.textContent = `Bon voyage`;
     else cd.textContent = `In progress`;
+
+    // Stats band — duration
+    const durEl = document.getElementById("stat-duration");
+    const durSuffix = document.getElementById("stat-duration-suffix");
+    if (durEl && state.trip.startDate && state.trip.endDate) {
+      const tripDays = Math.round(
+        (new Date(state.trip.endDate) - new Date(state.trip.startDate)) / 86400000
+      ) + 1;
+      durEl.textContent = tripDays;
+      if (durSuffix) durSuffix.textContent = tripDays === 1 ? "day" : "days";
+    } else if (durEl) {
+      durEl.textContent = "—";
+      if (durSuffix) durSuffix.textContent = "";
+    }
+
+    // Stats band — city count
+    const townsStatEl = document.getElementById("stat-towns-count");
+    if (townsStatEl) townsStatEl.textContent = state.towns.length || "—";
   }
 
   // Spots visited stat
@@ -5511,11 +5647,12 @@ function renderItinerary() {
   // Async: fetch any missing Wikipedia images, then re-render once when all are ready.
   // We do a single re-render (not per-town injection) to avoid stale-DOM races where
   // a concurrent renderItinerary() call replaces the container before injection lands.
-  const missing = state.towns.filter(
-    t => !t.customImage && !t.hidePhoto && t.wikipediaArticle && !imgCache[t.wikipediaArticle]
-  );
+  const missing = state.towns.filter(t => {
+    if (t.customImage || t.hidePhoto) return false;
+    return !imgCache[townImgArticle(t)];
+  });
   if (missing.length > 0) {
-    Promise.all(missing.map(t => fetchWikipediaImage(t.wikipediaArticle))).then(() => {
+    Promise.all(missing.map(t => fetchWikipediaImage(townImgArticle(t)))).then(() => {
       if (state.currentView === "itinerary") renderItinerary();
     });
   }
@@ -7392,10 +7529,12 @@ async function saveTownEdit() {
       // Generate a unique ID from name; avoid collisions with existing towns
       let newId = name.toLowerCase().replace(/[^a-z0-9]/g, "-");
       if (state.towns.find(t => t.id === newId)) newId = `${newId}-${Date.now()}`;
-      const newTown = { id: newId, name, arrivalDate, departureDate, country: "France", order: 999 };
+      const derivedCountry = extractTripDestination(state.trip?.name || "");
+      const newTown = { id: newId, name, arrivalDate, departureDate, country: derivedCountry || "", order: 999 };
       await setDoc(doc(db, "trips", activeTripId, "towns", newId), newTown);
       await reorderTownsByDate(newTown);
     }
+    delete tripTownsCache[activeTripId]; // collage will refetch next time trips screen opens
     closeTownEditModal();
   } catch (err) {
     console.error("Town save error:", err);
@@ -7423,6 +7562,7 @@ async function deleteTownEdit() {
     // Delete the town doc
     batch.delete(doc(db, "trips", activeTripId, "towns", editingTownId));
     await batch.commit();
+    delete tripTownsCache[activeTripId];
     closeTownEditModal();
   } catch (err) {
     console.error("Town delete error:", err);
@@ -7606,8 +7746,8 @@ function renderDashboardToday() {
    ───────────────────────────────────────────────────────────── */
 
 async function callGeminiGuide(spot, town) {
-  const townName = town?.name || "France";
-  const country = town?.country || "France";
+  const townName = town?.name || "";
+  const country = town?.country || extractTripDestination(state.trip?.name || "") || "";
   const typeLabel = {
     sight: "historical sight / landmark",
     restaurant: "restaurant",
@@ -8076,19 +8216,19 @@ async function saveTripSettings() {
   const btn = document.getElementById("ts-save-btn");
   btn.disabled = true; btn.textContent = "Saving…";
   try {
-    await updateDoc(doc(db, "trips", _tripSettingsId), {
+    const savedTripId = _tripSettingsId;
+    await updateDoc(doc(db, "trips", savedTripId), {
       name,
       startDate: document.getElementById("ts-start").value || null,
       endDate: document.getElementById("ts-end").value || null,
       currency: document.getElementById("ts-currency").value,
     });
-    btn.textContent = "Saved ✓";
-    setTimeout(() => { btn.textContent = "Save changes"; btn.disabled = false; }, 1800);
-    // Reflect in active trip sidebar label if this is the current trip
-    if (_tripSettingsId === activeTripId) {
+    // Reflect in active trip sidebar label before closing
+    if (savedTripId === activeTripId) {
       const el = document.getElementById("sidebar-trip-name");
       if (el) el.textContent = name;
     }
+    closeTripSettings();
   } catch (err) {
     errEl.textContent = "Failed to save: " + (err.message || err.code);
     errEl.style.display = "block";
@@ -8328,7 +8468,7 @@ function buildRecommendationContext(townId, date) {
 
   return {
     town: town.name,
-    country: town.country || "France",
+    country: town.country || extractTripDestination(state.trip?.name || "") || "",
     date,
     tripDay,
     townDay,
