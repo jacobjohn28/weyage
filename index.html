@@ -3178,10 +3178,6 @@ body.share-mode .transit-entry-del { display: none !important; }
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
           Map
         </button>
-        <button class="bottom-nav-item" id="sheet-add-city-btn" style="width:100%;flex-direction:row;gap:14px;padding:14px 24px;justify-content:flex-start;font-size:1rem">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-          New city
-        </button>
         <button class="bottom-nav-item share-link-btn" id="sheet-share-btn" style="width:100%;flex-direction:row;gap:14px;padding:14px 24px;justify-content:flex-start;font-size:1rem">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
           Share itinerary
@@ -4030,10 +4026,6 @@ document.getElementById("mobile-more-btn")?.addEventListener("click", () => {
 });
 document.getElementById("mobile-more-backdrop")?.addEventListener("click", () => {
   moreSheet.style.display = "none";
-});
-document.getElementById("sheet-add-city-btn")?.addEventListener("click", () => {
-  moreSheet.style.display = "none";
-  openTownEditModal();
 });
 
 ["sheet-documents-btn", "sheet-map-btn"].forEach(id => {
