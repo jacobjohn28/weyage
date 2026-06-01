@@ -9110,8 +9110,10 @@ if ("serviceWorker" in navigator) {
     </button>
   </div>
   <div class="trips-mobile-search">
-    <svg class="trips-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="15" height="15"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    <input class="trips-search-input" id="trips-mobile-search-input" type="search" placeholder="Search trips…" autocomplete="off">
+    <div class="trips-search-wrap" style="margin-bottom:0">
+      <svg class="trips-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="15" height="15"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input class="trips-search-input" id="trips-mobile-search-input" type="search" placeholder="Search trips…" autocomplete="off">
+    </div>
   </div>
   <div class="trips-mobile-body" id="trips-mobile-list"></div>
   <div class="trips-mobile-footer">
