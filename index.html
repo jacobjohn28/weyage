@@ -945,8 +945,8 @@
       border-top: 1px solid var(--border);
       padding: 8px 0;
       padding-bottom: max(8px, env(safe-area-inset-bottom));
-      position: sticky;
-      bottom: 0;
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
       z-index: 10;
     }
     [data-theme="dark"] .bottom-nav { background: rgba(15, 15, 16, 0.95); }
@@ -4096,6 +4096,7 @@ function showTripList() {
   document.getElementById("auth-screen").classList.remove("visible");
   document.getElementById("app").classList.remove("visible");
   document.getElementById("trips-screen").classList.add("visible");
+  localStorage.setItem("last-screen", "trips");
   renderSidebarTripList();
   renderTripCards();
 }
@@ -4283,7 +4284,10 @@ function listenToAllTrips(userEmail) {
     if (!_initialTripRouted) {
       _initialTripRouted = true;
       const lastId = localStorage.getItem("last-trip-id");
-      if (lastId && trips.find(t => t.id === lastId)) {
+      const lastScreen = localStorage.getItem("last-screen");
+      if (lastScreen === "trips") {
+        showTripList();
+      } else if (lastId && trips.find(t => t.id === lastId)) {
         switchTrip(lastId);
       } else if (trips.length === 1) {
         switchTrip(trips[0].id);
@@ -4306,6 +4310,7 @@ function switchTrip(tripId) {
   activeTripId = tripId;
   setState({ trip: null, towns: [], spots: [] });
   localStorage.setItem("last-trip-id", tripId);
+  localStorage.removeItem("last-screen");
   listenToTrip(tripId);
   showApp();
   // Run France seed/backfill only for the original trip
@@ -8858,7 +8863,6 @@ document.getElementById("sheet-all-trips-btn")?.addEventListener("click", () => 
 document.getElementById("trips-new-btn-sidebar")?.addEventListener("click", openCreateTripModal);
 document.getElementById("trips-new-btn-main")?.addEventListener("click", openCreateTripModal);
 document.getElementById("trips-signout-btn")?.addEventListener("click", () => signOut(auth));
-document.getElementById("trips-mobile-close")?.addEventListener("click", closeMobileTripOverlay);
 document.getElementById("trips-mobile-new-btn")?.addEventListener("click", () => { closeMobileTripOverlay(); openCreateTripModal(); });
 document.getElementById("trips-mobile-signout")?.addEventListener("click", () => signOut(auth));
 
@@ -8934,9 +8938,6 @@ if ("serviceWorker" in navigator) {
 <!-- Mobile trips overlay (opened from the "more" sheet) -->
 <div id="trips-mobile-overlay">
   <div class="trips-mobile-header">
-    <button class="icon-btn" id="trips-mobile-close">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><line x1="19" y1="5" x2="5" y2="19"/><line x1="5" y1="5" x2="19" y2="19"/></svg>
-    </button>
     <h2>All Trips</h2>
     <button class="btn-primary" id="trips-mobile-new-btn" style="padding:8px 14px;font-size:0.8125rem">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
