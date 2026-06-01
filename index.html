@@ -517,6 +517,7 @@
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .trips-mobile-card-dates { font-size: 0.8125rem; color: var(--text-2); }
+  .trips-mobile-card-cities { font-size: 0.75rem; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .trips-mobile-card-menu-btn {
     flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%;
     background: transparent; color: var(--text-3);
@@ -4506,6 +4507,7 @@ function renderMobileTripList() {
       <div class="trips-mobile-card-info">
         <div class="trips-mobile-card-name">${escapeHtml(t.name)}</div>
         <div class="trips-mobile-card-dates">${t.startDate ? fmtDateRange(t.startDate, t.endDate) : "Dates TBD"}</div>
+        ${t.cityNames?.length ? `<div class="trips-mobile-card-cities">${t.cityNames.map(escapeHtml).join(" | ")}</div>` : ""}
       </div>
       <button class="trips-mobile-card-menu-btn" data-trip-id="${escapeHtml(t.id)}" title="Trip settings" aria-label="Trip settings">⋯</button>
     </div>
