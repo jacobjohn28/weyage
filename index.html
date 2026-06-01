@@ -384,17 +384,9 @@
     background: var(--surface-2);
     overflow: hidden; position: relative;
   }
-  .trip-card-collage {
-    position: absolute; inset: 0;
-    display: grid; gap: 2px; background: var(--bg);
-    opacity: 0; transition: opacity 400ms var(--ease);
+  .trip-card-img img {
+    width: 100%; height: 100%; object-fit: cover;
   }
-  .trip-card-collage.loaded { opacity: 1; }
-  .trip-card-collage.count-2 { grid-template-columns: 1fr 1fr; }
-  .trip-card-collage.count-3 { grid-template-columns: 2fr 1fr; grid-template-rows: 1fr 1fr; }
-  .trip-card-collage.count-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
-  .trip-card-collage > div { background-size: cover; background-position: center; }
-  .trip-card-collage.count-3 > div:first-child { grid-row: 1 / 3; }
   .trip-card-img-placeholder {
     width: 100%; height: 100%;
     display: flex; align-items: center; justify-content: center;
@@ -4486,44 +4478,6 @@ function renderTripCards() {
     btn.addEventListener("click", (e) => { e.stopPropagation(); openTripSettings(btn.dataset.tripId); });
   });
 
-  // Async: build a city-photo collage (up to 4 cities), falling back to trip-name image
-  allTrips.forEach(async (t) => {
-    const names = await fetchTripTownNames(t.id);
-    const imgNames = names.slice(0, 4);
-
-    let urls = [];
-    if (imgNames.length) {
-      // Fetch (populates both imgCache and thumbCache), then use thumbnail for small cells
-      await Promise.all(
-        imgNames.map(n => fetchWikipediaImage(n.replace(/\s*\(.*\)$/, "").trim().replace(/\s+/g, "_")))
-      );
-      urls = imgNames
-        .map(n => {
-          const article = n.replace(/\s*\(.*\)$/, "").trim().replace(/\s+/g, "_");
-          return thumbCache[article] || imgCache[article] || null;
-        })
-        .filter(Boolean);
-    }
-    if (!urls.length) {
-      const url = await fetchTripCoverImage(t.id, t.name);
-      if (url) urls = [url];
-    }
-    if (!urls.length) return;
-
-    const card = grid.querySelector(`[data-trip-id="${CSS.escape(t.id)}"]`);
-    if (!card || card.querySelector(".trip-card-collage")) return;
-    const frame = card.querySelector(".trip-card-img");
-    const count = Math.min(urls.length, 4);
-    const collage = document.createElement("div");
-    collage.className = `trip-card-collage count-${count}`;
-    urls.slice(0, 4).forEach(url => {
-      const div = document.createElement("div");
-      div.style.backgroundImage = `url(${JSON.stringify(url)})`;
-      collage.appendChild(div);
-    });
-    frame.appendChild(collage);
-    requestAnimationFrame(() => collage.classList.add("loaded"));
-  });
 }
 
 function renderMobileTripList() {
@@ -4587,38 +4541,10 @@ function renderSidebarTowns() {
    IMAGE FETCHING — Wikipedia REST API + localStorage cache
    ───────────────────────────────────────────────────────────── */
 // Fixed city images — keyed by base city name (parenthetical suffixes stripped)
-// Trip cover image cache — keyed by trip ID, fetched from Wikipedia by destination name
-const TRIP_IMG_CACHE_KEY = "trip-cover-img-v1";
-const tripImgCache = (() => { try { return JSON.parse(localStorage.getItem(TRIP_IMG_CACHE_KEY) || "{}"); } catch { return {}; } })();
-function saveTripImgCache() { try { localStorage.setItem(TRIP_IMG_CACHE_KEY, JSON.stringify(tripImgCache)); } catch {} }
-
 function extractTripDestination(name) {
   const filler = new Set(["spring","summer","autumn","fall","winter","trip","tour","holiday","vacation","travel","adventure","my"]);
   const words = name.split(/\s+/).filter(w => !/^\d+$/.test(w) && !filler.has(w.toLowerCase()));
   return words.join(" ").trim() || name;
-}
-
-async function fetchTripCoverImage(tripId, tripName) {
-  if (tripImgCache[tripId]) return tripImgCache[tripId];
-  const dest = extractTripDestination(tripName);
-  if (!dest) return null;
-  // For multi-destination names like "Japan Korea 2026", try the full extracted
-  // string first, then fall back to just the first word ("Japan")
-  const firstWord = dest.split(/\s+/)[0];
-  const candidates = firstWord && firstWord !== dest ? [dest, firstWord] : [dest];
-  for (const candidate of candidates) {
-    try {
-      const resp = await fetch(
-        `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(candidate)}`,
-        { headers: { "Accept": "application/json" } }
-      );
-      if (!resp.ok) continue;
-      const data = await resp.json();
-      const url = data.originalimage?.source || data.thumbnail?.source || null;
-      if (url) { tripImgCache[tripId] = url; saveTripImgCache(); return url; }
-    } catch {}
-  }
-  return null;
 }
 
 const CITY_IMAGES = {
@@ -4630,19 +4556,12 @@ const CITY_IMAGES = {
   "Geneva":          "https://commons.wikimedia.org/wiki/Special:FilePath/Geneve_2005_001_Ork.ch.jpg",
 };
 
-function townImgArticle(town) {
-  if (town.wikipediaArticle) return town.wikipediaArticle;
-  // Fall back to town name as a Wikipedia article slug (works for most major cities)
-  return town.name.replace(/\s*\(.*\)$/, "").trim().replace(/\s+/g, "_");
-}
-
 function resolveTownImage(town) {
   if (town.customImage) return town.customImage;
   const baseName = town.name.replace(/\s*\(.*\)$/, "").trim();
   if (CITY_IMAGES[baseName]) return CITY_IMAGES[baseName];
   if (town.image) return town.image;
-  const article = townImgArticle(town);
-  return imgCache[article] || "";
+  return (town.wikipediaArticle && imgCache[town.wikipediaArticle]) || "";
 }
 
 const IMG_CACHE_KEY = "trip-wiki-img-cache";
@@ -4654,21 +4573,7 @@ function saveImgCache(cache) {
   try { localStorage.setItem(IMG_CACHE_KEY, JSON.stringify(cache)); } catch {}
 }
 const imgCache = loadImgCache();
-const thumbCache = {}; // article → thumbnail URL (smaller, for collage cells — not persisted)
 const inflightFetches = new Map(); // de-dupe concurrent fetches
-
-// In-memory cache of town names per trip (for collage on trips screen)
-// Cleared on any town save/delete so the collage refreshes next visit.
-const tripTownsCache = {};
-async function fetchTripTownNames(tripId) {
-  if (tripTownsCache[tripId] !== undefined) return tripTownsCache[tripId];
-  try {
-    const snap = await getDocs(collection(db, "trips", tripId, "towns"));
-    const names = snap.docs.map(d => d.data().name || "").filter(Boolean);
-    tripTownsCache[tripId] = names;
-    return names;
-  } catch { return []; }
-}
 
 // Day collapse overrides — keyed "townId:dateKey", value true=collapsed false=expanded
 // Only entries where the user explicitly clicked are stored; auto-rule applies to the rest.
@@ -4698,12 +4603,14 @@ async function fetchWikipediaImage(article) {
       );
       if (!resp.ok) return null;
       const data = await resp.json();
-      // Prefer original (high-res); fall back to thumbnail
-      const thumb = data.thumbnail?.source || null;
-      const full  = data.originalimage?.source || thumb || null;
-      if (thumb) thumbCache[article] = thumb;
-      if (full)  { imgCache[article] = full; saveImgCache(imgCache); }
-      return full;
+      const url = (data.originalimage && data.originalimage.source)
+                || (data.thumbnail && data.thumbnail.source)
+                || null;
+      if (url) {
+        imgCache[article] = url;
+        saveImgCache(imgCache);
+      }
+      return url;
     } catch (e) {
       console.warn("Wikipedia image fetch failed for", article, e);
       return null;
@@ -4915,14 +4822,27 @@ function renderDashboardTowns() {
     });
   });
 
-  // Async: fetch all missing images then re-render once (avoids per-fetch cascade)
-  const missingImgs = state.towns.filter(t => !t.customImage && !imgCache[townImgArticle(t)]);
-  if (missingImgs.length) {
-    Promise.all(missingImgs.map(t => fetchWikipediaImage(townImgArticle(t)))).then(() => {
-      renderDashboardTowns();
-      if (state.currentView === "itinerary") renderItinerary();
-    });
-  }
+  state.towns.forEach(async (t) => {
+    if (t.customImage) return;
+    if (!t.wikipediaArticle || imgCache[t.wikipediaArticle]) return;
+    const url = await fetchWikipediaImage(t.wikipediaArticle);
+    if (!url) return;
+    imgCache[t.wikipediaArticle] = url;
+    saveImgCache(imgCache);
+    renderDashboardTowns();
+    if (state.currentView === "itinerary") renderItinerary();
+    const article = container.querySelector(`[data-town-id="${CSS.escape(t.id)}"]`);
+    if (!article) return;
+    const frame = article.querySelector(".spread-img-frame");
+    if (!frame || frame.querySelector(".spread-img")) return;
+    const img = document.createElement("img");
+    img.className = "spread-img";
+    img.src = url; img.alt = t.name; img.loading = "lazy";
+    img.onload = () => img.classList.add("loaded");
+    img.onerror = () => img.remove();
+    const fallback = frame.querySelector(".spread-img-fallback");
+    fallback.after(img);
+  });
 }
 
 function renderDashboardMeta() {
@@ -5631,15 +5551,11 @@ function renderItinerary() {
     }));
   }
 
-  // Async: fetch any missing Wikipedia images, then re-render once when all are ready.
-  // We do a single re-render (not per-town injection) to avoid stale-DOM races where
-  // a concurrent renderItinerary() call replaces the container before injection lands.
-  const missing = state.towns.filter(t => {
-    if (t.customImage || t.hidePhoto) return false;
-    return !imgCache[townImgArticle(t)];
-  });
+  const missing = state.towns.filter(
+    t => !t.customImage && !t.hidePhoto && t.wikipediaArticle && !imgCache[t.wikipediaArticle]
+  );
   if (missing.length > 0) {
-    Promise.all(missing.map(t => fetchWikipediaImage(townImgArticle(t)))).then(() => {
+    Promise.all(missing.map(t => fetchWikipediaImage(t.wikipediaArticle))).then(() => {
       if (state.currentView === "itinerary") renderItinerary();
     });
   }
@@ -7521,7 +7437,6 @@ async function saveTownEdit() {
       await setDoc(doc(db, "trips", activeTripId, "towns", newId), newTown);
       await reorderTownsByDate(newTown);
     }
-    delete tripTownsCache[activeTripId]; // collage will refetch next time trips screen opens
     closeTownEditModal();
   } catch (err) {
     console.error("Town save error:", err);
@@ -7549,7 +7464,6 @@ async function deleteTownEdit() {
     // Delete the town doc
     batch.delete(doc(db, "trips", activeTripId, "towns", editingTownId));
     await batch.commit();
-    delete tripTownsCache[activeTripId];
     closeTownEditModal();
   } catch (err) {
     console.error("Town delete error:", err);
