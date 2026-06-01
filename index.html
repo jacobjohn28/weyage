@@ -288,6 +288,224 @@
   .auth-error.visible { display: block; }
 
   /* ============================================================
+     TRIPS SCREEN
+     ============================================================ */
+  #trips-screen {
+    position: fixed; inset: 0;
+    display: none;
+    background: var(--bg);
+    z-index: 50;
+  }
+  #trips-screen.visible { display: flex; }
+
+  /* Desktop: sidebar + main */
+  .trips-sidebar {
+    width: 240px;
+    flex-shrink: 0;
+    background: var(--surface-2);
+    border-right: 1px solid var(--border);
+    padding: 24px 16px;
+    display: flex; flex-direction: column;
+    gap: 4px;
+    overflow-y: auto;
+  }
+  .trips-sidebar-brand {
+    padding: 4px 12px 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 8px;
+  }
+  .trips-brand-name {
+    font-family: var(--font-display);
+    font-size: 1.5rem; font-weight: 600;
+    letter-spacing: -0.03em; line-height: 1.1;
+  }
+  .trips-brand-tagline {
+    font-size: 0.75rem; color: var(--text-3);
+    margin-top: 3px; letter-spacing: 0.04em; font-style: italic;
+  }
+  .trips-sidebar-list { flex: 1; overflow-y: auto; }
+  .trips-sidebar-foot {
+    margin-top: auto; padding-top: 16px;
+    border-top: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .trips-sidebar-item {
+    display: flex; flex-direction: column;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    color: var(--text-2);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    text-align: left; width: 100%;
+    transition: all 140ms var(--ease);
+    cursor: pointer;
+  }
+  .trips-sidebar-item:hover { background: var(--surface); color: var(--text); }
+  .trips-sidebar-item-name { font-size: 0.875rem; font-weight: 600; color: var(--text); }
+  .trips-sidebar-item-dates { font-size: 0.75rem; color: var(--text-3); margin-top: 2px; }
+
+  /* Main content */
+  .trips-main {
+    flex: 1; overflow-y: auto;
+    padding: 40px 40px;
+  }
+  .trips-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 32px;
+  }
+  .trips-heading {
+    font-family: var(--font-display);
+    font-size: 2rem; font-weight: 400;
+    letter-spacing: -0.03em;
+  }
+
+  /* Trip cards grid */
+  .trips-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+  }
+  .trip-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 200ms var(--ease);
+    box-shadow: var(--shadow-sm);
+  }
+  .trip-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--border-strong);
+  }
+  .trip-card-img {
+    width: 100%; height: 140px;
+    background: var(--surface-2);
+    overflow: hidden; position: relative;
+  }
+  .trip-card-img img {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+  .trip-card-img-placeholder {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display); font-size: 2.5rem;
+    color: var(--text-3); font-style: italic;
+  }
+  .trip-card-body { padding: 16px 18px 18px; }
+  .trip-card-name {
+    font-family: var(--font-display);
+    font-size: 1.25rem; font-weight: 500;
+    letter-spacing: -0.02em; margin-bottom: 4px;
+  }
+  .trip-card-dates { font-size: 0.8125rem; color: var(--text-2); margin-bottom: 10px; }
+  .trip-card-meta {
+    display: flex; gap: 12px;
+    font-size: 0.75rem; color: var(--text-3);
+  }
+  .trips-empty {
+    grid-column: 1/-1;
+    text-align: center; padding: 64px 24px;
+    color: var(--text-2);
+  }
+  .trips-empty-title {
+    font-family: var(--font-display); font-size: 1.5rem;
+    color: var(--text); margin-bottom: 8px;
+  }
+
+  /* Modal form fields (used in create trip + manage access modals) */
+  .field-group { display: flex; flex-direction: column; gap: 6px; }
+  .field-label { font-size: 0.8125rem; font-weight: 500; color: var(--text-2); }
+  .field-input {
+    padding: 9px 12px;
+    background: var(--bg);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    font-family: var(--font-body); font-size: 0.9375rem; color: var(--text);
+    transition: border-color 160ms var(--ease);
+    width: 100%;
+  }
+  .field-input:focus { outline: none; border-color: var(--accent); }
+  .modal-btn-primary {
+    padding: 9px 18px;
+    background: var(--accent); color: #fff;
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem; font-weight: 500;
+    transition: all 140ms var(--ease); cursor: pointer;
+  }
+  .modal-btn-primary:hover { filter: brightness(1.1); }
+  .modal-btn-primary:disabled { opacity: 0.6; pointer-events: none; }
+  .modal-btn-secondary {
+    padding: 9px 18px;
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem; font-weight: 500; color: var(--text-2);
+    transition: all 140ms var(--ease); cursor: pointer;
+  }
+  .modal-btn-secondary:hover { background: var(--surface-2); color: var(--text); }
+  .modal-btn-danger {
+    padding: 9px 18px;
+    background: rgba(184, 83, 66, 0.1);
+    color: var(--danger);
+    border: 1px solid rgba(184, 83, 66, 0.25);
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem; font-weight: 500;
+    transition: all 140ms var(--ease); cursor: pointer;
+  }
+  .modal-btn-danger:hover { background: rgba(184, 83, 66, 0.2); }
+
+  /* Mobile: hide sidebar, full-page cards */
+  @media (max-width: 768px) {
+    .trips-sidebar { display: none; }
+    .trips-main { padding: 24px 20px; }
+    .trips-header { margin-bottom: 20px; }
+    .trips-heading { font-size: 1.5rem; }
+  }
+
+  /* Mobile trips overlay (opened from the "more" sheet) */
+  #trips-mobile-overlay {
+    position: fixed; inset: 0;
+    background: var(--bg);
+    z-index: 90;
+    display: none;
+    flex-direction: column;
+  }
+  #trips-mobile-overlay.visible { display: flex; }
+  .trips-mobile-header {
+    padding: 20px 20px 12px;
+    display: flex; align-items: center; gap: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .trips-mobile-header h2 {
+    font-family: var(--font-display); font-size: 1.25rem;
+    font-weight: 500; flex: 1;
+  }
+  .trips-mobile-body {
+    flex: 1; overflow-y: auto;
+    padding: 20px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .trips-mobile-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    cursor: pointer; display: flex; flex-direction: column; gap: 4px;
+    transition: background 140ms var(--ease);
+  }
+  .trips-mobile-card:active { background: var(--surface-2); }
+  .trips-mobile-card-name {
+    font-family: var(--font-display); font-size: 1.1rem; font-weight: 500;
+  }
+  .trips-mobile-card-dates { font-size: 0.8125rem; color: var(--text-2); }
+  .trips-mobile-footer {
+    padding: 16px 20px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* ============================================================
      APP SHELL
      ============================================================ */
   #app {
@@ -2666,10 +2884,54 @@ body.share-mode .transit-entry-del { display: none !important; }
     <div id="auth-error" class="auth-error"></div>
 
     <div class="auth-foot">
-      A private trip planner for two travelers.<br>
-      Sign in with your invited Google account.
+      Sign in with your Google account to access your trips.
     </div>
   </div>
+</div>
+
+<!-- ============================================================
+     TRIPS SCREEN — all accessible trips + trip creation
+     ============================================================ -->
+<div id="trips-screen">
+
+  <!-- Desktop: two-column layout (sidebar-like left panel + main cards) -->
+  <aside class="trips-sidebar">
+    <div class="trips-sidebar-brand">
+      <div class="trips-brand-name">Weyage</div>
+      <div class="trips-brand-tagline">Explore Endlessly</div>
+    </div>
+    <div class="trips-sidebar-list" id="trips-sidebar-list">
+      <!-- Rendered by renderSidebarTripList() -->
+    </div>
+    <div class="trips-sidebar-foot">
+      <button class="nav-item" id="trips-new-btn-sidebar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        New trip
+      </button>
+      <div class="user-chip">
+        <div class="user-avatar" id="trips-user-avatar">·</div>
+        <div class="user-name" id="trips-user-name">…</div>
+        <button class="icon-btn" id="trips-signout-btn" title="Sign out" aria-label="Sign out">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main area: trip cards grid -->
+  <main class="trips-main">
+    <header class="trips-header">
+      <h2 class="trips-heading">Your trips</h2>
+      <button class="btn-primary" id="trips-new-btn-main">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New trip
+      </button>
+    </header>
+    <div class="trips-grid" id="trips-grid">
+      <!-- Rendered by renderTripCards() -->
+    </div>
+  </main>
+
 </div>
 
 <!-- ============================================================
@@ -2686,9 +2948,15 @@ body.share-mode .transit-entry-del { display: none !important; }
   <!-- Sidebar (desktop) -->
   <aside class="sidebar">
     <div class="sidebar-brand">
-      <div class="sidebar-brand-name">Weyage</div>
+      <div class="sidebar-brand-name" id="sidebar-trip-name">Weyage</div>
       <div class="sidebar-brand-tagline">Explore Endlessly</div>
     </div>
+
+    <!-- Back to all trips (shown when inside a trip) -->
+    <button class="nav-item" id="sidebar-back-btn" style="margin-bottom:8px;color:var(--accent);font-size:0.8125rem">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="14" height="14"><polyline points="15 18 9 12 15 6"/></svg>
+      All trips
+    </button>
 
     <div class="nav-section">Views</div>
     <button class="nav-item" data-view="dashboard">
@@ -2728,6 +2996,10 @@ body.share-mode .transit-entry-del { display: none !important; }
       <button class="nav-item share-link-btn" id="sidebar-share-btn" style="margin:6px 0 0;font-size:0.8125rem;opacity:0.7">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="16" height="16"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
         Share itinerary
+      </button>
+      <button class="nav-item" id="sidebar-manage-access-btn" style="margin:6px 0 0;font-size:0.8125rem;opacity:0.7">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="16" height="16"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Manage access
       </button>
       <div class="user-chip">
         <div class="user-avatar" id="user-avatar">·</div>
@@ -2887,6 +3159,10 @@ body.share-mode .transit-entry-del { display: none !important; }
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
           Map
         </button>
+        <button class="bottom-nav-item" id="sheet-all-trips-btn" style="width:100%;flex-direction:row;gap:14px;padding:14px 24px;justify-content:flex-start;font-size:1rem">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          All trips
+        </button>
         <button class="bottom-nav-item" id="sheet-add-city-btn" style="width:100%;flex-direction:row;gap:14px;padding:14px 24px;justify-content:flex-start;font-size:1rem">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
           New city
@@ -2898,6 +3174,88 @@ body.share-mode .transit-entry-del { display: none !important; }
       </div>
     </div>
   </main>
+</div>
+
+<!-- ============================================================
+     CREATE TRIP MODAL
+     ============================================================ -->
+<div class="modal-overlay" id="create-trip-overlay">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <h3 class="modal-title">New trip</h3>
+      <button class="icon-btn modal-close-btn" id="create-trip-close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="field-group">
+        <label class="field-label">Trip name</label>
+        <input class="field-input" type="text" id="ct-name" placeholder="e.g. Japan Spring 2027" autocomplete="off">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="field-group">
+          <label class="field-label">Start date</label>
+          <input class="field-input" type="date" id="ct-start">
+        </div>
+        <div class="field-group">
+          <label class="field-label">End date</label>
+          <input class="field-input" type="date" id="ct-end">
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Primary currency</label>
+        <select class="field-input" id="ct-currency">
+          <option value="EUR">EUR — Euro</option>
+          <option value="GBP">GBP — British Pound</option>
+          <option value="USD">USD — US Dollar</option>
+          <option value="SGD">SGD — Singapore Dollar</option>
+          <option value="JPY">JPY — Japanese Yen</option>
+          <option value="AUD">AUD — Australian Dollar</option>
+          <option value="CAD">CAD — Canadian Dollar</option>
+          <option value="CHF">CHF — Swiss Franc</option>
+          <option value="THB">THB — Thai Baht</option>
+          <option value="MYR">MYR — Malaysian Ringgit</option>
+        </select>
+      </div>
+      <div id="ct-error" style="display:none;padding:10px 12px;background:rgba(184,83,66,0.08);border:1px solid rgba(184,83,66,0.2);color:var(--danger);border-radius:var(--radius-sm);font-size:0.875rem"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn-secondary" id="create-trip-cancel">Cancel</button>
+      <button class="modal-btn-primary" id="create-trip-save">Create trip</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MANAGE ACCESS MODAL
+     ============================================================ -->
+<div class="modal-overlay" id="manage-access-overlay">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <h3 class="modal-title">Manage access</h3>
+      <button class="icon-btn modal-close-btn" id="manage-access-close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div id="manage-access-list" style="margin-bottom:20px"></div>
+      <div class="field-group" id="manage-access-add-section">
+        <label class="field-label">Invite by email</label>
+        <div style="display:flex;gap:8px">
+          <input class="field-input" type="email" id="manage-access-email" placeholder="name@example.com" style="flex:1">
+          <button class="modal-btn-primary" id="manage-access-add-btn" style="flex-shrink:0">Add</button>
+        </div>
+        <div id="manage-access-error" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(184,83,66,0.08);border:1px solid rgba(184,83,66,0.2);color:var(--danger);border-radius:var(--radius-sm);font-size:0.8125rem"></div>
+      </div>
+      <div id="manage-access-delete-section" style="display:none;margin-top:24px;padding-top:20px;border-top:1px solid var(--border)">
+        <div style="font-size:0.875rem;color:var(--text-2);margin-bottom:12px">Danger zone</div>
+        <button class="modal-btn-danger" id="manage-access-delete-trip-btn">Delete this trip</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn-secondary" id="manage-access-done">Done</button>
+    </div>
+  </div>
 </div>
 
 <!-- ============================================================
@@ -3410,6 +3768,7 @@ const FIREBASE_BASE = `https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}`;
 let initializeApp, getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, signInAnonymously;
 let initializeFirestore, persistentLocalCache, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs;
 let onSnapshot, writeBatch, serverTimestamp, arrayUnion;
+let query, where, arrayRemove;
 
 /* ─────────────────────────────────────────────────────────────
    FIREBASE CONFIG
@@ -3442,7 +3801,9 @@ const ALLOWED_EMAILS = [
 /* ─────────────────────────────────────────────────────────────
    TRIP CONSTANTS — pre-populated from initial planning
    ───────────────────────────────────────────────────────────── */
-const TRIP_ID = "france-spring-2026";
+// activeTripId is a module-level variable (NOT in state) — mirrors pendingScrollTownId pattern
+// to avoid re-render loops. Set by switchTrip(), read by all Firestore helpers.
+let activeTripId = null;
 const TRIP_SEED = {
   name: "France, printemps",
   startDate: "2026-05-28",
@@ -3504,6 +3865,7 @@ const state = {
   trip: null,
   towns: [],
   spots: [],
+  allTrips: [],
   currentView: "itinerary",
   focusTownId: null,
   theme: "light",
@@ -3637,7 +3999,7 @@ async function initFirebase() {
   initializeApp = appMod.initializeApp;
   ({ getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, signInAnonymously } = authMod);
   ({ initializeFirestore, persistentLocalCache, doc, getDoc, setDoc, updateDoc, deleteDoc,
-     collection, getDocs, onSnapshot, writeBatch, serverTimestamp, arrayUnion } = fsMod);
+     collection, getDocs, onSnapshot, writeBatch, serverTimestamp, arrayUnion, query, where, arrayRemove } = fsMod);
 
   app = initializeApp(FIREBASE_CONFIG);
   auth = getAuth(app);
@@ -3652,6 +4014,7 @@ function showAuthScreen(errorMessage) {
   document.getElementById("boot-screen").classList.add("hidden");
   document.getElementById("auth-screen").classList.add("visible");
   document.getElementById("app").classList.remove("visible");
+  document.getElementById("trips-screen")?.classList.remove("visible");
   const err = document.getElementById("auth-error");
   if (errorMessage) {
     err.textContent = errorMessage;
@@ -3660,10 +4023,25 @@ function showAuthScreen(errorMessage) {
     err.classList.remove("visible");
   }
 }
+function showTripList() {
+  document.getElementById("boot-screen").classList.add("hidden");
+  document.getElementById("auth-screen").classList.remove("visible");
+  document.getElementById("app").classList.remove("visible");
+  document.getElementById("trips-screen").classList.add("visible");
+  renderSidebarTripList();
+  renderTripCards();
+}
+
 function showApp() {
   document.getElementById("boot-screen").classList.add("hidden");
   document.getElementById("auth-screen").classList.remove("visible");
+  document.getElementById("trips-screen").classList.remove("visible");
   document.getElementById("app").classList.add("visible");
+  // Sidebar back link visibility
+  const backBtn = document.getElementById("sidebar-back-btn");
+  if (backBtn) backBtn.style.display = "";
+  const tripsPanel = document.getElementById("sidebar-trips-panel");
+  if (tripsPanel) tripsPanel.style.display = "none";
 }
 
 document.getElementById("google-signin").addEventListener("click", async () => {
@@ -3690,21 +4068,28 @@ function isAllowed(email) {
 }
 
 function setupUserChip(user) {
+  const initials = user.photoURL
+    ? `<img src="${user.photoURL}" alt="">`
+    : escapeHtml((user.displayName || user.email || "?").charAt(0).toUpperCase());
+
+  // App shell chip
   const avatar = document.getElementById("user-avatar");
   const name = document.getElementById("user-name");
-  if (user.photoURL) {
-    avatar.innerHTML = `<img src="${user.photoURL}" alt="">`;
-  } else {
-    avatar.textContent = (user.displayName || user.email || "?").charAt(0).toUpperCase();
-  }
-  name.textContent = user.displayName || user.email;
+  if (avatar) avatar.innerHTML = initials;
+  if (name) name.textContent = user.displayName || user.email;
+
+  // Trips screen chip
+  const tAvatar = document.getElementById("trips-user-avatar");
+  const tName = document.getElementById("trips-user-name");
+  if (tAvatar) tAvatar.innerHTML = initials;
+  if (tName) tName.textContent = user.displayName || user.email;
 }
 
 /* ─────────────────────────────────────────────────────────────
    FIRESTORE: SEED + LISTEN
    ───────────────────────────────────────────────────────────── */
 async function seedTripIfNeeded() {
-  const tripRef = doc(db, "trips", TRIP_ID);
+  const tripRef = doc(db, "trips", activeTripId);
   const tripSnap = await getDoc(tripRef);
   if (!tripSnap.exists()) {
     // First-time seed
@@ -3712,10 +4097,11 @@ async function seedTripIfNeeded() {
     batch.set(tripRef, {
       ...TRIP_SEED,
       allowedUsers: ALLOWED_EMAILS.map(e => e.toLowerCase()),
+      createdBy: ALLOWED_EMAILS[0]?.toLowerCase() || "",
       createdAt: serverTimestamp(),
     });
     for (const town of TOWN_SEEDS) {
-      const townRef = doc(db, "trips", TRIP_ID, "towns", town.id);
+      const townRef = doc(db, "trips", activeTripId, "towns", town.id);
       batch.set(townRef, { ...town, createdAt: serverTimestamp() });
     }
     await batch.commit();
@@ -3726,8 +4112,14 @@ async function seedTripIfNeeded() {
     // except for editorial fields managed by the seed: caption, tagline, wikipediaArticle).
     const batch = writeBatch(db);
     let backfilled = 0;
+    // Backfill createdBy if missing (added in multi-trip update)
+    const tripData = tripSnap.data();
+    if (!tripData.createdBy) {
+      batch.update(tripRef, { createdBy: ALLOWED_EMAILS[0]?.toLowerCase() || "" });
+      backfilled++;
+    }
     for (const seed of TOWN_SEEDS) {
-      const townRef = doc(db, "trips", TRIP_ID, "towns", seed.id);
+      const townRef = doc(db, "trips", activeTripId, "towns", seed.id);
       const townSnap = await getDoc(townRef);
       if (!townSnap.exists()) {
         batch.set(townRef, { ...seed, createdAt: serverTimestamp() });
@@ -3754,13 +4146,25 @@ async function seedTripIfNeeded() {
   }
 }
 
-function listenToTrip() {
+// Listener unsubscribe handles — stored so we can detach when switching trips
+let _tripUnsub = null, _townsUnsub = null, _spotsUnsub = null;
+let _allTripsUnsub = null;
+
+function detachTripListeners() {
+  _tripUnsub?.(); _townsUnsub?.(); _spotsUnsub?.();
+  _tripUnsub = _townsUnsub = _spotsUnsub = null;
+}
+
+function listenToTrip(tripId) {
   // Trip document — watch metadata for pending-writes sync indicator
-  onSnapshot(doc(db, "trips", TRIP_ID), { includeMetadataChanges: true }, (snap) => {
+  _tripUnsub = onSnapshot(doc(db, "trips", tripId), { includeMetadataChanges: true }, (snap) => {
     if (snap.exists()) {
       const data = snap.data();
       setState({ trip: { id: snap.id, ...data } });
       if (data.geminiApiKey) GEMINI_CONFIG.apiKey = data.geminiApiKey;
+      // Update sidebar brand with trip name
+      const brandName = document.getElementById("sidebar-trip-name");
+      if (brandName) brandName.textContent = data.name || "Trip";
     }
     const el = document.getElementById("status-indicator");
     if (el) {
@@ -3774,16 +4178,75 @@ function listenToTrip() {
     }
   });
   // Towns subcollection
-  onSnapshot(collection(db, "trips", TRIP_ID, "towns"), (snap) => {
+  _townsUnsub = onSnapshot(collection(db, "trips", tripId, "towns"), (snap) => {
     const towns = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     towns.sort((a, b) => (a.order || 0) - (b.order || 0));
     setState({ towns });
   });
   // Spots subcollection
-  onSnapshot(collection(db, "trips", TRIP_ID, "spots"), (snap) => {
+  _spotsUnsub = onSnapshot(collection(db, "trips", tripId, "spots"), (snap) => {
     const spots = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     setState({ spots });
   });
+}
+
+// ── All-trips listener ──────────────────────────────────────────────────────
+// Attaches once after login, stays alive for the whole session.
+// On the first snapshot it decides where to route the user.
+let _initialTripRouted = false;
+
+function listenToAllTrips(userEmail) {
+  const q = query(
+    collection(db, "trips"),
+    where("allowedUsers", "array-contains", userEmail.toLowerCase())
+  );
+  _allTripsUnsub = onSnapshot(q, (snap) => {
+    const trips = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    trips.sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0));
+    setState({ allTrips: trips });
+
+    if (!_initialTripRouted) {
+      _initialTripRouted = true;
+      const lastId = localStorage.getItem("last-trip-id");
+      if (lastId && trips.find(t => t.id === lastId)) {
+        switchTrip(lastId);
+      } else if (trips.length === 1) {
+        switchTrip(trips[0].id);
+      } else {
+        showTripList();
+      }
+    } else {
+      // Subsequent updates — re-render the trip list if it's visible
+      if (!activeTripId) {
+        renderSidebarTripList();
+        renderTripCards();
+      }
+    }
+  });
+}
+
+// ── Switch into a trip ──────────────────────────────────────────────────────
+function switchTrip(tripId) {
+  detachTripListeners();
+  activeTripId = tripId;
+  setState({ trip: null, towns: [], spots: [] });
+  localStorage.setItem("last-trip-id", tripId);
+  listenToTrip(tripId);
+  showApp();
+  // Run France seed/backfill only for the original trip
+  if (tripId === "france-spring-2026") {
+    seedTripIfNeeded().catch(err => console.warn("Background seed error:", err));
+  }
+}
+
+// ── Exit back to trip list ───────────────────────────────────────────────────
+function exitToTripList() {
+  detachTripListeners();
+  activeTripId = null;
+  GEMINI_CONFIG.apiKey = "";
+  setState({ trip: null, towns: [], spots: [] });
+  localStorage.removeItem("last-trip-id");
+  showTripList();
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -3894,6 +4357,91 @@ function wirePhoneCopyBtns(container) {
       }
     });
   });
+}
+
+/* ─────────────────────────────────────────────────────────────
+   TRIP LIST RENDERERS
+   ───────────────────────────────────────────────────────────── */
+function renderSidebarTripList() {
+  const container = document.getElementById("trips-sidebar-list");
+  if (!container) return;
+  const { allTrips } = state;
+  if (!allTrips.length) {
+    container.innerHTML = `<div style="padding:12px;font-size:0.8125rem;color:var(--text-3);font-style:italic">No trips yet</div>`;
+    return;
+  }
+  container.innerHTML = allTrips.map(t => `
+    <button class="trips-sidebar-item" data-trip-id="${escapeHtml(t.id)}">
+      <div class="trips-sidebar-item-name">${escapeHtml(t.name)}</div>
+      <div class="trips-sidebar-item-dates">${t.startDate ? fmtDateRange(t.startDate, t.endDate) : "Dates TBD"}</div>
+    </button>
+  `).join("");
+  container.querySelectorAll(".trips-sidebar-item").forEach(btn => {
+    btn.addEventListener("click", () => switchTrip(btn.dataset.tripId));
+  });
+}
+
+function renderTripCards() {
+  const grid = document.getElementById("trips-grid");
+  if (!grid) return;
+  const { allTrips } = state;
+  if (!allTrips.length) {
+    grid.innerHTML = `
+      <div class="trips-empty">
+        <div class="trips-empty-title">No trips yet</div>
+        <p style="font-size:0.9375rem;margin-top:8px">Create your first trip to get started.</p>
+      </div>`;
+    return;
+  }
+  grid.innerHTML = allTrips.map(t => {
+    return `
+      <div class="trip-card" data-trip-id="${escapeHtml(t.id)}">
+        <div class="trip-card-img">
+          <div class="trip-card-img-placeholder">${escapeHtml((t.name || "T").charAt(0))}</div>
+        </div>
+        <div class="trip-card-body">
+          <div class="trip-card-name">${escapeHtml(t.name)}</div>
+          <div class="trip-card-dates">${t.startDate ? fmtDateRange(t.startDate, t.endDate) : "Dates TBD"}</div>
+          <div class="trip-card-meta">
+            <span>${escapeHtml(t.currency || "")}</span>
+          </div>
+        </div>
+      </div>`;
+  }).join("");
+  grid.querySelectorAll(".trip-card").forEach(card => {
+    card.addEventListener("click", () => switchTrip(card.dataset.tripId));
+  });
+}
+
+function renderMobileTripList() {
+  const container = document.getElementById("trips-mobile-list");
+  if (!container) return;
+  const { allTrips } = state;
+  if (!allTrips.length) {
+    container.innerHTML = `<div style="text-align:center;padding:40px 24px;color:var(--text-2);font-style:italic">No trips yet</div>`;
+    return;
+  }
+  container.innerHTML = allTrips.map(t => `
+    <div class="trips-mobile-card" data-trip-id="${escapeHtml(t.id)}">
+      <div class="trips-mobile-card-name">${escapeHtml(t.name)}</div>
+      <div class="trips-mobile-card-dates">${t.startDate ? fmtDateRange(t.startDate, t.endDate) : "Dates TBD"}</div>
+    </div>
+  `).join("");
+  container.querySelectorAll(".trips-mobile-card").forEach(card => {
+    card.addEventListener("click", () => {
+      closeMobileTripOverlay();
+      switchTrip(card.dataset.tripId);
+    });
+  });
+}
+
+function openMobileTripOverlay() {
+  renderMobileTripList();
+  document.getElementById("trips-mobile-overlay").classList.add("visible");
+  history.pushState({ weyageTripsOverlay: true }, "");
+}
+function closeMobileTripOverlay() {
+  document.getElementById("trips-mobile-overlay")?.classList.remove("visible");
 }
 
 function renderSidebarTowns() {
@@ -4097,7 +4645,7 @@ Be specific: real names, real booking URLs (if well-known), real lead times. Avo
 }
 
 async function generateCityBriefing(townId, town) {
-  const townRef = doc(db, "trips", TRIP_ID, "towns", townId);
+  const townRef = doc(db, "trips", activeTripId, "towns", townId);
   await updateDoc(townRef, { briefing: { status: "pending" } }).catch(() => {});
   try {
     const content = await callGeminiBriefing(town);
@@ -4289,7 +4837,7 @@ subscribe(() => {
 /* ─────────────────────────────────────────────────────────────
    SPOT CRUD
    ───────────────────────────────────────────────────────────── */
-function spotDocRef(id) { return doc(db, "trips", TRIP_ID, "spots", id); }
+function spotDocRef(id) { return doc(db, "trips", activeTripId, "spots", id); }
 
 async function saveSpot(data, existingId) {
   if (existingId) {
@@ -5298,6 +5846,11 @@ function popModalHistory() {
 window.addEventListener("popstate", () => {
   _handlingPopstate = true;
   try {
+    if (document.getElementById("trips-mobile-overlay")?.classList.contains("visible")) {
+      closeMobileTripOverlay();
+      return;
+    }
+
     // Close the topmost open layer — order matters (lightbox > transit > visit price > drawer)
     const lb = document.getElementById("lightbox-overlay");
     if (lb?.classList.contains("open")) { lbClose(); return; }
@@ -5521,7 +6074,7 @@ async function saveAccommodation() {
   const townId = accomTownId;
   // Close immediately, sync in background
   closeAccomModal();
-  const townRef = doc(db, "trips", TRIP_ID, "towns", townId);
+  const townRef = doc(db, "trips", activeTripId, "towns", townId);
   updateDoc(townRef, { accommodation: data }).catch(err => console.error("saveAccommodation:", err));
 }
 
@@ -5775,21 +6328,21 @@ const CITY_PALETTE = ["#6B7DB3","#6BAA8D","#B36B6B","#B39E6B","#8999C9","#9B8DB3
 const TRANSIT_TYPES = { taxi: "🚕 Taxi", metro: "🚇 Metro", bus: "🚌 Bus", tram: "🚋 Tram", other: "✦ Other" };
 
 function addTransitExpense(townId, entry) {
-  return updateDoc(doc(db, "trips", TRIP_ID, "towns", townId), { transitExpenses: arrayUnion(entry) });
+  return updateDoc(doc(db, "trips", activeTripId, "towns", townId), { transitExpenses: arrayUnion(entry) });
 }
 
 function deleteTransitExpense(townId, entryId) {
   const town = state.towns.find(t => t.id === townId);
   if (!town) return Promise.resolve();
   const updated = (town.transitExpenses || []).filter(e => e.id !== entryId);
-  return updateDoc(doc(db, "trips", TRIP_ID, "towns", townId), { transitExpenses: updated });
+  return updateDoc(doc(db, "trips", activeTripId, "towns", townId), { transitExpenses: updated });
 }
 
 function updateTransitExpense(townId, updatedEntry) {
   const town = state.towns.find(t => t.id === townId);
   if (!town) return Promise.resolve();
   const updated = (town.transitExpenses || []).map(e => e.id === updatedEntry.id ? updatedEntry : e);
-  return updateDoc(doc(db, "trips", TRIP_ID, "towns", townId), { transitExpenses: updated });
+  return updateDoc(doc(db, "trips", activeTripId, "towns", townId), { transitExpenses: updated });
 }
 
 function showTransitSheet(townId, date, existingEntry = null) {
@@ -5947,7 +6500,7 @@ async function fetchAndSaveRates(btn) {
     const data = await res.json();
     if (data.result !== "success") throw new Error("API error");
     // Store rates + timestamp
-    await updateDoc(doc(db, "trips", TRIP_ID), {
+    await updateDoc(doc(db, "trips", activeTripId), {
       exchangeRates: data.rates,
       exchangeRatesUpdatedAt: serverTimestamp(),
     });
@@ -6281,7 +6834,7 @@ function renderBudget() {
       const val = parseFloat(document.getElementById(`budget-target-${cur}`)?.value) || null;
       const targets = { ...(state.trip?.budgetTargets || {}) };
       if (val) targets[cur] = val; else delete targets[cur];
-      await updateDoc(doc(db, "trips", TRIP_ID), { budgetTargets: targets });
+      await updateDoc(doc(db, "trips", activeTripId), { budgetTargets: targets });
     });
   });
 
@@ -6576,7 +7129,7 @@ async function addAttachment(spotId, file) {
   };
   const spot = state.spots.find(s => s.id === spotId);
   const attachments = [...(spot.attachments || []), attachment];
-  await updateDoc(doc(db, "trips", TRIP_ID, "spots", spotId), { attachments });
+  await updateDoc(doc(db, "trips", activeTripId, "spots", spotId), { attachments });
 }
 
 async function toggleAttachmentPin(spotId, attachId) {
@@ -6585,14 +7138,14 @@ async function toggleAttachmentPin(spotId, attachId) {
   const attachments = (spot.attachments || []).map(a =>
     a.id === attachId ? { ...a, pinned: !a.pinned } : a
   );
-  await updateDoc(doc(db, "trips", TRIP_ID, "spots", spotId), { attachments });
+  await updateDoc(doc(db, "trips", activeTripId, "spots", spotId), { attachments });
 }
 
 async function deleteAttachment(spotId, attachId) {
   const spot = state.spots.find(s => s.id === spotId);
   if (!spot) return;
   const attachments = (spot.attachments || []).filter(a => a.id !== attachId);
-  await updateDoc(doc(db, "trips", TRIP_ID, "spots", spotId), { attachments });
+  await updateDoc(doc(db, "trips", activeTripId, "spots", spotId), { attachments });
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -6739,7 +7292,7 @@ async function reorderTownsByDate(extraTown = null) {
     return (a.departureDate || "").localeCompare(b.departureDate || "");
   });
   const batch = writeBatch(db);
-  all.forEach((t, i) => batch.update(doc(db, "trips", TRIP_ID, "towns", t.id), { order: i + 1 }));
+  all.forEach((t, i) => batch.update(doc(db, "trips", activeTripId, "towns", t.id), { order: i + 1 }));
   await batch.commit();
 }
 
@@ -6752,7 +7305,7 @@ async function saveTownEdit() {
   saveBtn.disabled = true;
   try {
     if (editingTownId) {
-      await updateDoc(doc(db, "trips", TRIP_ID, "towns", editingTownId), { name, arrivalDate, departureDate, hidePhoto: townHidePhotoState });
+      await updateDoc(doc(db, "trips", activeTripId, "towns", editingTownId), { name, arrivalDate, departureDate, hidePhoto: townHidePhotoState });
       // Pass updated town explicitly — state.towns still has old dates at this point
       const updatedTown = { ...state.towns.find(t => t.id === editingTownId), name, arrivalDate, departureDate };
       await reorderTownsByDate(updatedTown);
@@ -6761,7 +7314,7 @@ async function saveTownEdit() {
       let newId = name.toLowerCase().replace(/[^a-z0-9]/g, "-");
       if (state.towns.find(t => t.id === newId)) newId = `${newId}-${Date.now()}`;
       const newTown = { id: newId, name, arrivalDate, departureDate, country: "France", order: 999 };
-      await setDoc(doc(db, "trips", TRIP_ID, "towns", newId), newTown);
+      await setDoc(doc(db, "trips", activeTripId, "towns", newId), newTown);
       await reorderTownsByDate(newTown);
     }
     closeTownEditModal();
@@ -6787,9 +7340,9 @@ async function deleteTownEdit() {
     const batch = writeBatch(db);
     // Delete all spots belonging to this town
     state.spots.filter(s => s.townId === editingTownId)
-      .forEach(s => batch.delete(doc(db, "trips", TRIP_ID, "spots", s.id)));
+      .forEach(s => batch.delete(doc(db, "trips", activeTripId, "spots", s.id)));
     // Delete the town doc
-    batch.delete(doc(db, "trips", TRIP_ID, "towns", editingTownId));
+    batch.delete(doc(db, "trips", activeTripId, "towns", editingTownId));
     await batch.commit();
     closeTownEditModal();
   } catch (err) {
@@ -6826,7 +7379,7 @@ async function linkSpots(spotIdA, spotIdB) {
     (b.groupId && s.groupId === b.groupId)
   );
   const batch = writeBatch(db);
-  affected.forEach(s => batch.update(doc(db, "trips", TRIP_ID, "spots", s.id), { groupId }));
+  affected.forEach(s => batch.update(doc(db, "trips", activeTripId, "spots", s.id), { groupId }));
   await batch.commit();
 }
 
@@ -6837,9 +7390,9 @@ async function unlinkSpot(spotId) {
   const batch = writeBatch(db);
   if (groupMembers.length <= 2) {
     // Last link — clear groupId on both so neither appears linked
-    groupMembers.forEach(s => batch.update(doc(db, "trips", TRIP_ID, "spots", s.id), { groupId: null }));
+    groupMembers.forEach(s => batch.update(doc(db, "trips", activeTripId, "spots", s.id), { groupId: null }));
   } else {
-    batch.update(doc(db, "trips", TRIP_ID, "spots", spotId), { groupId: null });
+    batch.update(doc(db, "trips", activeTripId, "spots", spotId), { groupId: null });
   }
   await batch.commit();
 }
@@ -7289,6 +7842,168 @@ function renderGuides() {
 }
 
 /* ─────────────────────────────────────────────────────────────
+   TRIP CREATION
+   ───────────────────────────────────────────────────────────── */
+function openCreateTripModal() {
+  const overlay = document.getElementById("create-trip-overlay");
+  if (!overlay) return;
+  document.getElementById("ct-name").value = "";
+  document.getElementById("ct-start").value = "";
+  document.getElementById("ct-end").value = "";
+  document.getElementById("ct-currency").value = "EUR";
+  document.getElementById("ct-error").style.display = "none";
+  overlay.classList.add("visible");
+  document.getElementById("ct-name").focus();
+  history.pushState({ weyageModal: true }, "");
+}
+
+function closeCreateTripModal() {
+  document.getElementById("create-trip-overlay").classList.remove("visible");
+}
+
+async function saveNewTrip() {
+  const name = document.getElementById("ct-name").value.trim();
+  const startDate = document.getElementById("ct-start").value;
+  const endDate = document.getElementById("ct-end").value;
+  const currency = document.getElementById("ct-currency").value;
+  const errEl = document.getElementById("ct-error");
+
+  if (!name) { errEl.textContent = "Trip name is required."; errEl.style.display = "block"; return; }
+  if (!startDate || !endDate) { errEl.textContent = "Start and end dates are required."; errEl.style.display = "block"; return; }
+  if (endDate < startDate) { errEl.textContent = "End date must be after start date."; errEl.style.display = "block"; return; }
+
+  errEl.style.display = "none";
+  const saveBtn = document.getElementById("create-trip-save");
+  saveBtn.disabled = true;
+  saveBtn.textContent = "Creating…";
+
+  try {
+    // Generate a URL-safe trip ID from name + year
+    const year = new Date(startDate + "T00:00:00").getFullYear();
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    const tripId = `${slug}-${year}`;
+
+    await setDoc(doc(db, "trips", tripId), {
+      name,
+      startDate,
+      endDate,
+      currency,
+      allowedUsers: [state.user.email.toLowerCase()],
+      createdBy: state.user.email.toLowerCase(),
+      tags: ["Must-Try", "Hidden Gem", "Local Favourite", "Splurge", "Reservation", "Booked"],
+      paymentMethods: ["Card", "Cash"],
+      categories: ["Food", "Sights", "Transport", "Lodging", "Shopping", "Other"],
+      createdAt: serverTimestamp(),
+    });
+
+    closeCreateTripModal();
+    switchTrip(tripId);
+  } catch (err) {
+    console.error("Create trip failed:", err);
+    errEl.textContent = "Failed to create trip: " + (err.message || err.code);
+    errEl.style.display = "block";
+    saveBtn.disabled = false;
+    saveBtn.textContent = "Create trip";
+  }
+}
+
+document.getElementById("create-trip-close")?.addEventListener("click", closeCreateTripModal);
+document.getElementById("create-trip-cancel")?.addEventListener("click", closeCreateTripModal);
+document.getElementById("create-trip-save")?.addEventListener("click", saveNewTrip);
+document.getElementById("create-trip-overlay")?.addEventListener("click", (e) => {
+  if (e.target === e.currentTarget) closeCreateTripModal();
+});
+
+/* ─────────────────────────────────────────────────────────────
+   MANAGE ACCESS
+   ───────────────────────────────────────────────────────────── */
+function openManageAccess() {
+  if (!activeTripId || !state.trip) return;
+  renderAccessList();
+  const deleteSection = document.getElementById("manage-access-delete-section");
+  const isCreator = state.trip.createdBy === state.user?.email?.toLowerCase();
+  if (deleteSection) deleteSection.style.display = isCreator ? "block" : "none";
+  document.getElementById("manage-access-overlay").classList.add("visible");
+  document.getElementById("manage-access-error").style.display = "none";
+  document.getElementById("manage-access-email").value = "";
+  history.pushState({ weyageModal: true }, "");
+}
+
+function closeManageAccess() {
+  document.getElementById("manage-access-overlay").classList.remove("visible");
+}
+
+function renderAccessList() {
+  const container = document.getElementById("manage-access-list");
+  if (!container || !state.trip) return;
+  const users = state.trip.allowedUsers || [];
+  const isCreator = state.trip.createdBy === state.user?.email?.toLowerCase();
+  const currentEmail = state.user?.email?.toLowerCase();
+  container.innerHTML = users.map(email => `
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+      <div style="flex:1;font-size:0.875rem">${escapeHtml(email)}${email === currentEmail ? ' <span style="color:var(--text-3);font-size:0.75rem">(you)</span>' : ""}${email === state.trip.createdBy ? ' <span style="color:var(--accent);font-size:0.75rem">owner</span>' : ""}</div>
+      ${isCreator && email !== currentEmail ? `<button class="icon-btn remove-access-btn" data-email="${escapeHtml(email)}" title="Remove" style="color:var(--danger)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="16" height="16"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>` : ""}
+    </div>
+  `).join("");
+  container.querySelectorAll(".remove-access-btn").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const email = btn.dataset.email;
+      if (!confirm(`Remove ${email} from this trip?`)) return;
+      await updateDoc(doc(db, "trips", activeTripId), { allowedUsers: arrayRemove(email) });
+      renderAccessList();
+    });
+  });
+}
+
+async function addCollaborator() {
+  const email = document.getElementById("manage-access-email").value.trim().toLowerCase();
+  const errEl = document.getElementById("manage-access-error");
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errEl.textContent = "Enter a valid email address."; errEl.style.display = "block"; return;
+  }
+  if ((state.trip.allowedUsers || []).includes(email)) {
+    errEl.textContent = "This person already has access."; errEl.style.display = "block"; return;
+  }
+  // Check the invited email is also in ALLOWED_EMAILS (global gate)
+  if (!isAllowed(email)) {
+    errEl.textContent = "That email isn't on the app's access list. Ask the app owner to add it to ALLOWED_EMAILS first.";
+    errEl.style.display = "block"; return;
+  }
+  errEl.style.display = "none";
+  try {
+    await updateDoc(doc(db, "trips", activeTripId), { allowedUsers: arrayUnion(email) });
+    document.getElementById("manage-access-email").value = "";
+    renderAccessList();
+  } catch (err) {
+    errEl.textContent = "Failed to add collaborator: " + (err.message || err.code);
+    errEl.style.display = "block";
+  }
+}
+
+async function deleteTrip() {
+  if (!activeTripId || !state.trip) return;
+  const isCreator = state.trip.createdBy === state.user?.email?.toLowerCase();
+  if (!isCreator) return;
+  if (!confirm(`Delete "${state.trip.name}" permanently? This cannot be undone.`)) return;
+  try {
+    await deleteDoc(doc(db, "trips", activeTripId));
+    closeManageAccess();
+    exitToTripList();
+  } catch (err) {
+    alert("Failed to delete trip: " + (err.message || err.code));
+  }
+}
+
+document.getElementById("sidebar-manage-access-btn")?.addEventListener("click", openManageAccess);
+document.getElementById("manage-access-close")?.addEventListener("click", closeManageAccess);
+document.getElementById("manage-access-done")?.addEventListener("click", closeManageAccess);
+document.getElementById("manage-access-add-btn")?.addEventListener("click", addCollaborator);
+document.getElementById("manage-access-delete-trip-btn")?.addEventListener("click", deleteTrip);
+document.getElementById("manage-access-overlay")?.addEventListener("click", (e) => {
+  if (e.target === e.currentTarget) closeManageAccess();
+});
+
+/* ─────────────────────────────────────────────────────────────
    SHARE LINK
    ───────────────────────────────────────────────────────────── */
 
@@ -7300,7 +8015,7 @@ async function generateAndCopyShareLink(btn) {
     let token = state.trip?.shareToken;
     if (!token) {
       token = crypto.randomUUID();
-      await updateDoc(doc(db, "trips", TRIP_ID), { shareToken: token });
+      await updateDoc(doc(db, "trips", activeTripId), { shareToken: token });
     }
     const url = `${location.origin}${location.pathname}?share=${token}`;
     await navigator.clipboard.writeText(url);
@@ -7329,7 +8044,8 @@ async function initSharedView(token) {
   setState({ shareMode: true, currentView: "itinerary" });
 
   // Load trip + verify token
-  listenToTrip();
+  activeTripId = "france-spring-2026";
+  listenToTrip(activeTripId);
 
   // Wait for first snapshot (trip data) before rendering
   let resolved = false;
@@ -7395,6 +8111,12 @@ async function init() {
 
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
+      // Detach all listeners on sign-out so they don't bleed into the next session
+      detachTripListeners();
+      _allTripsUnsub?.();
+      _allTripsUnsub = null;
+      activeTripId = null;
+      setState({ user: null, trip: null, towns: [], spots: [], allTrips: [] });
       showAuthScreen();
       return;
     }
@@ -7405,20 +8127,10 @@ async function init() {
     }
     setState({ user });
     setupUserChip(user);
-
-    // Start Firestore listeners immediately — onSnapshot fires from the
-    // IndexedDB cache within ~50ms so the UI renders before any network
-    // round-trip completes.
-    listenToTrip();
-    showApp();
-
-    // Seed / backfill runs in the background without blocking the UI.
-    // If it fails on a repeat visit the cached data is already showing;
-    // if it fails on first visit (no cache) the listeners will still
-    // populate the UI once the network responds.
-    seedTripIfNeeded().catch(err =>
-      console.warn("Background seed error (non-fatal):", err)
-    );
+    _initialTripRouted = false;
+    // listenToAllTrips fires first snapshot quickly (IndexedDB cache).
+    // On first snapshot it routes to last trip or trip list automatically.
+    listenToAllTrips(user.email);
   });
 }
 
@@ -7668,7 +8380,7 @@ function showKeyEntryForm(onSave) {
     saveBtn.disabled = true;
     saveBtn.textContent = "Saving…";
     try {
-      await updateDoc(doc(db, "trips", TRIP_ID), { geminiApiKey: key });
+      await updateDoc(doc(db, "trips", activeTripId), { geminiApiKey: key });
       GEMINI_CONFIG.apiKey = key;
       onSave();
     } catch (err) {
@@ -7931,6 +8643,24 @@ document.getElementById("lb-img").addEventListener("touchend", e => {
   if (btn) btn.addEventListener("click", () => generateAndCopyShareLink(btn));
 });
 
+// Sidebar back button → exit to trip list
+document.getElementById("sidebar-back-btn")?.addEventListener("click", exitToTripList);
+
+// Mobile "All trips" sheet button
+document.getElementById("sheet-all-trips-btn")?.addEventListener("click", () => {
+  // Close the more sheet first
+  moreSheet.style.display = "none";
+  openMobileTripOverlay();
+});
+
+// Trips screen buttons
+document.getElementById("trips-new-btn-sidebar")?.addEventListener("click", openCreateTripModal);
+document.getElementById("trips-new-btn-main")?.addEventListener("click", openCreateTripModal);
+document.getElementById("trips-signout-btn")?.addEventListener("click", () => signOut(auth));
+document.getElementById("trips-mobile-close")?.addEventListener("click", closeMobileTripOverlay);
+document.getElementById("trips-mobile-new-btn")?.addEventListener("click", () => { closeMobileTripOverlay(); openCreateTripModal(); });
+document.getElementById("trips-mobile-signout")?.addEventListener("click", () => signOut(auth));
+
 init().catch((err) => {
   console.error("Boot error:", err);
   showAuthScreen("Couldn't start the app: " + (err.message || err.code || err));
@@ -8000,5 +8730,25 @@ if ("serviceWorker" in navigator) {
 }
 </script>
 
+<!-- Mobile trips overlay (opened from the "more" sheet) -->
+<div id="trips-mobile-overlay">
+  <div class="trips-mobile-header">
+    <button class="icon-btn" id="trips-mobile-close">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><line x1="19" y1="5" x2="5" y2="19"/><line x1="5" y1="5" x2="19" y2="19"/></svg>
+    </button>
+    <h2>All Trips</h2>
+    <button class="btn-primary" id="trips-mobile-new-btn" style="padding:8px 14px;font-size:0.8125rem">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      New
+    </button>
+  </div>
+  <div class="trips-mobile-body" id="trips-mobile-list"></div>
+  <div class="trips-mobile-footer">
+    <button class="nav-item" id="trips-mobile-signout">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="16" height="16"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Sign out
+    </button>
+  </div>
+</div>
 </body>
 </html>
