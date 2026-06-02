@@ -3165,10 +3165,6 @@ body.share-mode .transit-entry-del { display: none !important; }
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
       Guides
     </button>
-    <button class="nav-item" data-view="map">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-      Map
-    </button>
     <button class="nav-item" data-view="budget">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
       Budget
@@ -3184,7 +3180,7 @@ body.share-mode .transit-entry-del { display: none !important; }
     <div class="sidebar-foot">
       <div id="status-indicator" class="status-dot">Synced</div>
       <button class="nav-item" id="sidebar-help-btn" style="font-size:0.8125rem;opacity:0.7">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="16" height="16"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;border:1.5px solid currentColor;font-size:0.6875rem;font-weight:700;line-height:1;flex-shrink:0">?</span>
         Help
       </button>
       <button class="nav-item share-link-btn" id="sidebar-share-btn" style="margin:6px 0 0;font-size:0.8125rem;opacity:0.7">
@@ -3279,14 +3275,6 @@ body.share-mode .transit-entry-del { display: none !important; }
         <div id="guides-content"></div>
       </section>
 
-      <section class="view" id="view-map">
-        <div class="placeholder">
-          <div class="placeholder-eyebrow">coming next</div>
-          <h2>Map</h2>
-          <p>Every spot on an interactive map. Filter by town, type, or tag. Pre-cache tiles before you leave wifi.</p>
-        </div>
-      </section>
-
       <section class="view" id="view-budget">
         <div class="section-header" style="margin-bottom:20px">
           <h1 class="section-title">Budget</h1>
@@ -3345,16 +3333,12 @@ body.share-mode .transit-entry-del { display: none !important; }
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
           Documents
         </button>
-        <button class="bottom-nav-item" data-view="map" style="width:100%;flex-direction:row;gap:14px;padding:14px 24px;justify-content:flex-start;font-size:1rem" id="sheet-map-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-          Map
-        </button>
         <button class="bottom-nav-item share-link-btn" id="sheet-share-btn" style="width:100%;flex-direction:row;gap:14px;padding:14px 24px;justify-content:flex-start;font-size:1rem">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
           Share itinerary
         </button>
         <button class="bottom-nav-item" id="sheet-help-btn" style="width:100%;flex-direction:row;gap:14px;padding:14px 24px;justify-content:flex-start;font-size:1rem">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;border:1.75px solid currentColor;font-size:0.8125rem;font-weight:700;line-height:1;flex-shrink:0">?</span>
           Help
         </button>
         <div style="margin:6px 24px 0;border-top:1px solid var(--border)"></div>
@@ -4118,7 +4102,7 @@ function setView(viewName) {
   document.querySelectorAll(".nav-item, .bottom-nav-item").forEach(b => {
     b.classList.toggle("active", b.dataset.view === viewName);
   });
-  const titles = { dashboard: "Overview", itinerary: "Itinerary", guides: "Guides", map: "Map", budget: "Budget", documents: "Documents" };
+  const titles = { dashboard: "Overview", itinerary: "Itinerary", guides: "Guides", budget: "Budget", documents: "Documents" };
   document.getElementById("topbar-title").textContent = titles[viewName] || "Dashboard";
   if (viewName === "itinerary") {
     // Only auto-scroll to today when the user hasn't explicitly clicked a specific town
@@ -4148,12 +4132,9 @@ document.getElementById("mobile-more-backdrop")?.addEventListener("click", () =>
   moreSheet.style.display = "none";
 });
 
-["sheet-documents-btn", "sheet-map-btn"].forEach(id => {
-  document.getElementById(id)?.addEventListener("click", () => {
-    moreSheet.style.display = "none";
-    const btn = document.getElementById(id);
-    if (btn?.dataset.view) setView(btn.dataset.view);
-  });
+document.getElementById("sheet-documents-btn")?.addEventListener("click", () => {
+  moreSheet.style.display = "none";
+  setView("documents");
 });
 
 /* ─────────────────────────────────────────────────────────────
