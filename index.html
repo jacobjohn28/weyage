@@ -4789,10 +4789,10 @@ function renderDashboardTowns() {
       <div class="itinerary-empty" style="padding:48px 24px">
         <p style="font-size:1.0625rem;font-weight:500;color:var(--text);margin-bottom:8px">No cities yet</p>
         <p style="margin-bottom:28px">Add your first city to start building your trip overview.</p>
-        <button class="btn-primary" id="dashboard-add-city-btn" style="padding:10px 22px;font-size:0.9375rem">
+        ${state.shareMode ? "" : `<button class="btn-primary" id="dashboard-add-city-btn" style="padding:10px 22px;font-size:0.9375rem">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="margin-right:6px;vertical-align:-2px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Add a city
-        </button>
+        </button>`}
       </div>`;
     container.querySelector("#dashboard-add-city-btn")?.addEventListener("click", () => openTownEditModal());
     return;
@@ -5282,12 +5282,12 @@ function renderItinerary() {
         <div class="itinerary-empty">
           <p style="font-size:1.0625rem;font-weight:500;color:var(--text);margin-bottom:8px">No cities yet</p>
           <p style="margin-bottom:28px">Add your first city to start planning your trip.</p>
-          <button class="btn-primary" id="itinerary-add-city-btn" style="padding:10px 22px;font-size:0.9375rem">
+          ${state.shareMode ? "" : `<button class="btn-primary" id="itinerary-add-city-btn" style="padding:10px 22px;font-size:0.9375rem">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="margin-right:6px;vertical-align:-2px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add a city
-          </button>
+          </button>`}
         </div>`;
-      container.querySelector("#itinerary-add-city-btn").addEventListener("click", () => openTownEditModal());
+      container.querySelector("#itinerary-add-city-btn")?.addEventListener("click", () => openTownEditModal());
     }
     return;
   }
@@ -5407,14 +5407,14 @@ function renderItinerary() {
       </div>`);
   }
 
-  container.innerHTML = html.join("") + `
+  container.innerHTML = html.join("") + (state.shareMode ? "" : `
     <div style="padding:8px 0 32px;text-align:center">
       <button class="btn-secondary" id="itinerary-add-city-footer-btn" style="font-size:0.875rem;padding:9px 20px">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="margin-right:6px;vertical-align:-2px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Add city
       </button>
-    </div>`;
-  container.querySelector("#itinerary-add-city-footer-btn").addEventListener("click", () => openTownEditModal());
+    </div>`);
+  container.querySelector("#itinerary-add-city-footer-btn")?.addEventListener("click", () => openTownEditModal());
 
   // Accommodation card → open read-only drawer; add-accom-link → open edit modal
   container.querySelectorAll(".accom-card").forEach(el => {
