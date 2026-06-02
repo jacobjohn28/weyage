@@ -3052,7 +3052,7 @@ body.share-mode .transit-entry-del { display: none !important; }
 
     <!-- Back to all trips (shown when inside a trip) -->
     <button class="nav-item" id="sidebar-back-btn" style="margin-bottom:8px;color:var(--accent);font-size:0.8125rem">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="14" height="14"><polyline points="15 18 9 12 15 6"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="14" height="14"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
       All trips
     </button>
 
@@ -3255,7 +3255,7 @@ body.share-mode .transit-entry-del { display: none !important; }
         </button>
         <div style="margin:6px 24px 0;border-top:1px solid var(--border)"></div>
         <button class="bottom-nav-item" id="sheet-all-trips-btn" style="width:100%;flex-direction:row;gap:14px;padding:14px 24px;justify-content:flex-start;font-size:1rem;color:var(--accent)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><polyline points="15 18 9 12 15 6"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
           All trips
         </button>
       </div>
@@ -4663,12 +4663,14 @@ function renderMobileTripList() {
 }
 
 function openMobileTripOverlay() {
+  localStorage.setItem("last-screen", "trips");
   renderMobileTripList();
   document.getElementById("trips-mobile-overlay").classList.add("visible");
   history.pushState({ weyageTripsOverlay: true }, "");
 }
 function closeMobileTripOverlay() {
   document.getElementById("trips-mobile-overlay")?.classList.remove("visible");
+  localStorage.removeItem("last-screen");
 }
 
 function renderSidebarTowns() {
