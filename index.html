@@ -8691,11 +8691,6 @@ async function addTripCollaborator() {
   }
   errEl.style.display = "none";
   try {
-    const approvalSnap = await getDoc(doc(db, "appUsers", email));
-    if (!approvalSnap.exists()) {
-      errEl.textContent = "That email doesn't have app access yet. Ask the owner to add them in Firebase first.";
-      errEl.style.display = "block"; return;
-    }
     await updateDoc(doc(db, "trips", _tripSettingsId), { allowedUsers: arrayUnion(email) });
     document.getElementById("ts-email").value = "";
     const updated = { ...trip, allowedUsers: [...(trip.allowedUsers || []), email] };
