@@ -1812,7 +1812,7 @@
   body.share-mode .share-banner { display: flex; }
   body.share-mode .sidebar { display: none !important; }
   body.share-mode .bottom-nav { display: none !important; }
-  body.share-mode #app.visible { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+  body.share-mode #app.visible { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
   body.share-mode .main { border-radius: 0; }
   body.share-mode .add-spot-inline,
   body.share-mode .town-add-btn,
@@ -2089,10 +2089,20 @@
     font-family: var(--font-body); font-size: 0.9375rem; color: var(--text);
     transition: border-color 160ms var(--ease);
     width: 100%;
+    color-scheme: light;
   }
+  [data-theme="dark"] .form-input,
+  [data-theme="dark"] .form-textarea,
+  [data-theme="dark"] .form-select { color-scheme: dark; }
   .form-input:focus, .form-textarea:focus, .form-select:focus {
     outline: none; border-color: var(--accent);
   }
+  .form-input::-webkit-calendar-picker-indicator,
+  .field-input::-webkit-calendar-picker-indicator {
+    cursor: pointer; opacity: 0.55;
+  }
+  .form-input::-webkit-calendar-picker-indicator:hover,
+  .field-input::-webkit-calendar-picker-indicator:hover { opacity: 1; }
   .form-textarea { resize: vertical; min-height: 80px; }
   .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
@@ -4415,36 +4425,57 @@ function listenToTrip(tripId) {
     }
   });
   // Towns subcollection
-  _townsUnsub = onSnapshot(collection(db, "trips", tripId, "towns"), (snap) => {
-    const towns = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    towns.sort((a, b) => (a.order || 0) - (b.order || 0));
-    setState({ towns });
-    if (_pendingBackfill && towns.length > 0) {
-      _pendingBackfill = false;
-      setTimeout(startPhotoBackfill, 600);
-    }
-    // Sync cityNames onto the trip doc so the trips list can display them without extra fetches.
-    // This also backfills legacy trips that predate the cityNames field.
-    const names = towns.map(t => t.name);
-    const existing = state.allTrips.find(t => t.id === tripId);
-    if (!existing || JSON.stringify(existing.cityNames) !== JSON.stringify(names)) {
-      updateDoc(doc(db, "trips", tripId), { cityNames: names }).catch(() => {});
-    }
-    // One-time migration: populate cityPhotos on the trip doc from existing town photoUrls
-    // so the trips-screen collage works without needing extra reads per card.
-    if (existing && !existing.cityPhotos) {
-      const photoMap = {};
-      towns.forEach(t => { if (t.photoUrl) photoMap[t.id] = t.photoUrl; });
-      if (Object.keys(photoMap).length) {
-        updateDoc(doc(db, "trips", tripId), { cityPhotos: photoMap }).catch(() => {});
+  _townsUnsub = onSnapshot(
+    collection(db, "trips", tripId, "towns"),
+    (snap) => {
+      const towns = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      towns.sort((a, b) => (a.order || 0) - (b.order || 0));
+      setState({ towns });
+      if (_pendingBackfill && towns.length > 0) {
+        _pendingBackfill = false;
+        setTimeout(startPhotoBackfill, 600);
+      }
+      // Sync cityNames onto the trip doc so the trips list can display them without extra fetches.
+      const names = towns.map(t => t.name);
+      const existing = state.allTrips.find(t => t.id === tripId);
+      if (!existing || JSON.stringify(existing.cityNames) !== JSON.stringify(names)) {
+        updateDoc(doc(db, "trips", tripId), { cityNames: names }).catch(() => {});
+      }
+      // One-time migration: populate cityPhotos on the trip doc from existing town photoUrls.
+      if (existing && !existing.cityPhotos) {
+        const photoMap = {};
+        towns.forEach(t => { if (t.photoUrl) photoMap[t.id] = t.photoUrl; });
+        if (Object.keys(photoMap).length) {
+          updateDoc(doc(db, "trips", tripId), { cityPhotos: photoMap }).catch(() => {});
+        }
+      }
+    },
+    (err) => {
+      console.error("Towns listener error — check Firestore subcollection rules:", err.code);
+      if (state.shareMode) {
+        // Shared view: towns subcollection is not readable by anonymous users.
+        // The Firestore rules need a match for /trips/{tripId}/towns/{townId} that allows
+        // reads when the parent trip has a shareToken.
+        const main = document.querySelector(".main");
+        if (main) main.innerHTML = `
+          <div style="padding:48px 24px;text-align:center;color:var(--text-2);max-width:480px;margin:0 auto">
+            <p style="font-size:1rem;font-weight:500;margin-bottom:8px">Couldn't load this shared trip</p>
+            <p style="font-size:0.875rem;color:var(--text-3)">The Firestore security rules need to be updated to allow shared viewing of cities and spots. Ask the trip owner to check the setup guide.</p>
+          </div>`;
       }
     }
-  });
+  );
   // Spots subcollection
-  _spotsUnsub = onSnapshot(collection(db, "trips", tripId, "spots"), (snap) => {
-    const spots = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    setState({ spots });
-  });
+  _spotsUnsub = onSnapshot(
+    collection(db, "trips", tripId, "spots"),
+    (snap) => {
+      const spots = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      setState({ spots });
+    },
+    (err) => {
+      console.error("Spots listener error — check Firestore subcollection rules:", err.code);
+    }
+  );
 }
 
 // ── All-trips listener ──────────────────────────────────────────────────────
