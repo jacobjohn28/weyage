@@ -2970,7 +2970,7 @@ body.share-mode .transit-entry-del { display: none !important; }
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  width: 100%; max-width: 660px;
+  width: 100%; max-width: 720px;
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: var(--shadow-lg);
@@ -3031,6 +3031,86 @@ body.share-mode .transit-entry-del { display: none !important; }
 }
 .help-modal-footer-note {
   font-size: 0.8125rem; color: var(--text-3);
+}
+.help-max-width { max-width: 720px; }
+.help-section-heading {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
+  padding: 20px 28px 10px;
+}
+.help-section-heading + .help-tips-grid { padding-top: 0; }
+.help-guide-section {
+  padding: 16px 28px;
+  border-top: 1px solid var(--border);
+}
+.help-guide-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.help-guide-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-soft);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.help-guide-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.help-feature-bullets {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.help-feature-bullets li {
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  padding-left: 16px;
+  position: relative;
+  line-height: 1.55;
+}
+.help-feature-bullets li::before {
+  content: "·";
+  position: absolute;
+  left: 4px;
+  color: var(--accent);
+  font-size: 1.1rem;
+  line-height: 1.3;
+}
+.help-callout {
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-soft);
+  border-radius: var(--radius);
+  padding: 9px 12px;
+  margin-top: 10px;
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  line-height: 1.55;
+}
+.help-callout-warn {
+  background: rgba(180, 100, 20, 0.07);
+  border: 1px solid rgba(180, 100, 20, 0.22);
+  border-radius: var(--radius);
+  padding: 9px 12px;
+  margin-top: 10px;
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  line-height: 1.55;
 }
 @media (max-width: 600px) {
   .help-tips-grid { grid-template-columns: 1fr; }
@@ -3693,7 +3773,7 @@ body.share-mode .transit-entry-del { display: none !important; }
       <div id="price-booking-fields">
         <div class="form-row" style="margin-bottom:0">
           <div class="form-field">
-            <label class="form-label" for="spot-price">Price</label>
+            <label class="form-label" for="spot-price">Price <span style="font-weight:400;font-size:0.75rem;color:var(--text-3)">(shows in Budget tab)</span></label>
             <div style="display:flex;gap:6px">
               <select class="form-input" id="spot-price-currency" style="width:76px;flex-shrink:0;padding-left:8px">
                 <option value="EUR">€ EUR</option>
@@ -4015,7 +4095,7 @@ body.share-mode .transit-entry-del { display: none !important; }
 <!-- ============================================================
      APPLICATION SCRIPT
      ============================================================ -->
-<input type="file" id="attach-file-input" accept="image/*,application/pdf,.pdf" style="display:none">
+<input type="file" id="attach-file-input" accept="image/*" style="display:none">
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script type="module">
 // Firebase SDK is loaded via dynamic import inside initFirebase() rather than
@@ -7666,7 +7746,7 @@ function renderDocuments() {
 
   const allSpotsWithDocs = state.spots.filter(s => s.attachments && s.attachments.length > 0);
   if (allSpotsWithDocs.length === 0) {
-    container.innerHTML = `<div class="itinerary-empty"><p>No documents yet. Add photos, QR codes, or tickets to any spot from the spot detail drawer.</p></div>`;
+    container.innerHTML = `<div class="itinerary-empty"><p>No documents yet. Open any spot's detail drawer and tap <strong>Attach</strong> to add a screenshot or photo.</p><p style="font-size:0.8125rem;color:var(--text-3);margin-top:8px">Tip: upload images (JPEG, PNG, WebP) rather than PDFs — they load faster and use less storage. Screenshot your PDFs first.</p></div>`;
     return;
   }
 
@@ -9426,29 +9506,23 @@ if ("serviceWorker" in navigator) {
       <div>
         <div class="help-modal-wordmark">Weyage</div>
         <div class="help-modal-title">Plan trips you'll actually remember.</div>
-        <div class="help-modal-subtitle">Here's everything you can do — tap any area of the app to explore.</div>
+        <div class="help-modal-subtitle">A quick tour of every feature — scroll to explore.</div>
       </div>
       <button class="icon-btn" id="help-close-btn" aria-label="Close help">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
 
+    <!-- ── Quick overview ── -->
+    <div class="help-section-heading">Quick overview</div>
     <div class="help-tips-grid">
-
-      <div class="help-tip">
-        <div class="help-tip-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
-        </div>
-        <div class="help-tip-title">Trips</div>
-        <div class="help-tip-desc">Create a trip for each journey. Each has its own cities, itinerary, budget, and documents — all separate and organised.</div>
-      </div>
 
       <div class="help-tip">
         <div class="help-tip-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><path d="M8 2v4M16 2v4M3 10h18M5 6h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/></svg>
         </div>
         <div class="help-tip-title">Itinerary</div>
-        <div class="help-tip-desc">Add cities, then plan each day with spots — sights, restaurants, cafés, and experiences. Drag to reorder, or stash ideas in the wishlist.</div>
+        <div class="help-tip-desc">Add cities and plan each day with spots — sights, restaurants, cafés, and experiences. Drag to reorder. Park unscheduled ideas in the Wishlist.</div>
       </div>
 
       <div class="help-tip">
@@ -9456,56 +9530,204 @@ if ("serviceWorker" in navigator) {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
         </div>
         <div class="help-tip-title">Overview</div>
-        <div class="help-tip-desc">An editorial, magazine-style view of your whole trip. Tap any city card to jump straight to its days in the itinerary.</div>
+        <div class="help-tip-desc">A magazine-style spread of your whole trip. Tap any city card to jump to it in the Itinerary. City AI briefings live here too.</div>
       </div>
 
       <div class="help-tip">
         <div class="help-tip-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>
         </div>
-        <div class="help-tip-title">Guides</div>
-        <div class="help-tip-desc">Auto-generated quick-reference cards for every spot in your trip. Browse by city or search — perfect for a last-minute glance on the go.</div>
+        <div class="help-tip-title">AI Recommendations</div>
+        <div class="help-tip-desc">Tap ✨ on any day in the Itinerary to get smart suggestions for restaurants, sights, and experiences — tailored to your city and style.</div>
       </div>
 
       <div class="help-tip">
         <div class="help-tip-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
         </div>
-        <div class="help-tip-title">Budget</div>
-        <div class="help-tip-desc">Log expenses per spot or per city, track by category, and see totals in your trip currency. All conversions handled automatically.</div>
+        <div class="help-tip-title">Budget &amp; Costs</div>
+        <div class="help-tip-desc">Attach a cost to any spot when adding it — or log standalone expenses in the Budget tab. See totals by category in your trip currency.</div>
+      </div>
+
+      <div class="help-tip">
+        <div class="help-tip-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="2" y1="9" x2="22" y2="9"/><line x1="2" y1="15" x2="22" y2="15"/><line x1="9" y1="9" x2="9" y2="22"/></svg>
+        </div>
+        <div class="help-tip-title">Documents</div>
+        <div class="help-tip-desc">Attach booking screenshots and tickets to any spot. Use images (JPEG, PNG, WebP) — screenshot PDFs before uploading to keep files small.</div>
       </div>
 
       <div class="help-tip">
         <div class="help-tip-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
         </div>
-        <div class="help-tip-title">Share your trip</div>
-        <div class="help-tip-desc">Tap <em>Share Itinerary</em> in the sidebar to generate a read-only link. Anyone with the link can browse your full itinerary.</div>
+        <div class="help-tip-title">Share &amp; Collaborate</div>
+        <div class="help-tip-desc">Generate a read-only link anyone can open without logging in. Or add collaborators in Trip Settings to let them plan alongside you.</div>
       </div>
 
     </div>
 
-    <!-- Sync status legend -->
-    <div style="margin:0 28px 20px;padding:14px 16px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);display:flex;flex-direction:column;gap:8px">
+    <!-- ── Detailed guide ── -->
+    <div class="help-section-heading" style="padding-top:4px">Detailed guide</div>
+
+    <!-- Overview tab -->
+    <div class="help-guide-section">
+      <div class="help-guide-heading">
+        <div class="help-guide-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="15" height="15"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        </div>
+        <div class="help-guide-title">Overview tab</div>
+      </div>
+      <ul class="help-feature-bullets">
+        <li>A visual, magazine-style spread of your whole trip — dates, cities, and key stats at a glance.</li>
+        <li>Tap any city card to jump directly to that city's days in the Itinerary.</li>
+        <li>Each city card has an AI Briefing toggle — generates a quick summary of what to expect (requires Gemini API).</li>
+        <li>City cover photos can be set or changed using the camera icon on each card.</li>
+      </ul>
+    </div>
+
+    <!-- Itinerary tab -->
+    <div class="help-guide-section">
+      <div class="help-guide-heading">
+        <div class="help-guide-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="15" height="15"><path d="M8 2v4M16 2v4M3 10h18M5 6h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/></svg>
+        </div>
+        <div class="help-guide-title">Itinerary tab</div>
+      </div>
+      <ul class="help-feature-bullets">
+        <li>Add a city using <strong>+ Add a city</strong> at the top or the button at the end of the itinerary.</li>
+        <li>Each city is broken into days. Tap a day to expand it and add spots.</li>
+        <li>A spot can be a sight, restaurant, café, experience, or transport leg.</li>
+        <li>Tap any spot to open its detail drawer — view address, notes, cost, and attached documents.</li>
+        <li>On desktop, drag spots up and down to reorder them within a day.</li>
+        <li><strong>Wishlist:</strong> spots not yet assigned to a date live at the bottom of each city. Drag them onto a day when you're ready.</li>
+        <li>Navigate between cities using the sidebar (desktop) or city cards in the Overview tab.</li>
+      </ul>
+    </div>
+
+    <!-- AI Recommendations -->
+    <div class="help-guide-section">
+      <div class="help-guide-heading">
+        <div class="help-guide-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="15" height="15"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>
+        </div>
+        <div class="help-guide-title">AI Recommendations ✨</div>
+      </div>
+      <ul class="help-feature-bullets">
+        <li>Tap the <strong>✨ sparkle button</strong> at the right edge of any day header in the Itinerary.</li>
+        <li>The AI panel slides in with tailored suggestions — restaurants, sights, hidden gems — based on the city and date.</li>
+        <li>Tap any suggestion to instantly add it as a spot on that day.</li>
+        <li>Use the text prompt at the bottom to refine: e.g. "budget-friendly lunch near the old town".</li>
+      </ul>
+      <div class="help-callout">
+        <strong>Requires a Gemini API key</strong> — set by the admin in Site Settings (from the All Trips page). Free keys are available at <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener" style="color:var(--accent)">Google AI Studio</a>.
+      </div>
+    </div>
+
+    <!-- Transit -->
+    <div class="help-guide-section">
+      <div class="help-guide-heading">
+        <div class="help-guide-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="15" height="15"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+        </div>
+        <div class="help-guide-title">Transit</div>
+      </div>
+      <ul class="help-feature-bullets">
+        <li><strong>Between cities:</strong> tap the transit arrow between two city sections in the Itinerary to log a flight, train, ferry, or car journey. Enter carrier, seat, departure and arrival times.</li>
+        <li><strong>Within a city:</strong> each day has transit chips (🚇 metro, 🚌 bus, 🚕 taxi…) — log how you moved around that day.</li>
+        <li>Transit entries appear as clear dividers between city blocks, so your route is easy to follow.</li>
+        <li>Add a spot with type <strong>Transport</strong> for point-to-point journeys within a day (e.g. airport transfer).</li>
+      </ul>
+    </div>
+
+    <!-- Budget & Costs -->
+    <div class="help-guide-section">
+      <div class="help-guide-heading">
+        <div class="help-guide-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="15" height="15"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </div>
+        <div class="help-guide-title">Budget &amp; Costs</div>
+      </div>
+      <ul class="help-feature-bullets">
+        <li>When adding or editing a spot, fill in the <strong>Price</strong> field to attach a cost directly — it shows up in the Budget tab automatically.</li>
+        <li>Log standalone expenses (accommodation, travel cards, etc.) directly in the <strong>Budget tab</strong> using <strong>+ Add expense</strong>.</li>
+        <li>Expenses are categorised: Food, Transport, Accommodation, Activities, Shopping, Other.</li>
+        <li>All amounts are shown in your trip currency. Set the currency in Trip Settings.</li>
+        <li>The Budget tab shows a total spend and a breakdown by category.</li>
+      </ul>
+    </div>
+
+    <!-- Guides tab -->
+    <div class="help-guide-section">
+      <div class="help-guide-heading">
+        <div class="help-guide-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="15" height="15"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        </div>
+        <div class="help-guide-title">Guides tab</div>
+      </div>
+      <ul class="help-feature-bullets">
+        <li>Auto-generated quick-reference cards for every spot in your trip.</li>
+        <li>Search by name, or scroll through all spots organised by city.</li>
+        <li>Each card shows category, address, notes, cost, and tags at a glance.</li>
+        <li>Great for offline reference on the day — no need to dig through the itinerary.</li>
+      </ul>
+    </div>
+
+    <!-- Documents tab -->
+    <div class="help-guide-section">
+      <div class="help-guide-heading">
+        <div class="help-guide-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="15" height="15"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="2" y1="9" x2="22" y2="9"/><line x1="2" y1="15" x2="22" y2="15"/><line x1="9" y1="9" x2="9" y2="22"/></svg>
+        </div>
+        <div class="help-guide-title">Documents</div>
+      </div>
+      <ul class="help-feature-bullets">
+        <li>Open any spot's detail drawer and tap <strong>Attach</strong> to upload a screenshot or photo — booking confirmations, QR codes, tickets, etc.</li>
+        <li>All attachments for a trip are also visible together in the <strong>Documents tab</strong>, organised by spot.</li>
+        <li>Tap any thumbnail to open it full-screen.</li>
+      </ul>
+      <div class="help-callout-warn">
+        <strong>Images only (JPEG, PNG, WebP)</strong> — avoid uploading PDFs as they are large and slow to load on mobile. Instead, take a screenshot of your PDF and upload that image.
+      </div>
+    </div>
+
+    <!-- Sharing & Collaboration -->
+    <div class="help-guide-section">
+      <div class="help-guide-heading">
+        <div class="help-guide-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="15" height="15"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        </div>
+        <div class="help-guide-title">Sharing &amp; Collaboration</div>
+      </div>
+      <ul class="help-feature-bullets">
+        <li><strong>Share Itinerary</strong> (sidebar/menu) generates a read-only link — anyone can view without logging in. Great for sharing with friends or family.</li>
+        <li>Shared viewers can see the Itinerary, Overview, Budget, and Guides but cannot make changes.</li>
+        <li>To let someone <strong>edit</strong> the trip, add them as a collaborator: open Trip Settings (⚙ gear icon) → Collaborators → enter their email.</li>
+        <li>All edits by collaborators sync in real-time.</li>
+      </ul>
+    </div>
+
+    <!-- Sync indicator -->
+    <div style="margin:4px 28px 20px;padding:14px 16px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);display:flex;flex-direction:column;gap:8px">
       <div style="font-size:0.75rem;font-weight:600;color:var(--text-3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:2px">Sync indicator</div>
       <div style="display:flex;flex-wrap:wrap;gap:16px">
         <span style="display:inline-flex;align-items:center;gap:7px;font-size:0.8125rem;color:var(--text-2)">
           <span style="width:8px;height:8px;border-radius:50%;background:var(--success);flex-shrink:0"></span>
-          <strong style="color:var(--text)">Synced</strong> — all changes saved to the cloud
+          <strong style="color:var(--text)">Synced</strong> — all changes saved
         </span>
         <span style="display:inline-flex;align-items:center;gap:7px;font-size:0.8125rem;color:var(--text-2)">
           <span style="width:8px;height:8px;border-radius:50%;background:var(--warning);flex-shrink:0"></span>
-          <strong style="color:var(--text)">Saving…</strong> — a change is being written
+          <strong style="color:var(--text)">Saving…</strong> — write in progress
         </span>
         <span style="display:inline-flex;align-items:center;gap:7px;font-size:0.8125rem;color:var(--text-2)">
           <span style="width:8px;height:8px;border-radius:50%;background:var(--text-3);flex-shrink:0"></span>
-          <strong style="color:var(--text)">Offline</strong> — no connection; changes sync when you reconnect
+          <strong style="color:var(--text)">Offline</strong> — syncs when reconnected
         </span>
       </div>
     </div>
 
     <div class="help-modal-footer">
-      <span class="help-modal-footer-note">Reopen anytime via <strong>Help</strong> in the sidebar.</span>
+      <span class="help-modal-footer-note">Reopen anytime via <strong>?</strong> in the sidebar.</span>
       <button class="btn-primary" id="help-done-btn" style="gap:8px">
         Start planning
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
