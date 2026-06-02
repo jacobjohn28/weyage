@@ -43,12 +43,11 @@
 
   4. Paste your firebaseConfig values into the FIREBASE_CONFIG block below.
 
-  5. Add the two Google account emails of the trip travelers to the
-     ALLOWED_EMAILS array below.
+  5. Paste the Firestore security rules from SETUP.md into Firestore →
+     Rules tab. Do the same for Storage → Rules tab.
 
-  6. Paste the Firestore security rules from SETUP.md into Firestore →
-     Rules tab. Do the same for Storage → Rules tab. These rules ensure
-     only allowlisted users can read/write trip data.
+  6. Add users by creating documents in the appUsers Firestore collection
+     (keyed by lowercase email). No code changes needed to add new users.
 
   7. Authentication → Settings → Authorized domains → add your GitHub Pages
      domain (e.g. yourname.github.io). localhost is already authorized
@@ -3921,14 +3920,7 @@ const GEMINI_CONFIG = {
   model: "gemini-3.1-flash-lite",
 };
 
-/* ─────────────────────────────────────────────────────────────
-   ALLOWED USERS
-   ───────────────────────────────────────────────────────────── */
-const ALLOWED_EMAILS = [
-  "jacobjohn28@gmail.com",
-  "ssusan.koruthu@gmail.com",
-  "jjsk20112022@gmail.com",
-];
+/* Access is managed via the appUsers collection in Firestore — no hardcoded emails needed. */
 
 /* ─────────────────────────────────────────────────────────────
    TRIP CONSTANTS — pre-populated from initial planning
@@ -4191,11 +4183,6 @@ document.getElementById("google-signin").addEventListener("click", async () => {
 
 document.getElementById("signout-btn").addEventListener("click", () => signOut(auth));
 
-function isAllowed(email) {
-  if (!email) return false;
-  if (ALLOWED_EMAILS.length === 0) return false;
-  return ALLOWED_EMAILS.map(e => e.toLowerCase()).includes(email.toLowerCase());
-}
 
 function setupUserChip(user) {
   const initials = user.photoURL
@@ -4226,8 +4213,8 @@ async function seedTripIfNeeded() {
     const batch = writeBatch(db);
     batch.set(tripRef, {
       ...TRIP_SEED,
-      allowedUsers: ALLOWED_EMAILS.map(e => e.toLowerCase()),
-      createdBy: ALLOWED_EMAILS[0]?.toLowerCase() || "",
+      allowedUsers: [state.user?.email?.toLowerCase() || ""],
+      createdBy: state.user?.email?.toLowerCase() || "",
       createdAt: serverTimestamp(),
     });
     for (const town of TOWN_SEEDS) {
@@ -4245,7 +4232,7 @@ async function seedTripIfNeeded() {
     // Backfill createdBy if missing (added in multi-trip update)
     const tripData = tripSnap.data();
     if (!tripData.createdBy) {
-      batch.update(tripRef, { createdBy: ALLOWED_EMAILS[0]?.toLowerCase() || "" });
+      batch.update(tripRef, { createdBy: state.user?.email?.toLowerCase() || "" });
       backfilled++;
     }
     for (const seed of TOWN_SEEDS) {
@@ -8328,12 +8315,13 @@ async function addTripCollaborator() {
   if ((trip.allowedUsers || []).includes(email)) {
     errEl.textContent = "This person already has access."; errEl.style.display = "block"; return;
   }
-  if (!isAllowed(email)) {
-    errEl.textContent = "That email isn't on the app's access list. Ask the app owner to add it to ALLOWED_EMAILS first.";
-    errEl.style.display = "block"; return;
-  }
   errEl.style.display = "none";
   try {
+    const approvalSnap = await getDoc(doc(db, "appUsers", email));
+    if (!approvalSnap.exists()) {
+      errEl.textContent = "That email doesn't have app access yet. Ask the owner to add them in Firebase first.";
+      errEl.style.display = "block"; return;
+    }
     await updateDoc(doc(db, "trips", _tripSettingsId), { allowedUsers: arrayUnion(email) });
     document.getElementById("ts-email").value = "";
     const updated = { ...trip, allowedUsers: [...(trip.allowedUsers || []), email] };
@@ -8461,12 +8449,8 @@ async function init() {
     return;
   }
 
-  if (!isConfigured() || ALLOWED_EMAILS.length === 0) {
-    showAuthScreen(
-      !isConfigured()
-        ? "Setup required: open this file and fill in FIREBASE_CONFIG. See SETUP.md for the full walkthrough."
-        : "Setup required: add your Google emails to the ALLOWED_EMAILS array. See SETUP.md."
-    );
+  if (!isConfigured()) {
+    showAuthScreen("Setup required: open this file and fill in FIREBASE_CONFIG. See SETUP.md for the full walkthrough.");
     return;
   }
 
@@ -8483,9 +8467,16 @@ async function init() {
       showAuthScreen();
       return;
     }
-    if (!isAllowed(user.email)) {
+    try {
+      const approvalSnap = await getDoc(doc(db, "appUsers", user.email.toLowerCase()));
+      if (!approvalSnap.exists()) {
+        await signOut(auth);
+        showAuthScreen(`${user.email} doesn't have access yet. Ask the owner to add you in Firebase.`);
+        return;
+      }
+    } catch (err) {
       await signOut(auth);
-      showAuthScreen(`This trip is private. ${user.email} is not on the guest list.`);
+      showAuthScreen("Couldn't verify access. Check your connection and try again.");
       return;
     }
     setState({ user });
