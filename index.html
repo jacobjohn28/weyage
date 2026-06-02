@@ -1469,7 +1469,7 @@
   .itinerary-empty p { max-width: 320px; margin: 0 auto; font-size: 0.9375rem; line-height: 1.6; }
 
   /* Town groups */
-  .town-group { margin-bottom: 48px; }
+  .town-group { margin-bottom: 48px; scroll-margin-top: 80px; }
   .town-photo-banner {
     width: 100%; height: 200px;
     border-radius: 14px;
@@ -4017,10 +4017,13 @@ function setView(viewName) {
   const titles = { dashboard: "Overview", itinerary: "Itinerary", guides: "Guides", map: "Map", budget: "Budget", documents: "Documents" };
   document.getElementById("topbar-title").textContent = titles[viewName] || "Dashboard";
   if (viewName === "itinerary") {
-    const todayIso = localDateStr(new Date());
-    const { startDate, endDate } = state.trip || {};
-    if (startDate && endDate && todayIso >= startDate && todayIso <= endDate) {
-      pendingScrollToToday = true;
+    // Only auto-scroll to today when the user hasn't explicitly clicked a specific town
+    if (!pendingScrollTownId) {
+      const todayIso = localDateStr(new Date());
+      const { startDate, endDate } = state.trip || {};
+      if (startDate && endDate && todayIso >= startDate && todayIso <= endDate) {
+        pendingScrollToToday = true;
+      }
     }
     renderItinerary();
   }
@@ -4570,8 +4573,14 @@ function renderSidebarTowns() {
   `).join("");
   container.querySelectorAll(".nav-item[data-town]").forEach(btn => {
     btn.addEventListener("click", () => {
-      pendingScrollTownId = btn.dataset.town;
-      setView("itinerary");
+      if (state.currentView === "itinerary") {
+        // Already on itinerary — scroll directly, no re-render needed
+        const target = document.getElementById(`itinerary-town-${btn.dataset.town}`);
+        if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+      } else {
+        pendingScrollTownId = btn.dataset.town;
+        setView("itinerary");
+      }
     });
   });
 }
@@ -4851,8 +4860,14 @@ function renderDashboardTowns() {
   container.querySelectorAll(".spread[data-town-id]").forEach(card => {
     card.addEventListener("click", (e) => {
       if (e.target.closest(".spread-briefing")) return;
-      pendingScrollTownId = card.dataset.townId;
-      setView("itinerary");
+      if (state.currentView === "itinerary") {
+        // Already on itinerary — scroll directly, no re-render needed
+        const target = document.getElementById(`itinerary-town-${card.dataset.townId}`);
+        if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+      } else {
+        pendingScrollTownId = card.dataset.townId;
+        setView("itinerary");
+      }
     });
   });
 
@@ -5588,35 +5603,27 @@ function renderItinerary() {
     });
   }
 
-  // Scroll to focused town (navigated from dashboard)
+  // Scroll to focused town (navigated from overview or sidebar)
   if (pendingScrollTownId) {
     const townId = pendingScrollTownId;
-    pendingScrollTownId = null; // clear before any re-render can fire
-    // Double rAF: first frame commits DOM, second frame has final layout metrics
-    requestAnimationFrame(() => requestAnimationFrame(() => {
+    pendingScrollTownId = null;
+    // rAF lets the DOM paint before scrolling; scrollIntoView uses scroll-margin-top for offset
+    requestAnimationFrame(() => {
       const target = document.getElementById(`itinerary-town-${townId}`);
-      const main = document.querySelector(".main");
-      if (target && main) {
-        const top = target.getBoundingClientRect().top - main.getBoundingClientRect().top + main.scrollTop - 24;
-        main.scrollTo({ top, behavior: "smooth" });
-      }
-    }));
+      if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   }
 
   // Auto-scroll to today's date section when opening the tab mid-trip
   if (pendingScrollToToday) {
     pendingScrollToToday = false;
     const todayIso = localDateStr(new Date());
-    requestAnimationFrame(() => requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
       const todayList = container.querySelector(`.spot-list[data-date="${todayIso}"]`);
       if (!todayList) return;
       const dayGroup = todayList.closest(".day-group") || todayList.parentElement;
-      const main = document.querySelector(".main");
-      if (dayGroup && main) {
-        const top = dayGroup.getBoundingClientRect().top - main.getBoundingClientRect().top + main.scrollTop - 16;
-        main.scrollTo({ top, behavior: "smooth" });
-      }
-    }));
+      if (dayGroup) dayGroup.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   }
 
   const missing = state.towns.filter(
