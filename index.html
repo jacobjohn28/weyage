@@ -974,9 +974,12 @@
     content: "";
     width: 6px; height: 6px; border-radius: 50%;
     background: var(--success);
+    flex-shrink: 0;
   }
   .status-dot.offline::before { background: var(--text-3); }
   .status-dot.syncing::before { background: var(--warning); animation: pulse 1.4s ease-in-out infinite; }
+  /* Mobile topbar indicator — hidden on desktop */
+  .status-dot-mobile { display: none; }
 
   /* ============================================================
      RESPONSIVE — MOBILE
@@ -987,6 +990,7 @@
       grid-template-rows: 1fr auto;
     }
     .sidebar { display: none; }
+    .status-dot-mobile { display: inline-flex; }
 
     .topbar {
       padding: 14px 20px;
@@ -3178,7 +3182,6 @@ body.share-mode .transit-entry-del { display: none !important; }
     <div id="sidebar-towns"></div>
 
     <div class="sidebar-foot">
-      <div id="status-indicator" class="status-dot">Synced</div>
       <button class="nav-item" id="sidebar-help-btn" style="font-size:0.8125rem;opacity:0.7">
         <span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;border:1.5px solid currentColor;font-size:0.6875rem;font-weight:700;line-height:1;flex-shrink:0">?</span>
         Help
@@ -3187,6 +3190,7 @@ body.share-mode .transit-entry-del { display: none !important; }
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="16" height="16"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
         Share Itinerary
       </button>
+      <div id="status-indicator" class="status-dot" style="padding:4px 12px">Synced</div>
       <div class="user-chip">
         <div class="user-avatar" id="user-avatar">·</div>
         <div class="user-name" id="user-name">Loading…</div>
@@ -3202,6 +3206,7 @@ body.share-mode .transit-entry-del { display: none !important; }
     <header class="topbar">
       <div class="topbar-title" id="topbar-title">Itinerary</div>
       <div class="topbar-actions">
+        <div id="status-indicator-mobile" class="status-dot status-dot-mobile">Synced</div>
         <button class="icon-btn" id="theme-toggle" title="Toggle theme" aria-label="Toggle theme">
           <svg id="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
           <svg id="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="display:none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
@@ -4076,19 +4081,21 @@ document.getElementById("theme-toggle").addEventListener("click", () => {
 /* ─────────────────────────────────────────────────────────────
    ONLINE / OFFLINE STATUS
    ───────────────────────────────────────────────────────────── */
-function updateStatusIndicator() {
-  const el = document.getElementById("status-indicator");
-  if (!el) return;
-  if (!state.online) {
-    el.className = "status-dot offline";
-    el.textContent = "Offline";
-  } else {
-    el.className = "status-dot";
-    el.textContent = "Synced";
-  }
+function updateStatusIndicator(className, text) {
+  ["status-indicator", "status-indicator-mobile"].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const mobile = id === "status-indicator-mobile";
+    el.className = "status-dot" + (mobile ? " status-dot-mobile" : "") + (className ? " " + className : "");
+    el.textContent = text;
+  });
 }
-window.addEventListener("online", () => { state.online = true; updateStatusIndicator(); });
-window.addEventListener("offline", () => { state.online = false; updateStatusIndicator(); });
+// Convenience wrappers used by online/offline events and Firestore snapshot
+function _setStatusOnline() { updateStatusIndicator("", "Synced"); }
+function _setStatusOffline() { updateStatusIndicator("offline", "Offline"); }
+function _setStatusSyncing() { updateStatusIndicator("syncing", "Saving…"); }
+window.addEventListener("online", () => { state.online = true; _setStatusOnline(); });
+window.addEventListener("offline", () => { state.online = false; _setStatusOffline(); });
 
 /* ─────────────────────────────────────────────────────────────
    VIEW ROUTING
@@ -4264,15 +4271,10 @@ function listenToTrip(tripId) {
       const brandName = document.getElementById("sidebar-trip-name");
       if (brandName) brandName.textContent = data.name || "Trip";
     }
-    const el = document.getElementById("status-indicator");
-    if (el) {
-      if (snap.metadata.hasPendingWrites) {
-        el.className = "status-dot syncing";
-        el.textContent = "Saving…";
-      } else if (state.online) {
-        el.className = "status-dot";
-        el.textContent = "Synced";
-      }
+    if (snap.metadata.hasPendingWrites) {
+      _setStatusSyncing();
+    } else if (state.online) {
+      _setStatusOnline();
     }
   });
   // Towns subcollection
@@ -8512,7 +8514,7 @@ async function initSharedView(token) {
    ───────────────────────────────────────────────────────────── */
 async function init() {
   initTheme();
-  updateStatusIndicator();
+  _setStatusOnline();
 
   // Share link: skip auth, show read-only itinerary
   const shareToken = new URLSearchParams(location.search).get("share");
@@ -9249,6 +9251,25 @@ if ("serviceWorker" in navigator) {
         <div class="help-tip-desc">Tap <em>Share Itinerary</em> in the sidebar to generate a read-only link. Anyone with the link can browse your full itinerary.</div>
       </div>
 
+    </div>
+
+    <!-- Sync status legend -->
+    <div style="margin:0 28px 20px;padding:14px 16px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);display:flex;flex-direction:column;gap:8px">
+      <div style="font-size:0.75rem;font-weight:600;color:var(--text-3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:2px">Sync indicator</div>
+      <div style="display:flex;flex-wrap:wrap;gap:16px">
+        <span style="display:inline-flex;align-items:center;gap:7px;font-size:0.8125rem;color:var(--text-2)">
+          <span style="width:8px;height:8px;border-radius:50%;background:var(--success);flex-shrink:0"></span>
+          <strong style="color:var(--text)">Synced</strong> — all changes saved to the cloud
+        </span>
+        <span style="display:inline-flex;align-items:center;gap:7px;font-size:0.8125rem;color:var(--text-2)">
+          <span style="width:8px;height:8px;border-radius:50%;background:var(--warning);flex-shrink:0"></span>
+          <strong style="color:var(--text)">Saving…</strong> — a change is being written
+        </span>
+        <span style="display:inline-flex;align-items:center;gap:7px;font-size:0.8125rem;color:var(--text-2)">
+          <span style="width:8px;height:8px;border-radius:50%;background:var(--text-3);flex-shrink:0"></span>
+          <strong style="color:var(--text)">Offline</strong> — no connection; changes sync when you reconnect
+        </span>
+      </div>
     </div>
 
     <div class="help-modal-footer">
