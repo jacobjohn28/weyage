@@ -456,6 +456,21 @@
     text-align: center; padding: 64px 24px;
     color: var(--text-2);
   }
+  /* Currency chips (Trip Settings destination currencies) */
+  .currency-chips { display: flex; flex-wrap: wrap; gap: 6px; min-height: 24px; }
+  .currency-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 8px 3px 10px;
+    background: var(--accent-bg); border: 1px solid var(--accent-soft);
+    border-radius: 20px; font-size: 0.8125rem; color: var(--accent); font-weight: 600;
+  }
+  .currency-chip-remove {
+    cursor: pointer; background: none; border: none; padding: 0;
+    color: var(--accent); opacity: 0.55; font-size: 1rem; line-height: 1;
+    display: flex; align-items: center;
+  }
+  .currency-chip-remove:hover { opacity: 1; }
+
   .trips-empty-title {
     font-family: var(--font-display); font-size: 1.5rem;
     color: var(--text); margin-bottom: 8px;
@@ -3537,19 +3552,9 @@ body.share-mode .transit-entry-del { display: none !important; }
         </div>
       </div>
       <div class="field-group">
-        <label class="field-label">Primary currency</label>
-        <select class="field-input" id="ct-currency">
-          <option value="EUR">EUR — Euro</option>
-          <option value="GBP">GBP — British Pound</option>
-          <option value="USD">USD — US Dollar</option>
-          <option value="SGD">SGD — Singapore Dollar</option>
-          <option value="JPY">JPY — Japanese Yen</option>
-          <option value="AUD">AUD — Australian Dollar</option>
-          <option value="CAD">CAD — Canadian Dollar</option>
-          <option value="CHF">CHF — Swiss Franc</option>
-          <option value="THB">THB — Thai Baht</option>
-          <option value="MYR">MYR — Malaysian Ringgit</option>
-        </select>
+        <label class="field-label">Home currency</label>
+        <select class="field-input" id="ct-currency"></select>
+        <div style="font-size:0.75rem;color:var(--text-3);margin-top:4px">Add destination currencies later in Trip Settings.</div>
       </div>
       <div id="ct-error" style="display:none;padding:10px 12px;background:rgba(184,83,66,0.08);border:1px solid rgba(184,83,66,0.2);color:var(--danger);border-radius:var(--radius-sm);font-size:0.875rem"></div>
     </div>
@@ -3593,19 +3598,20 @@ body.share-mode .transit-entry-del { display: none !important; }
           </div>
         </div>
         <div class="field-group">
-          <label class="field-label">Primary currency</label>
-          <select class="field-input" id="ts-currency">
-            <option value="EUR">EUR — Euro</option>
-            <option value="GBP">GBP — British Pound</option>
-            <option value="USD">USD — US Dollar</option>
-            <option value="SGD">SGD — Singapore Dollar</option>
-            <option value="JPY">JPY — Japanese Yen</option>
-            <option value="AUD">AUD — Australian Dollar</option>
-            <option value="CAD">CAD — Canadian Dollar</option>
-            <option value="CHF">CHF — Swiss Franc</option>
-            <option value="THB">THB — Thai Baht</option>
-            <option value="MYR">MYR — Malaysian Ringgit</option>
-          </select>
+          <label class="field-label">Home currency</label>
+          <select class="field-input" id="ts-currency"></select>
+          <div style="font-size:0.75rem;color:var(--text-3);margin-top:4px">Your base currency — used for totals and conversion.</div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Destination currencies</label>
+          <div id="ts-extra-currencies" class="currency-chips"></div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <select id="ts-add-currency-sel" class="field-input" style="flex:1">
+              <option value="">Add a currency…</option>
+            </select>
+            <button type="button" id="ts-add-currency-btn" class="modal-btn-secondary" style="flex-shrink:0">Add</button>
+          </div>
+          <div style="font-size:0.75rem;color:var(--text-3);margin-top:4px">Currencies you'll spend in — shown in all price dropdowns.</div>
         </div>
         <div id="ts-save-error" style="display:none;padding:8px 12px;background:rgba(184,83,66,0.08);border:1px solid rgba(184,83,66,0.2);color:var(--danger);border-radius:var(--radius-sm);font-size:0.8125rem;margin-bottom:10px"></div>
         <button class="modal-btn-primary" id="ts-save-btn" style="width:100%">Save changes</button>
@@ -3812,13 +3818,7 @@ body.share-mode .transit-entry-del { display: none !important; }
           <div class="form-field">
             <label class="form-label" for="spot-price">Price <span style="font-weight:400;font-size:0.75rem;color:var(--text-3)">(shows in Budget tab)</span></label>
             <div style="display:flex;gap:6px">
-              <select class="form-input" id="spot-price-currency" style="width:76px;flex-shrink:0;padding-left:8px">
-                <option value="EUR">€ EUR</option>
-                <option value="SGD">S$ SGD</option>
-                <option value="USD">$ USD</option>
-                <option value="GBP">£ GBP</option>
-                <option value="AUD">A$ AUD</option>
-              </select>
+              <select class="form-input" id="spot-price-currency" style="width:86px;flex-shrink:0;padding-left:8px"></select>
               <input class="form-input" id="spot-price" type="number" min="0" step="0.01" placeholder="0.00">
             </div>
           </div>
@@ -3921,13 +3921,7 @@ body.share-mode .transit-entry-del { display: none !important; }
         <div class="form-field">
           <label class="form-label" for="accom-price">Total price</label>
           <div style="display:flex;gap:6px">
-            <select class="form-input" id="accom-price-currency" style="width:76px;flex-shrink:0;padding-left:8px">
-              <option value="EUR">€ EUR</option>
-              <option value="SGD">S$ SGD</option>
-              <option value="USD">$ USD</option>
-              <option value="GBP">£ GBP</option>
-              <option value="AUD">A$ AUD</option>
-            </select>
+            <select class="form-input" id="accom-price-currency" style="width:86px;flex-shrink:0;padding-left:8px"></select>
             <input class="form-input" id="accom-price" type="number" min="0" step="0.01" placeholder="0.00">
           </div>
         </div>
@@ -3999,13 +3993,7 @@ body.share-mode .transit-entry-del { display: none !important; }
       <div id="visit-price-spot"></div>
     </div>
     <div id="visit-price-inputs">
-      <select id="visit-price-currency" class="form-input" style="width:84px;flex-shrink:0;padding-left:8px">
-        <option value="EUR">€ EUR</option>
-        <option value="SGD">S$ SGD</option>
-        <option value="USD">$ USD</option>
-        <option value="GBP">£ GBP</option>
-        <option value="AUD">A$ AUD</option>
-      </select>
+      <select id="visit-price-currency" class="form-input" style="width:86px;flex-shrink:0;padding-left:8px"></select>
       <input id="visit-price-input" class="form-input" type="number" min="0" step="0.01" placeholder="0.00" style="flex:1">
     </div>
     <div id="visit-price-actions">
@@ -4035,13 +4023,7 @@ body.share-mode .transit-entry-del { display: none !important; }
       <button class="transit-type-btn" data-type="other">✦ Other</button>
     </div>
     <div id="transit-amount-row">
-      <select id="transit-currency" class="form-input" style="width:84px;flex-shrink:0;padding-left:8px">
-        <option value="EUR">€ EUR</option>
-        <option value="SGD">S$ SGD</option>
-        <option value="USD">$ USD</option>
-        <option value="GBP">£ GBP</option>
-        <option value="AUD">A$ AUD</option>
-      </select>
+      <select id="transit-currency" class="form-input" style="width:86px;flex-shrink:0;padding-left:8px"></select>
       <input id="transit-amount" class="form-input" type="number" min="0" step="0.01" placeholder="0.00" style="flex:1">
     </div>
     <input id="transit-note" class="form-input" type="text" maxlength="80" placeholder="Note — optional (e.g. airport → hotel)">
@@ -5500,7 +5482,7 @@ function showVisitPricePrompt(spot) {
     // Pre-fill with existing price/currency if set
     spotEl.textContent = spot.name || "";
     input.value = spot.price ? spot.price.toFixed(2) : "";
-    currSel.value = spot.priceCurrency || "EUR";
+    populateCurrencySelect(currSel, spot.priceCurrency);
 
     overlay.classList.add("open");
     // Focus the price input after the sheet animates in
@@ -6628,7 +6610,7 @@ function openModal(spot = null, presets = {}) {
   document.getElementById("visited-switch").classList.toggle("on", visitedState);
 
   document.getElementById("spot-price").value = spot ? (spot.price ?? "") : "";
-  document.getElementById("spot-price-currency").value = spot?.priceCurrency || "EUR";
+  populateCurrencySelect(document.getElementById("spot-price-currency"), spot?.priceCurrency);
   document.getElementById("spot-booking-ref").value = spot ? (spot.bookingRef || "") : "";
   priceEstimatedState = spot ? (spot.priceEstimated ?? true) : true;
   bookedState = spot ? (spot.booked ?? false) : false;
@@ -6681,7 +6663,7 @@ function openAccomModal(town) {
   document.getElementById("accom-checkout-time").value  = a.checkoutTime || "";
   document.getElementById("accom-booking-ref").value    = a.bookingRef || "";
   document.getElementById("accom-price").value          = a.price != null ? a.price : "";
-  document.getElementById("accom-price-currency").value = a.priceCurrency || "EUR";
+  populateCurrencySelect(document.getElementById("accom-price-currency"), a.priceCurrency);
   document.getElementById("accom-notes").value          = a.notes || "";
 
   const sw = document.getElementById("accom-booked-switch");
@@ -7020,7 +7002,7 @@ function showTransitSheet(townId, date, existingEntry = null) {
     // Pre-fill for edit, or reset for add
     amtInput.value  = existingEntry ? existingEntry.amount.toFixed(2) : "";
     noteInput.value = existingEntry?.note || "";
-    currSel.value   = existingEntry?.currency || town?.accommodation?.priceCurrency || "EUR";
+    populateCurrencySelect(currSel, existingEntry?.currency || town?.accommodation?.priceCurrency);
 
     // Reset save button
     const saveBtn = document.getElementById("transit-save");
@@ -7089,8 +7071,69 @@ function getBudgetCategory(spot) {
   return "Sights & Other";
 }
 
+// Full list of supported currencies — used to build selects and chips
+const CURRENCY_LIST = [
+  { code: "AED", symbol: "د.إ", label: "AED — UAE Dirham" },
+  { code: "AUD", symbol: "A$",  label: "AUD — Australian Dollar" },
+  { code: "BRL", symbol: "R$",  label: "BRL — Brazilian Real" },
+  { code: "CAD", symbol: "CA$", label: "CAD — Canadian Dollar" },
+  { code: "CHF", symbol: "CHF", label: "CHF — Swiss Franc" },
+  { code: "CNY", symbol: "¥",   label: "CNY — Chinese Yuan" },
+  { code: "CZK", symbol: "Kč",  label: "CZK — Czech Koruna" },
+  { code: "DKK", symbol: "kr",  label: "DKK — Danish Krone" },
+  { code: "EUR", symbol: "€",   label: "EUR — Euro" },
+  { code: "GBP", symbol: "£",   label: "GBP — British Pound" },
+  { code: "HKD", symbol: "HK$", label: "HKD — Hong Kong Dollar" },
+  { code: "HUF", symbol: "Ft",  label: "HUF — Hungarian Forint" },
+  { code: "IDR", symbol: "Rp",  label: "IDR — Indonesian Rupiah" },
+  { code: "INR", symbol: "₹",   label: "INR — Indian Rupee" },
+  { code: "JPY", symbol: "¥",   label: "JPY — Japanese Yen" },
+  { code: "KRW", symbol: "₩",   label: "KRW — South Korean Won" },
+  { code: "MXN", symbol: "$",   label: "MXN — Mexican Peso" },
+  { code: "MYR", symbol: "RM",  label: "MYR — Malaysian Ringgit" },
+  { code: "NOK", symbol: "kr",  label: "NOK — Norwegian Krone" },
+  { code: "NZD", symbol: "NZ$", label: "NZD — New Zealand Dollar" },
+  { code: "PHP", symbol: "₱",   label: "PHP — Philippine Peso" },
+  { code: "PLN", symbol: "zł",  label: "PLN — Polish Złoty" },
+  { code: "SAR", symbol: "ر.س", label: "SAR — Saudi Riyal" },
+  { code: "SEK", symbol: "kr",  label: "SEK — Swedish Krona" },
+  { code: "SGD", symbol: "S$",  label: "SGD — Singapore Dollar" },
+  { code: "THB", symbol: "฿",   label: "THB — Thai Baht" },
+  { code: "TRY", symbol: "₺",   label: "TRY — Turkish Lira" },
+  { code: "TWD", symbol: "NT$", label: "TWD — Taiwan Dollar" },
+  { code: "USD", symbol: "$",   label: "USD — US Dollar" },
+  { code: "VND", symbol: "₫",   label: "VND — Vietnamese Dong" },
+  { code: "ZAR", symbol: "R",   label: "ZAR — South African Rand" },
+];
+
 function currencySymbol(code) {
-  return { EUR: "€", SGD: "S$", USD: "$", GBP: "£", AUD: "A$" }[code] || code;
+  return CURRENCY_LIST.find(c => c.code === code)?.symbol || code;
+}
+
+/** All currencies configured for the active trip: home + destination */
+function getTripCurrencies() {
+  const home  = state.trip?.currency || "EUR";
+  const extra = state.trip?.extraCurrencies || [];
+  return [home, ...extra.filter(c => c !== home)];
+}
+
+/**
+ * Populate a <select> element with the trip's currencies.
+ * Preserves selectedValue; falls back to the home currency.
+ */
+function populateCurrencySelect(el, selectedValue) {
+  if (!el) return;
+  const currencies = getTripCurrencies();
+  const current    = selectedValue || currencies[0];
+  el.innerHTML = currencies.map(code => {
+    const sym = currencySymbol(code);
+    return `<option value="${code}"${code === current ? " selected" : ""}>${sym} ${code}</option>`;
+  }).join("");
+  // Keep pre-existing value if it isn't in the list (legacy data)
+  if (current && !currencies.includes(current)) {
+    el.innerHTML += `<option value="${current}" selected>${currencySymbol(current)} ${current}</option>`;
+    el.value = current;
+  }
 }
 
 function aggregateBudget() {
@@ -8583,7 +8626,10 @@ function openCreateTripModal() {
   document.getElementById("ct-name").value = "";
   document.getElementById("ct-start").value = "";
   document.getElementById("ct-end").value = "";
-  document.getElementById("ct-currency").value = "EUR";
+  const ctCurrSel = document.getElementById("ct-currency");
+  ctCurrSel.innerHTML = CURRENCY_LIST.map(c =>
+    `<option value="${c.code}"${c.code === "EUR" ? " selected" : ""}>${c.label}</option>`
+  ).join("");
   document.getElementById("ct-error").style.display = "none";
   overlay.classList.add("visible");
   document.getElementById("ct-name").focus();
@@ -8650,6 +8696,27 @@ document.getElementById("create-trip-overlay")?.addEventListener("click", (e) =>
 /* ─────────────────────────────────────────────────────────────
    TRIP SETTINGS DRAWER
    ───────────────────────────────────────────────────────────── */
+let _tsExtraCurrencies = []; // working copy of destination currencies while settings drawer is open
+
+function renderExtraCurrencyChips() {
+  const container = document.getElementById("ts-extra-currencies");
+  if (!container) return;
+  const homeCurrency = document.getElementById("ts-currency")?.value;
+  container.innerHTML = _tsExtraCurrencies.length
+    ? _tsExtraCurrencies.map(code => `
+        <span class="currency-chip">
+          ${escapeHtml(code)}
+          <button class="currency-chip-remove" data-code="${escapeHtml(code)}" aria-label="Remove ${escapeHtml(code)}" type="button">×</button>
+        </span>`).join("")
+    : `<span style="font-size:0.8125rem;color:var(--text-3);font-style:italic">None added yet</span>`;
+  container.querySelectorAll(".currency-chip-remove").forEach(btn => {
+    btn.addEventListener("click", () => {
+      _tsExtraCurrencies = _tsExtraCurrencies.filter(c => c !== btn.dataset.code);
+      renderExtraCurrencyChips();
+    });
+  });
+}
+
 function openTripSettings(tripId) {
   const trip = state.allTrips.find(t => t.id === tripId);
   if (!trip) return;
@@ -8659,7 +8726,41 @@ function openTripSettings(tripId) {
   document.getElementById("ts-name").value = trip.name || "";
   document.getElementById("ts-start").value = trip.startDate || "";
   document.getElementById("ts-end").value = trip.endDate || "";
-  document.getElementById("ts-currency").value = trip.currency || "EUR";
+
+  // Populate home currency select from full CURRENCY_LIST
+  const tsCurrSel = document.getElementById("ts-currency");
+  tsCurrSel.innerHTML = CURRENCY_LIST.map(c =>
+    `<option value="${c.code}"${c.code === (trip.currency || "EUR") ? " selected" : ""}>${c.label}</option>`
+  ).join("");
+
+  // Populate add-currency dropdown (exclude home currency + already added ones)
+  function refreshAddCurrencySel() {
+    const home   = document.getElementById("ts-currency").value;
+    const taken  = new Set([home, ..._tsExtraCurrencies]);
+    const addSel = document.getElementById("ts-add-currency-sel");
+    addSel.innerHTML = `<option value="">Add a currency…</option>` +
+      CURRENCY_LIST.filter(c => !taken.has(c.code)).map(c =>
+        `<option value="${c.code}">${c.label}</option>`
+      ).join("");
+  }
+  _tsExtraCurrencies = [...(trip.extraCurrencies || [])];
+  renderExtraCurrencyChips();
+  refreshAddCurrencySel();
+
+  // Re-filter add-currency dropdown when home currency changes
+  tsCurrSel.onchange = () => { refreshAddCurrencySel(); renderExtraCurrencyChips(); };
+
+  // Add currency button
+  const addBtn = document.getElementById("ts-add-currency-btn");
+  addBtn.onclick = () => {
+    const sel  = document.getElementById("ts-add-currency-sel");
+    const code = sel.value;
+    if (!code || _tsExtraCurrencies.includes(code)) return;
+    _tsExtraCurrencies.push(code);
+    renderExtraCurrencyChips();
+    refreshAddCurrencySel();
+  };
+
   document.getElementById("ts-save-error").style.display = "none";
   const saveBtn = document.getElementById("ts-save-btn");
   saveBtn.textContent = "Save changes"; saveBtn.disabled = false;
@@ -8736,6 +8837,7 @@ async function saveTripSettings() {
       startDate: document.getElementById("ts-start").value || null,
       endDate: document.getElementById("ts-end").value || null,
       currency: document.getElementById("ts-currency").value,
+      extraCurrencies: _tsExtraCurrencies,
     });
     // Reflect in active trip sidebar label before closing
     if (savedTripId === activeTripId) {
