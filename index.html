@@ -414,6 +414,43 @@
     transition: background 150ms var(--ease);
   }
   .trip-card-menu-btn:hover { background: rgba(0,0,0,0.58); }
+  /* City photo collage inside trip card */
+  .trip-card-collage {
+    display: flex; width: 100%; height: 100%;
+  }
+  .trip-card-collage-strip {
+    flex: 1; overflow: hidden; position: relative;
+  }
+  .trip-card-collage-strip + .trip-card-collage-strip {
+    border-left: 1.5px solid var(--surface);
+  }
+  .trip-card-collage-strip img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+    transition: transform 320ms var(--ease);
+  }
+  .trip-card:hover .trip-card-collage-strip img { transform: scale(1.05); }
+  /* Mobile thumbnail collage */
+  .trips-mobile-card-thumb {
+    width: 64px; height: 56px; border-radius: 8px;
+    overflow: hidden; flex-shrink: 0;
+    background: var(--surface-2); border: 1px solid var(--border);
+    display: flex;
+  }
+  .trips-mobile-card-thumb-strip {
+    flex: 1; overflow: hidden;
+  }
+  .trips-mobile-card-thumb-strip + .trips-mobile-card-thumb-strip {
+    border-left: 1px solid var(--surface);
+  }
+  .trips-mobile-card-thumb-strip img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+  }
+  .trips-mobile-card-thumb-placeholder {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display); font-size: 1.25rem;
+    color: var(--text-3); font-style: italic;
+  }
   .trips-empty {
     grid-column: 1/-1;
     text-align: center; padding: 64px 24px;
@@ -4411,6 +4448,15 @@ function listenToTrip(tripId) {
     if (!existing || JSON.stringify(existing.cityNames) !== JSON.stringify(names)) {
       updateDoc(doc(db, "trips", tripId), { cityNames: names }).catch(() => {});
     }
+    // One-time migration: populate cityPhotos on the trip doc from existing town photoUrls
+    // so the trips-screen collage works without needing extra reads per card.
+    if (existing && !existing.cityPhotos) {
+      const photoMap = {};
+      towns.forEach(t => { if (t.photoUrl) photoMap[t.id] = t.photoUrl; });
+      if (Object.keys(photoMap).length) {
+        updateDoc(doc(db, "trips", tripId), { cityPhotos: photoMap }).catch(() => {});
+      }
+    }
   });
   // Spots subcollection
   _spotsUnsub = onSnapshot(collection(db, "trips", tripId, "spots"), (snap) => {
@@ -4711,10 +4757,17 @@ function renderTripCards() {
     return Number(b) - Number(a);
   });
 
-  const cardHTML = t => `
+  const cardHTML = t => {
+    const photoUrls = Object.values(t.cityPhotos || {}).filter(Boolean).slice(0, 5);
+    const imgArea = photoUrls.length
+      ? `<div class="trip-card-collage">${photoUrls.map(url =>
+          `<div class="trip-card-collage-strip"><img src="${escapeHtml(url)}" alt="" loading="lazy" onerror="this.closest('.trip-card-collage-strip').style.display='none'"></div>`
+        ).join("")}</div>`
+      : `<div class="trip-card-img-placeholder">${escapeHtml((t.name || "T").charAt(0))}</div>`;
+    return `
     <div class="trip-card" data-trip-id="${escapeHtml(t.id)}">
       <div class="trip-card-img">
-        <div class="trip-card-img-placeholder">${escapeHtml((t.name || "T").charAt(0))}</div>
+        ${imgArea}
         <button class="trip-card-menu-btn" data-trip-id="${escapeHtml(t.id)}" title="Trip settings" aria-label="Trip settings">⋯</button>
       </div>
       <div class="trip-card-body">
@@ -4724,6 +4777,7 @@ function renderTripCards() {
         <div class="trip-card-meta"><span>${escapeHtml(t.currency || "")}</span></div>
       </div>
     </div>`;
+  };
 
   grid.innerHTML = years.map(year => {
     const collapsed = collapsedYears.has(year);
@@ -4785,8 +4839,16 @@ function renderMobileTripList() {
     return Number(b) - Number(a);
   });
 
-  const mobileCardHTML = t => `
+  const mobileCardHTML = t => {
+    const photoUrls = Object.values(t.cityPhotos || {}).filter(Boolean).slice(0, 3);
+    const thumbArea = photoUrls.length
+      ? `<div class="trips-mobile-card-thumb">${photoUrls.map(url =>
+          `<div class="trips-mobile-card-thumb-strip"><img src="${escapeHtml(url)}" alt="" loading="lazy" onerror="this.closest('.trips-mobile-card-thumb-strip').style.display='none'"></div>`
+        ).join("")}</div>`
+      : `<div class="trips-mobile-card-thumb"><div class="trips-mobile-card-thumb-placeholder">${escapeHtml((t.name || "T").charAt(0))}</div></div>`;
+    return `
     <div class="trips-mobile-card" data-trip-id="${escapeHtml(t.id)}">
+      ${thumbArea}
       <div class="trips-mobile-card-info">
         <div class="trips-mobile-card-name">${escapeHtml(t.name)}</div>
         <div class="trips-mobile-card-dates">${t.startDate ? fmtDateRange(t.startDate, t.endDate) : "Dates TBD"}</div>
@@ -4794,6 +4856,7 @@ function renderMobileTripList() {
       </div>
       <button class="trips-mobile-card-menu-btn" data-trip-id="${escapeHtml(t.id)}" title="Trip settings" aria-label="Trip settings">⋯</button>
     </div>`;
+  };
 
   container.innerHTML = years.map(year => {
     const collapsed = collapsedYears.has(year);
@@ -4901,7 +4964,8 @@ async function fetchPexelsPhotos(query, count = 3) {
   }
 }
 
-let _photoPickerTownId = null;
+let _photoPickerTownId   = null;
+let _photoPickerTownName = null;
 let _backfillQueue   = [];   // [{id, name}, …] — towns still to process during backfill
 let _backfillTotal   = 0;    // total towns when backfill started (for progress display)
 let _pendingBackfill = false; // set before switchTrip(); cleared when towns load
@@ -4909,7 +4973,8 @@ let _pendingBackfill = false; // set before switchTrip(); cleared when towns loa
 function closePhotoPicker(cancelBackfill = false) {
   document.getElementById("photo-picker-overlay").classList.remove("visible");
   document.body.style.overflow = "";
-  _photoPickerTownId = null;
+  _photoPickerTownId   = null;
+  _photoPickerTownName = null;
 
   if (cancelBackfill || !_backfillQueue.length) {
     _backfillQueue = [];
@@ -4954,7 +5019,8 @@ function startPhotoBackfill() {
 
 async function openPhotoPicker(townId, townName) {
   if (!PEXELS_CONFIG.apiKey) return;
-  _photoPickerTownId = townId;
+  _photoPickerTownId   = townId;
+  _photoPickerTownName = townName;
 
   const overlay = document.getElementById("photo-picker-overlay");
   document.getElementById("photo-picker-city-name").textContent = townName;
@@ -5010,11 +5076,17 @@ async function openPhotoPicker(townId, townName) {
       const tid = _photoPickerTownId;
       closePhotoPicker();
       try {
+        // Save photo to the town document
         await updateDoc(doc(db, "trips", activeTripId, "towns", tid), {
           photoUrl: photo.url,
           photoCredit: photo.credit,
           photoCreditUrl: photo.creditUrl
         });
+        // Mirror the URL on the parent trip doc so trip cards can show a collage
+        // without additional Firestore reads
+        updateDoc(doc(db, "trips", activeTripId), {
+          [`cityPhotos.${tid}`]: photo.url
+        }).catch(() => {});
       } catch (err) {
         console.error("Failed to save photo:", err);
       }
