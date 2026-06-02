@@ -3149,7 +3149,7 @@ body.share-mode .transit-entry-del { display: none !important; }
     <!-- Back to all trips (shown when inside a trip) -->
     <button class="nav-item" id="sidebar-back-btn" style="margin-bottom:8px;color:var(--accent);font-size:0.8125rem">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="14" height="14"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-      All trips
+      All Trips
     </button>
 
     <div class="nav-section">Views</div>
@@ -3183,9 +3183,9 @@ body.share-mode .transit-entry-del { display: none !important; }
         <span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;border:1.5px solid currentColor;font-size:0.6875rem;font-weight:700;line-height:1;flex-shrink:0">?</span>
         Help
       </button>
-      <button class="nav-item share-link-btn" id="sidebar-share-btn" style="margin:6px 0 0;font-size:0.8125rem;opacity:0.7">
+      <button class="nav-item share-link-btn" id="sidebar-share-btn" style="font-size:0.8125rem;opacity:0.7">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="16" height="16"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-        Share itinerary
+        Share Itinerary
       </button>
       <div class="user-chip">
         <div class="user-avatar" id="user-avatar">·</div>
@@ -3335,7 +3335,7 @@ body.share-mode .transit-entry-del { display: none !important; }
         </button>
         <button class="bottom-nav-item share-link-btn" id="sheet-share-btn" style="width:100%;flex-direction:row;gap:14px;padding:14px 24px;justify-content:flex-start;font-size:1rem">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-          Share itinerary
+          Share Itinerary
         </button>
         <button class="bottom-nav-item" id="sheet-help-btn" style="width:100%;flex-direction:row;gap:14px;padding:14px 24px;justify-content:flex-start;font-size:1rem">
           <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;border:1.75px solid currentColor;font-size:0.8125rem;font-weight:700;line-height:1;flex-shrink:0">?</span>
@@ -3344,7 +3344,7 @@ body.share-mode .transit-entry-del { display: none !important; }
         <div style="margin:6px 24px 0;border-top:1px solid var(--border)"></div>
         <button class="bottom-nav-item" id="sheet-all-trips-btn" style="width:100%;flex-direction:row;gap:14px;padding:14px 24px;justify-content:flex-start;font-size:1rem;color:var(--accent)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-          All trips
+          All Trips
         </button>
       </div>
     </div>
@@ -9072,7 +9072,7 @@ document.getElementById("lb-img").addEventListener("touchend", e => {
 // Sidebar back button → exit to trip list
 document.getElementById("sidebar-back-btn")?.addEventListener("click", exitToTripList);
 
-// Mobile "All trips" sheet button
+// Mobile "All Trips" sheet button
 document.getElementById("sheet-all-trips-btn")?.addEventListener("click", () => {
   // Close the more sheet first
   moreSheet.style.display = "none";
@@ -9246,7 +9246,7 @@ if ("serviceWorker" in navigator) {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
         </div>
         <div class="help-tip-title">Share your trip</div>
-        <div class="help-tip-desc">Tap <em>Share itinerary</em> in the sidebar to generate a read-only link. Anyone with the link can browse your full itinerary.</div>
+        <div class="help-tip-desc">Tap <em>Share Itinerary</em> in the sidebar to generate a read-only link. Anyone with the link can browse your full itinerary.</div>
       </div>
 
     </div>
