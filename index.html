@@ -67,7 +67,7 @@
   ✓ Light/dark theme with system detection and manual override
   ✓ Responsive app shell (sidebar on desktop, bottom nav on mobile)
   ✓ Empty view containers ready for Phase 2 content
-  ✓ Seeded trip data (France itinerary, towns) created on first sign-in
+  ✓ New trips start empty — add cities from the Itinerary or Overview tab
   ✓ Connection status indicator
   ✓ Reactive state store with Firestore listeners
 
@@ -3929,58 +3929,6 @@ const GEMINI_CONFIG = {
 // to avoid re-render loops. Set by switchTrip(), read by all Firestore helpers.
 let activeTripId = null;
 let _tripSettingsId = null; // trip whose settings drawer is currently open
-const TRIP_SEED = {
-  name: "France, printemps",
-  startDate: "2026-05-28",
-  endDate: "2026-06-14",
-  currency: "EUR",
-  tags: ["Must-Try", "UNESCO", "Hidden Gem", "Local Favorite", "Splurge", "Reservation"],
-  paymentMethods: ["Card", "Cash", "Revolut"],
-  categories: ["Food", "Sights", "Transport", "Lodging", "Shopping", "Other"],
-};
-const TOWN_SEEDS = [
-  {
-    id: "paris", name: "Paris", country: "France",
-    arrivalDate: "2026-05-28", departureDate: "2026-06-01",
-    lat: 48.8566, lng: 2.3522, order: 1,
-    tagline: "France · The City of Light",
-    caption: "Boulevards, bistros, an iron lattice on the skyline.",
-    wikipediaArticle: "Eiffel_Tower"
-  },
-  {
-    id: "annecy", name: "Annecy", country: "France",
-    arrivalDate: "2026-06-01", departureDate: "2026-06-04",
-    lat: 45.8992, lng: 6.1294, order: 2,
-    tagline: "Savoie · The Venice of the Alps",
-    caption: "Turquoise alpine water with mountains keeping watch.",
-    wikipediaArticle: "Lake_Annecy"
-  },
-  {
-    id: "nice", name: "Nice", country: "France",
-    arrivalDate: "2026-06-04", departureDate: "2026-06-07",
-    lat: 43.7102, lng: 7.2620, order: 3,
-    tagline: "Côte d'Azur · The Pearl of the Riviera",
-    caption: "Mediterranean blue and the long curve of the Promenade.",
-    wikipediaArticle: "Promenade_des_Anglais"
-  },
-  {
-    id: "aix-en-provence", name: "Aix-en-Provence", country: "France",
-    arrivalDate: "2026-06-07", departureDate: "2026-06-11",
-    lat: 43.5297, lng: 5.4474, order: 4,
-    tagline: "Provence · A Thousand Fountains",
-    caption: "Lavender rows under the slow light of Provence.",
-    wikipediaArticle: "Plateau_de_Valensole",
-    customImage: "https://commons.wikimedia.org/wiki/Special:FilePath/Lavender_field_and_Mont_Ventoux.jpg"
-  },
-  {
-    id: "fontainebleau", name: "Fontainebleau", country: "France",
-    arrivalDate: "2026-06-11", departureDate: "2026-06-14",
-    lat: 48.4022, lng: 2.7000, order: 5,
-    tagline: "Île-de-France · The Royal Forest",
-    caption: "A royal château hemmed by one of France's oldest forests.",
-    wikipediaArticle: "Palace_of_Fontainebleau"
-  },
-];
 
 /* ─────────────────────────────────────────────────────────────
    STATE STORE — tiny reactive object
@@ -4205,63 +4153,6 @@ function setupUserChip(user) {
 /* ─────────────────────────────────────────────────────────────
    FIRESTORE: SEED + LISTEN
    ───────────────────────────────────────────────────────────── */
-async function seedTripIfNeeded() {
-  const tripRef = doc(db, "trips", activeTripId);
-  const tripSnap = await getDoc(tripRef);
-  if (!tripSnap.exists()) {
-    // First-time seed
-    const batch = writeBatch(db);
-    batch.set(tripRef, {
-      ...TRIP_SEED,
-      allowedUsers: [state.user?.email?.toLowerCase() || ""],
-      createdBy: state.user?.email?.toLowerCase() || "",
-      createdAt: serverTimestamp(),
-    });
-    for (const town of TOWN_SEEDS) {
-      const townRef = doc(db, "trips", activeTripId, "towns", town.id);
-      batch.set(townRef, { ...town, createdAt: serverTimestamp() });
-    }
-    await batch.commit();
-    console.log("Seeded trip with 5 towns.");
-  } else {
-    // Backfill for existing trip — add new fields, refresh editorial copy.
-    // Never overwrites user customisations (we only set what's not already set,
-    // except for editorial fields managed by the seed: caption, tagline, wikipediaArticle).
-    const batch = writeBatch(db);
-    let backfilled = 0;
-    // Backfill createdBy if missing (added in multi-trip update)
-    const tripData = tripSnap.data();
-    if (!tripData.createdBy) {
-      batch.update(tripRef, { createdBy: state.user?.email?.toLowerCase() || "" });
-      backfilled++;
-    }
-    for (const seed of TOWN_SEEDS) {
-      const townRef = doc(db, "trips", activeTripId, "towns", seed.id);
-      const townSnap = await getDoc(townRef);
-      if (!townSnap.exists()) {
-        batch.set(townRef, { ...seed, createdAt: serverTimestamp() });
-        backfilled++;
-        continue;
-      }
-      const data = townSnap.data();
-      const patch = {};
-      // Always refresh seed-managed editorial fields if they differ
-      if (data.wikipediaArticle !== seed.wikipediaArticle) patch.wikipediaArticle = seed.wikipediaArticle;
-      if (data.caption !== seed.caption) patch.caption = seed.caption;
-      if (data.tagline !== seed.tagline) patch.tagline = seed.tagline;
-      // customImage: only set if seed provides one (never clears user-uploaded)
-      if (seed.customImage && data.customImage !== seed.customImage) patch.customImage = seed.customImage;
-      if (Object.keys(patch).length) {
-        batch.update(townRef, patch);
-        backfilled++;
-      }
-    }
-    if (backfilled) {
-      await batch.commit();
-      console.log(`Backfilled ${backfilled} town(s).`);
-    }
-  }
-}
 
 // Listener unsubscribe handles — stored so we can detach when switching trips
 let _tripUnsub = null, _townsUnsub = null, _spotsUnsub = null;
@@ -4363,10 +4254,6 @@ function switchTrip(tripId) {
   localStorage.removeItem("last-screen");
   listenToTrip(tripId);
   showApp();
-  // Run France seed/backfill only for the original trip
-  if (tripId === "france-spring-2026") {
-    seedTripIfNeeded().catch(err => console.warn("Background seed error:", err));
-  }
 }
 
 // ── Exit back to trip list ───────────────────────────────────────────────────
@@ -4895,6 +4782,22 @@ async function generateCityBriefing(townId, town) {
 
 function renderDashboardTowns() {
   const container = document.getElementById("dashboard-towns");
+  if (!container) return;
+
+  if (!state.towns.length) {
+    container.innerHTML = `
+      <div class="itinerary-empty" style="padding:48px 24px">
+        <p style="font-size:1.0625rem;font-weight:500;color:var(--text);margin-bottom:8px">No cities yet</p>
+        <p style="margin-bottom:28px">Add your first city to start building your trip overview.</p>
+        <button class="btn-primary" id="dashboard-add-city-btn" style="padding:10px 22px;font-size:0.9375rem">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="margin-right:6px;vertical-align:-2px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add a city
+        </button>
+      </div>`;
+    container.querySelector("#dashboard-add-city-btn")?.addEventListener("click", () => openTownEditModal());
+    return;
+  }
+
   const typeLabel = { sight: "Sights", restaurant: "Restaurants", cafe: "Cafés", experience: "Experiences", transport: "Transport" };
   const typeOrder = ["sight", "restaurant", "cafe", "experience", "transport"];
 
@@ -5082,10 +4985,8 @@ function renderDashboardMeta() {
 }
 
 subscribe(() => {
-  if (state.towns.length) {
-    renderSidebarTowns();
-    renderDashboardTowns();
-  }
+  renderSidebarTowns();
+  renderDashboardTowns();
   renderDashboardMeta();
   renderDashboardToday();
   if (state.currentView === "itinerary") renderItinerary();
