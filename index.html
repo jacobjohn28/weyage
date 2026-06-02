@@ -4582,7 +4582,11 @@ function renderSidebarTowns() {
       if (state.currentView === "itinerary") {
         // Already on itinerary — scroll directly, no re-render needed
         const target = document.getElementById(`itinerary-town-${btn.dataset.town}`);
-        if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+        const main = document.querySelector(".main");
+        if (target && main) {
+          const top = main.scrollTop + target.getBoundingClientRect().top - main.getBoundingClientRect().top - 80;
+          main.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+        }
       } else {
         pendingScrollTownId = btn.dataset.town;
         setView("itinerary");
@@ -4869,7 +4873,11 @@ function renderDashboardTowns() {
       if (state.currentView === "itinerary") {
         // Already on itinerary — scroll directly, no re-render needed
         const target = document.getElementById(`itinerary-town-${card.dataset.townId}`);
-        if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+        const main = document.querySelector(".main");
+        if (target && main) {
+          const top = main.scrollTop + target.getBoundingClientRect().top - main.getBoundingClientRect().top - 80;
+          main.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+        }
       } else {
         pendingScrollTownId = card.dataset.townId;
         setView("itinerary");
@@ -5613,10 +5621,15 @@ function renderItinerary() {
   if (pendingScrollTownId) {
     const townId = pendingScrollTownId;
     pendingScrollTownId = null;
-    // rAF lets the DOM paint before scrolling; scrollIntoView uses scroll-margin-top for offset
+    // Use explicit main.scrollTo() rather than scrollIntoView() — Safari on mobile does not
+    // reliably detect CSS-Grid-sized elements as scroll containers for scrollIntoView.
     requestAnimationFrame(() => {
       const target = document.getElementById(`itinerary-town-${townId}`);
-      if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+      const main = document.querySelector(".main");
+      if (target && main) {
+        const top = main.scrollTop + target.getBoundingClientRect().top - main.getBoundingClientRect().top - 80;
+        main.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+      }
     });
   }
 
@@ -5628,7 +5641,11 @@ function renderItinerary() {
       const todayList = container.querySelector(`.spot-list[data-date="${todayIso}"]`);
       if (!todayList) return;
       const dayGroup = todayList.closest(".day-group") || todayList.parentElement;
-      if (dayGroup) dayGroup.scrollIntoView({ behavior: "smooth", block: "start" });
+      const main = document.querySelector(".main");
+      if (dayGroup && main) {
+        const top = main.scrollTop + dayGroup.getBoundingClientRect().top - main.getBoundingClientRect().top - 80;
+        main.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+      }
     });
   }
 
