@@ -8282,6 +8282,17 @@ async function generateAndCopyShareLink(btn) {
   }
 }
 
+function showInvalidShareLink() {
+  document.getElementById("boot-screen").classList.add("hidden");
+  document.getElementById("app").classList.add("visible");
+  document.querySelector(".main").innerHTML = `
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:16px;color:var(--text-3);padding:40px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="40" height="40"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <strong style="color:var(--text-1);font-size:1.1rem">Invalid or expired link</strong>
+      <span style="font-size:0.875rem">Ask the trip organiser to share a fresh link.</span>
+    </div>`;
+}
+
 async function initSharedView(token) {
   await initFirebase();
   try {
@@ -8297,37 +8308,37 @@ async function initSharedView(token) {
   document.body.classList.add("share-mode");
   setState({ shareMode: true, currentView: "itinerary" });
 
-  // Load trip + verify token
-  activeTripId = "france-spring-2026";
+  // Find the trip that owns this share token.
+  // IMPORTANT — Firestore rules must allow anonymous reads for shared trips:
+  //   match /trips/{tripId} {
+  //     allow read: if request.auth != null && resource.data.shareToken != null;
+  //     ... existing rules ...
+  //   }
+  try {
+    const snap = await getDocs(query(collection(db, "trips"), where("shareToken", "==", token)));
+    if (snap.empty) { showInvalidShareLink(); return; }
+    activeTripId = snap.docs[0].id;
+  } catch (err) {
+    console.error("Share token lookup failed:", err);
+    showInvalidShareLink();
+    return;
+  }
+
   listenToTrip(activeTripId);
 
-  // Wait for first snapshot (trip data) before rendering
+  // Wait for first snapshot before rendering
   let resolved = false;
   const unsub = subscribe(() => {
     if (!state.trip || resolved) return;
     resolved = true;
     unsub();
 
-    if (state.trip.shareToken !== token) {
-      document.getElementById("boot-screen").classList.add("hidden");
-      const app = document.getElementById("app");
-      app.classList.add("visible");
-      document.querySelector(".main").innerHTML = `
-        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:16px;color:var(--text-3);padding:40px">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="40" height="40"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <strong style="color:var(--text-1);font-size:1.1rem">Invalid or expired link</strong>
-          <span style="font-size:0.875rem">Ask the trip organiser to share a fresh link.</span>
-        </div>`;
-      return;
-    }
-
-    // Valid token — show app
     const s = state.trip.startDate ? new Date(state.trip.startDate + "T00:00:00") : null;
     const e = state.trip.endDate   ? new Date(state.trip.endDate   + "T00:00:00") : null;
     const startStr = s ? s.toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "";
     const endStr   = e ? e.toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "";
     const dates = startStr && endStr ? ` | ${startStr} – ${endStr}` : "";
-    document.getElementById("share-banner-trip").textContent = "France Trip" + dates;
+    document.getElementById("share-banner-trip").textContent = (state.trip.name || "Trip") + dates;
     document.getElementById("boot-screen").classList.add("hidden");
     document.getElementById("app").classList.add("visible");
 
