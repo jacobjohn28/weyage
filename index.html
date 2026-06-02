@@ -3126,6 +3126,10 @@ body.share-mode .transit-entry-del { display: none !important; }
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
         New trip
       </button>
+      <button class="nav-item" id="trips-site-settings-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="16" height="16"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Site Settings
+      </button>
       <div class="user-chip">
         <div class="user-avatar" id="trips-user-avatar">·</div>
         <div class="user-name" id="trips-user-name">…</div>
@@ -3142,6 +3146,9 @@ body.share-mode .transit-entry-del { display: none !important; }
       <h2 class="trips-heading">Your trips</h2>
       <div style="display:flex;align-items:center;gap:10px">
         <!-- Sign-out button: only shown on mobile where the sidebar (and its sign-out) is hidden -->
+        <button class="icon-btn" id="trips-site-settings-btn-mobile" title="Site settings" aria-label="Site settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="18" height="18"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
         <button class="icon-btn trips-mobile-signout-btn" id="trips-main-signout-btn" title="Sign out" aria-label="Sign out">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="18" height="18"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         </button>
@@ -3212,10 +3219,6 @@ body.share-mode .transit-entry-del { display: none !important; }
     <div id="sidebar-towns"></div>
 
     <div class="sidebar-foot">
-      <button class="nav-item" id="sidebar-site-settings-btn" style="font-size:0.8125rem;opacity:0.7">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="16" height="16"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        Site Settings
-      </button>
       <button class="nav-item" id="sidebar-help-btn" style="font-size:0.8125rem;opacity:0.7">
         <span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;border:1.5px solid currentColor;font-size:0.6875rem;font-weight:700;line-height:1;flex-shrink:0">?</span>
         Help
@@ -3380,10 +3383,6 @@ body.share-mode .transit-entry-del { display: none !important; }
           <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;border:1.75px solid currentColor;font-size:0.8125rem;font-weight:700;line-height:1;flex-shrink:0">?</span>
           Help
         </button>
-        <button class="bottom-nav-item" id="sheet-site-settings-btn" style="width:100%;flex-direction:row;gap:14px;padding:14px 24px;justify-content:flex-start;font-size:1rem">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-          Site Settings
-        </button>
         <div style="margin:6px 24px 0;border-top:1px solid var(--border)"></div>
         <button class="bottom-nav-item" id="sheet-all-trips-btn" style="width:100%;flex-direction:row;gap:14px;padding:14px 24px;justify-content:flex-start;font-size:1rem;color:var(--accent)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
@@ -3507,15 +3506,6 @@ body.share-mode .transit-entry-del { display: none !important; }
           </div>
           <div id="ts-add-error" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(184,83,66,0.08);border:1px solid rgba(184,83,66,0.2);color:var(--danger);border-radius:var(--radius-sm);font-size:0.8125rem"></div>
         </div>
-      </div>
-
-      <!-- Photo backfill shortcut -->
-      <div id="ts-backfill-section" style="display:none">
-        <div style="font-size:0.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-3);margin-bottom:14px">Photos</div>
-        <button id="ts-backfill-btn" class="modal-btn-secondary" style="width:100%" type="button">
-          Backfill photos for existing cities
-        </button>
-        <div id="ts-backfill-hint" style="font-size:0.75rem;color:var(--text-3);margin-top:5px;text-align:center"></div>
       </div>
 
       <!-- Danger zone (creator only) -->
@@ -4315,7 +4305,6 @@ function listenToTrip(tripId) {
     if (snap.exists()) {
       const data = snap.data();
       setState({ trip: { id: snap.id, ...data } });
-      if (data.geminiApiKey) GEMINI_CONFIG.apiKey = data.geminiApiKey;
       // Update sidebar brand with trip name
       const brandName = document.getElementById("sidebar-trip-name");
       if (brandName) brandName.textContent = data.name || "Trip";
@@ -4331,6 +4320,10 @@ function listenToTrip(tripId) {
     const towns = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     towns.sort((a, b) => (a.order || 0) - (b.order || 0));
     setState({ towns });
+    if (_pendingBackfill && towns.length > 0) {
+      _pendingBackfill = false;
+      setTimeout(startPhotoBackfill, 600);
+    }
     // Sync cityNames onto the trip doc so the trips list can display them without extra fetches.
     // This also backfills legacy trips that predate the cityNames field.
     const names = towns.map(t => t.name);
@@ -4401,7 +4394,7 @@ function switchTrip(tripId) {
 function exitToTripList() {
   detachTripListeners();
   activeTripId = null;
-  GEMINI_CONFIG.apiKey = "";
+  // GEMINI_CONFIG.apiKey is site-level — persists across trips
   // PEXELS_CONFIG.apiKey is site-level — persists across trips
   setState({ trip: null, towns: [], spots: [] });
   localStorage.removeItem("last-trip-id");
@@ -4418,6 +4411,7 @@ async function loadSiteConfig() {
     if (snap.exists()) {
       const d = snap.data();
       if (d.pexelsApiKey) PEXELS_CONFIG.apiKey = d.pexelsApiKey;
+      if (d.geminiApiKey) GEMINI_CONFIG.apiKey = d.geminiApiKey;
     }
   } catch (err) {
     console.warn("Site config unavailable:", err);
@@ -4425,11 +4419,27 @@ async function loadSiteConfig() {
 }
 
 function openSiteSettings() {
-  document.getElementById("site-settings-pexels-key").value = PEXELS_CONFIG.apiKey || "";
-  const errEl = document.getElementById("site-settings-error");
-  errEl.style.display = "none";
+  document.getElementById("site-settings-gemini-key").value = GEMINI_CONFIG.apiKey || "";
+  document.getElementById("site-settings-error").style.display = "none";
   const btn = document.getElementById("site-settings-save-btn");
   btn.textContent = "Save"; btn.disabled = false;
+
+  // Populate trip dropdown
+  const select = document.getElementById("site-settings-trip-select");
+  select.innerHTML = '<option value="">Select a trip…</option>';
+  (state.allTrips || []).forEach(t => {
+    const opt = document.createElement("option");
+    opt.value = t.id;
+    opt.textContent = t.name || "Untitled trip";
+    select.appendChild(opt);
+  });
+  document.getElementById("site-settings-backfill-btn").disabled = true;
+  document.getElementById("site-settings-backfill-hint").style.display = "none";
+
+  // Show/hide backfill section based on whether Pexels key is configured
+  document.getElementById("site-settings-backfill-section").style.display =
+    PEXELS_CONFIG.apiKey ? "" : "none";
+
   document.getElementById("site-settings-overlay").classList.add("visible");
   document.body.style.overflow = "hidden";
   pushModalHistory();
@@ -4441,14 +4451,14 @@ function closeSiteSettings() {
 }
 
 async function saveSiteSettings() {
-  const key = document.getElementById("site-settings-pexels-key").value.trim();
+  const geminiKey = document.getElementById("site-settings-gemini-key").value.trim();
   const errEl = document.getElementById("site-settings-error");
   const btn = document.getElementById("site-settings-save-btn");
   errEl.style.display = "none";
   btn.textContent = "Saving…"; btn.disabled = true;
   try {
-    await setDoc(doc(db, "config", "site"), { pexelsApiKey: key }, { merge: true });
-    PEXELS_CONFIG.apiKey = key;
+    await setDoc(doc(db, "config", "site"), { geminiApiKey: geminiKey }, { merge: true });
+    GEMINI_CONFIG.apiKey = geminiKey;
     btn.textContent = "Saved!";
     setTimeout(() => closeSiteSettings(), 900);
   } catch (err) {
@@ -4814,6 +4824,7 @@ async function fetchPexelsPhotos(query, count = 3) {
 let _photoPickerTownId = null;
 let _backfillQueue   = [];   // [{id, name}, …] — towns still to process during backfill
 let _backfillTotal   = 0;    // total towns when backfill started (for progress display)
+let _pendingBackfill = false; // set before switchTrip(); cleared when towns load
 
 function closePhotoPicker(cancelBackfill = false) {
   document.getElementById("photo-picker-overlay").classList.remove("visible");
@@ -4831,9 +4842,22 @@ function closePhotoPicker(cancelBackfill = false) {
   setTimeout(() => openPhotoPicker(next.id, next.name), 180);
 }
 
+function startBackfillForTrip(tripId) {
+  if (!tripId) return;
+  if (!PEXELS_CONFIG.apiKey) {
+    const hint = document.getElementById("site-settings-backfill-hint");
+    hint.textContent = "No Pexels API key configured — add pexelsApiKey to config/site in Firestore first.";
+    hint.style.display = "block";
+    return;
+  }
+  closeSiteSettings();
+  _pendingBackfill = true;
+  setTimeout(() => switchTrip(tripId), 150);
+}
+
 function startPhotoBackfill() {
   if (!PEXELS_CONFIG.apiKey) {
-    alert("Save your Pexels API key in Trip Settings first, then try again.");
+    alert("No Pexels API key configured. Add pexelsApiKey to config/site in Firestore.");
     return;
   }
   const missing = (state.towns || []).filter(t => !t.photoUrl);
@@ -4842,8 +4866,6 @@ function startPhotoBackfill() {
     return;
   }
 
-  // Close the settings drawer, then start the sequential picker
-  closeTripSettings();
   _backfillQueue = missing.map(t => ({ id: t.id, name: t.name }));
   _backfillTotal = _backfillQueue.length;
   const first = _backfillQueue.shift();
@@ -8374,20 +8396,21 @@ document.getElementById("photo-picker-overlay")?.addEventListener("click", (e) =
 // Skip: close this one and advance to the next in the sequence
 document.getElementById("photo-picker-skip")?.addEventListener("click", () => closePhotoPicker(false));
 
-// Backfill button in Trip Settings
-document.getElementById("ts-backfill-btn")?.addEventListener("click", startPhotoBackfill);
-
-// Site settings buttons
-document.getElementById("sidebar-site-settings-btn")?.addEventListener("click", openSiteSettings);
-document.getElementById("sheet-site-settings-btn")?.addEventListener("click", () => {
-  moreSheet.style.display = "none";
-  openSiteSettings();
-});
+// Site settings — accessible from All Trips screen
+document.getElementById("trips-site-settings-btn")?.addEventListener("click", openSiteSettings);
+document.getElementById("trips-site-settings-btn-mobile")?.addEventListener("click", openSiteSettings);
 document.getElementById("site-settings-close")?.addEventListener("click", closeSiteSettings);
 document.getElementById("site-settings-cancel-btn")?.addEventListener("click", closeSiteSettings);
 document.getElementById("site-settings-save-btn")?.addEventListener("click", saveSiteSettings);
 document.getElementById("site-settings-overlay")?.addEventListener("click", (e) => {
   if (e.target === document.getElementById("site-settings-overlay")) closeSiteSettings();
+});
+document.getElementById("site-settings-trip-select")?.addEventListener("change", (e) => {
+  document.getElementById("site-settings-backfill-btn").disabled = !e.target.value;
+});
+document.getElementById("site-settings-backfill-btn")?.addEventListener("click", () => {
+  const tripId = document.getElementById("site-settings-trip-select").value;
+  startBackfillForTrip(tripId);
 });
 
 // Sidebar help button (desktop)
@@ -8485,23 +8508,6 @@ function openTripSettings(tripId) {
   document.getElementById("ts-start").value = trip.startDate || "";
   document.getElementById("ts-end").value = trip.endDate || "";
   document.getElementById("ts-currency").value = trip.currency || "EUR";
-  // Backfill button — show only when a Pexels key is configured and there are towns without photos
-  const missingPhotos = (state.towns || []).filter(t => !t.photoUrl);
-  const backfillSection = document.getElementById("ts-backfill-section");
-  if (PEXELS_CONFIG.apiKey && missingPhotos.length) {
-    backfillSection.style.display = "block";
-    document.getElementById("ts-backfill-btn").textContent =
-      `Backfill photos for existing cities (${missingPhotos.length} without a photo)`;
-    document.getElementById("ts-backfill-hint").textContent =
-      "Steps through each city one by one — pick your favourite from 3 options.";
-  } else if (!PEXELS_CONFIG.apiKey && (state.towns || []).length) {
-    backfillSection.style.display = "block";
-    document.getElementById("ts-backfill-btn").textContent = "Backfill photos for existing cities";
-    document.getElementById("ts-backfill-hint").textContent = "Save your Pexels API key above first, then come back here.";
-  } else {
-    backfillSection.style.display = "none";
-  }
-
   document.getElementById("ts-save-error").style.display = "none";
   const saveBtn = document.getElementById("ts-save-btn");
   saveBtn.textContent = "Save changes"; saveBtn.disabled = false;
@@ -9034,7 +9040,7 @@ function showKeyEntryForm(onSave) {
     saveBtn.disabled = true;
     saveBtn.textContent = "Saving…";
     try {
-      await updateDoc(doc(db, "trips", activeTripId), { geminiApiKey: key });
+      await setDoc(doc(db, "config", "site"), { geminiApiKey: key }, { merge: true });
       GEMINI_CONFIG.apiKey = key;
       onSave();
     } catch (err) {
@@ -9516,7 +9522,7 @@ if ("serviceWorker" in navigator) {
      SITE SETTINGS MODAL
      ============================================================ -->
 <div class="modal-overlay" id="site-settings-overlay">
-  <div class="modal" style="max-width:440px">
+  <div class="modal" style="max-width:480px">
     <div class="modal-header">
       <h3 class="modal-title">Site Settings</h3>
       <button class="icon-btn modal-close-btn" id="site-settings-close">
@@ -9524,15 +9530,36 @@ if ("serviceWorker" in navigator) {
       </button>
     </div>
     <div class="modal-body">
-      <div style="font-size:0.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-3);margin-bottom:14px">Photo API</div>
-      <div class="field-group">
-        <label class="field-label">Pexels API key</label>
-        <input class="field-input" type="password" id="site-settings-pexels-key" placeholder="Paste your Pexels API key…" autocomplete="off" spellcheck="false">
-        <div style="font-size:0.75rem;color:var(--text-3);margin-top:5px">
-          Set once here — applies to all trips automatically. Get a free key at <a href="https://www.pexels.com/api/" target="_blank" rel="noopener" style="color:var(--accent)">pexels.com/api</a>.
+
+      <!-- Gemini API key -->
+      <div style="margin-bottom:28px">
+        <div style="font-size:0.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-3);margin-bottom:14px">AI Briefings</div>
+        <div class="field-group">
+          <label class="field-label">Gemini API key</label>
+          <input class="field-input" type="password" id="site-settings-gemini-key" placeholder="Paste your Gemini API key…" autocomplete="off" spellcheck="false">
+          <div style="font-size:0.75rem;color:var(--text-3);margin-top:5px">
+            Set once here — applies to all trips. Get a free key at <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener" style="color:var(--accent)">Google AI Studio</a>.
+          </div>
         </div>
       </div>
-      <div id="site-settings-error" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(184,83,66,0.08);border:1px solid rgba(184,83,66,0.2);color:var(--danger);border-radius:var(--radius-sm);font-size:0.8125rem"></div>
+
+      <!-- Photo backfill -->
+      <div id="site-settings-backfill-section">
+        <div style="font-size:0.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-3);margin-bottom:14px">Photos</div>
+        <div class="field-group">
+          <label class="field-label">Add missing photos to a trip</label>
+          <select class="field-input" id="site-settings-trip-select" style="cursor:pointer">
+            <option value="">Select a trip…</option>
+          </select>
+          <div style="font-size:0.75rem;color:var(--text-3);margin-top:5px">Steps through each city without a photo — pick your favourite from 3 options.</div>
+        </div>
+        <button id="site-settings-backfill-btn" class="modal-btn-secondary" style="width:100%;margin-top:4px" type="button" disabled>
+          Start photo backfill
+        </button>
+        <div id="site-settings-backfill-hint" style="font-size:0.75rem;color:var(--text-3);margin-top:6px;text-align:center;display:none"></div>
+      </div>
+
+      <div id="site-settings-error" style="display:none;margin-top:12px;padding:8px 12px;background:rgba(184,83,66,0.08);border:1px solid rgba(184,83,66,0.2);color:var(--danger);border-radius:var(--radius-sm);font-size:0.8125rem"></div>
     </div>
     <div class="modal-footer">
       <button class="modal-btn-secondary" id="site-settings-cancel-btn">Cancel</button>
