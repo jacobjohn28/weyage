@@ -2458,6 +2458,91 @@
     display: flex; gap: 10px; flex-shrink: 0;
   }
 
+  /* Trip settings — participants list */
+  .ts-member-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 0; border-bottom: 1px solid var(--border);
+  }
+  .ts-member-item:last-child { border-bottom: none; }
+  .ts-member-avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem; font-weight: 600; color: #fff; flex-shrink: 0;
+  }
+  .ts-member-name { flex: 1; font-size: 0.875rem; }
+  .ts-member-remove {
+    background: none; border: none; cursor: pointer; padding: 4px 6px;
+    color: var(--text-3); border-radius: var(--radius-sm); font-size: 1rem;
+    line-height: 1; transition: color 150ms;
+  }
+  .ts-member-remove:hover { color: var(--danger); }
+
+  /* Payer chips (expense modal "Who paid?" selector) */
+  .payer-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .payer-chip {
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 10px 4px 6px; border-radius: 100px;
+    border: 1.5px solid var(--border); cursor: pointer;
+    font-size: 0.8125rem; transition: border-color 150ms, background 150ms;
+    user-select: none;
+  }
+  .payer-chip.selected { border-color: var(--accent); background: var(--accent-bg); }
+  .payer-chip-avatar {
+    width: 20px; height: 20px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.625rem; font-weight: 600; color: #fff; flex-shrink: 0;
+  }
+
+  /* Custom split rows (expense modal) */
+  .split-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 0; border-bottom: 1px solid var(--border);
+  }
+  .split-row:last-child { border-bottom: none; }
+  .split-row-name {
+    flex: 1; font-size: 0.875rem;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .split-row-input {
+    width: 80px; padding: 5px 8px;
+    border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+    font-size: 0.875rem; text-align: right;
+    background: var(--surface-2); color: var(--text);
+  }
+  .split-row-input:focus { outline: none; border-color: var(--accent); }
+
+  /* Group balances card (budget tab) */
+  .group-balances-card {
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px; margin-bottom: 24px;
+  }
+  .group-balances-heading {
+    font-size: 0.6875rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--text-3); margin-bottom: 12px;
+  }
+  .balance-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 0.875rem;
+  }
+  .balance-row:last-child { border-bottom: none; }
+  .balance-from {
+    flex: 1; display: flex; align-items: center; gap: 6px;
+    min-width: 0; flex-wrap: wrap;
+  }
+  .balance-amount { font-variant-numeric: tabular-nums; font-weight: 600; flex-shrink: 0; }
+  .balance-avatar {
+    width: 22px; height: 22px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.625rem; font-weight: 600; color: #fff; flex-shrink: 0;
+  }
+  .balance-settle-btn {
+    padding: 4px 10px; border-radius: var(--radius-sm); font-size: 0.75rem;
+    background: var(--accent-bg); border: 1.5px solid var(--accent-soft);
+    color: var(--accent); cursor: pointer; transition: background 150ms; flex-shrink: 0;
+  }
+  .balance-settle-btn:hover { background: var(--accent-soft); }
+  body.share-mode .balance-settle-btn { display: none !important; }
+
   /* Documents view */
   .docs-town-group { margin-bottom: 32px; }
   .docs-town-label {
@@ -3695,6 +3780,18 @@ body.share-mode .transit-entry-del { display: none !important; }
         </div>
       </div>
 
+      <!-- Participants (expense splitting) -->
+      <div>
+        <div style="font-size:0.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-3);margin-bottom:6px">Participants</div>
+        <div style="font-size:0.8125rem;color:var(--text-3);margin-bottom:12px">People in your group who share expenses.</div>
+        <div id="ts-members-list" style="margin-bottom:12px"></div>
+        <div style="display:flex;gap:8px">
+          <input class="field-input" type="text" id="ts-member-name" placeholder="Name (e.g. Alice)" autocomplete="off" maxlength="40" style="flex:1">
+          <button type="button" id="ts-add-member-btn" class="modal-btn-secondary" style="flex-shrink:0">Add</button>
+        </div>
+        <div id="ts-member-error" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(184,83,66,0.08);border:1px solid rgba(184,83,66,0.2);color:var(--danger);border-radius:var(--radius-sm);font-size:0.8125rem"></div>
+      </div>
+
       <!-- Danger zone (creator only) -->
       <div id="ts-danger-section" style="display:none;padding-top:20px;border-top:1px solid var(--border)">
         <div style="font-size:0.875rem;color:var(--text-2);margin-bottom:12px">Danger zone</div>
@@ -4161,6 +4258,17 @@ body.share-mode .transit-entry-del { display: none !important; }
       <div class="form-field">
         <div class="form-label">Note <span style="font-weight:400;color:var(--text-3)">(optional)</span></div>
         <input id="exp-note" class="form-input" type="text" placeholder="Any extra detail…" maxlength="200" autocomplete="off">
+      </div>
+      <!-- Split section (shown only when trip has 2+ participants) -->
+      <div id="exp-split-section" style="display:none">
+        <div class="form-label" style="margin-bottom:8px">Who paid?</div>
+        <div id="exp-payer-chips" class="payer-chips"></div>
+        <div class="visited-toggle" id="exp-split-toggle" role="button" tabindex="0" style="margin-top:10px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="16" height="16"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span class="visited-toggle-label" style="font-size:0.875rem">Split equally among all</span>
+          <div class="toggle-switch" id="exp-split-equal-switch"></div>
+        </div>
+        <div id="exp-custom-splits" style="display:none;margin-top:10px"></div>
       </div>
       <div id="exp-error" style="display:none;padding:8px 12px;background:rgba(184,83,66,0.08);border:1px solid rgba(184,83,66,0.2);color:var(--danger);border-radius:var(--radius-sm);font-size:0.8125rem"></div>
     </div>
@@ -7321,6 +7429,72 @@ function populateCurrencySelect(el, selectedValue) {
    ───────────────────────────────────────────────────────────── */
 let _editingExpenseId = null;
 let _expEstimated = false;
+let _expPayerId = null;
+let _expSplitEqual = true;
+let _expCustomSplits = {};
+
+function renderPayerChips(members) {
+  const container = document.getElementById("exp-payer-chips");
+  if (!container) return;
+  container.innerHTML = members.map(m => `
+    <div class="payer-chip${m.id === _expPayerId ? " selected" : ""}" data-member-id="${escapeHtml(m.id)}">
+      <div class="payer-chip-avatar" style="background:${escapeHtml(m.color || "#888")}">${escapeHtml(m.name.charAt(0).toUpperCase())}</div>
+      ${escapeHtml(m.name)}
+    </div>`).join("");
+  container.querySelectorAll(".payer-chip").forEach(chip => {
+    chip.addEventListener("click", () => {
+      _expPayerId = chip.dataset.memberId;
+      renderPayerChips(members);
+    });
+  });
+}
+
+function updateSplitTotalCheck() {
+  const checkEl = document.getElementById("split-total-check");
+  if (!checkEl) return;
+  const totalAmount = parseFloat(document.getElementById("exp-amount").value) || 0;
+  const splitTotal = Object.values(_expCustomSplits).reduce((s, v) => s + v, 0);
+  const diff = Math.abs(totalAmount - splitTotal);
+  if (totalAmount > 0 && diff < 0.01) {
+    checkEl.textContent = "✓ Splits add up correctly";
+    checkEl.style.color = "var(--accent)";
+  } else if (totalAmount > 0) {
+    checkEl.textContent = `Splits total ${splitTotal.toFixed(2)}, expected ${totalAmount.toFixed(2)}`;
+    checkEl.style.color = "var(--danger)";
+  } else {
+    checkEl.textContent = "";
+  }
+}
+
+function renderCustomSplits(members) {
+  const container = document.getElementById("exp-custom-splits");
+  if (!container) return;
+  const totalAmount = parseFloat(document.getElementById("exp-amount").value) || 0;
+  const perPerson = members.length > 0 ? totalAmount / members.length : 0;
+  container.innerHTML = `
+    <div style="font-size:0.8125rem;color:var(--text-3);margin-bottom:8px">Custom amounts owed (${document.getElementById("exp-currency").value}):</div>
+    ${members.map(m => {
+      const owed = _expCustomSplits[m.id] !== undefined ? _expCustomSplits[m.id] : parseFloat(perPerson.toFixed(2));
+      if (_expCustomSplits[m.id] === undefined) _expCustomSplits[m.id] = parseFloat(perPerson.toFixed(2));
+      return `
+        <div class="split-row">
+          <div class="split-row-name">
+            <div class="balance-avatar" style="background:${escapeHtml(m.color || "#888")};width:20px;height:20px;font-size:0.6rem">${escapeHtml(m.name.charAt(0).toUpperCase())}</div>
+            ${escapeHtml(m.name)}
+          </div>
+          <input class="split-row-input" type="number" min="0" step="0.01"
+            data-member-id="${escapeHtml(m.id)}" value="${owed.toFixed(2)}">
+        </div>`;
+    }).join("")}
+    <div id="split-total-check" style="font-size:0.75rem;margin-top:8px;text-align:right"></div>`;
+  container.querySelectorAll(".split-row-input").forEach(input => {
+    input.addEventListener("input", () => {
+      _expCustomSplits[input.dataset.memberId] = parseFloat(input.value) || 0;
+      updateSplitTotalCheck();
+    });
+  });
+  updateSplitTotalCheck();
+}
 
 function openExpenseModal(expenseId = null) {
   _editingExpenseId = expenseId;
@@ -7369,6 +7543,28 @@ function openExpenseModal(expenseId = null) {
   _expEstimated = existing?.isEstimated ?? false;
   document.getElementById("exp-estimated-switch").classList.toggle("on", _expEstimated);
 
+  // Split section — only shown when trip has 2+ participants
+  const members = state.trip?.members || [];
+  const splitSection = document.getElementById("exp-split-section");
+  if (members.length >= 2) {
+    splitSection.style.display = "block";
+    // Default payer: match logged-in user's name, else first member
+    _expPayerId = existing?.paidBy
+      || members.find(m => m.name.toLowerCase() === (state.user?.displayName || "").toLowerCase())?.id
+      || members[0]?.id
+      || null;
+    _expSplitEqual = existing?.splitType !== "custom";
+    _expCustomSplits = {};
+    if (existing?.splits) existing.splits.forEach(s => { _expCustomSplits[s.memberId] = s.owed; });
+    renderPayerChips(members);
+    document.getElementById("exp-split-equal-switch").classList.toggle("on", _expSplitEqual);
+    const customDiv = document.getElementById("exp-custom-splits");
+    customDiv.style.display = _expSplitEqual ? "none" : "block";
+    if (!_expSplitEqual) renderCustomSplits(members);
+  } else {
+    splitSection.style.display = "none";
+  }
+
   document.getElementById("exp-error").style.display = "none";
   document.getElementById("expense-modal-overlay").classList.add("visible");
   document.body.style.overflow = "hidden";
@@ -7401,6 +7597,26 @@ async function saveExpense() {
 
   const data = { description, amount, currency, category, date, townId, paymentMethod, note, isEstimated: _expEstimated };
 
+  // Attach split data when trip has participants
+  const members = state.trip?.members || [];
+  if (members.length >= 2 && _expPayerId) {
+    data.paidBy = _expPayerId;
+    data.splitType = _expSplitEqual ? "equal" : "custom";
+    if (_expSplitEqual) {
+      const perPerson = amount / members.length;
+      data.splits = members.map(m => ({ memberId: m.id, owed: perPerson }));
+    } else {
+      data.splits = members.map(m => ({ memberId: m.id, owed: _expCustomSplits[m.id] || 0 }));
+      const splitTotal = data.splits.reduce((s, x) => s + x.owed, 0);
+      if (Math.abs(splitTotal - amount) > 0.05) {
+        errEl.textContent = `Custom splits total ${splitTotal.toFixed(2)} but expense is ${amount.toFixed(2)} — please adjust.`;
+        errEl.style.display = "block";
+        saveBtn.disabled = false;
+        return;
+      }
+    }
+  }
+
   try {
     if (_editingExpenseId) {
       await updateDoc(doc(db, "trips", activeTripId, "expenses", _editingExpenseId), data);
@@ -7413,6 +7629,36 @@ async function saveExpense() {
     errEl.style.display = "block";
   } finally {
     saveBtn.disabled = false;
+  }
+}
+
+async function settleUp(fromMemberId, toMemberId, amount, currency) {
+  const members = state.trip?.members || [];
+  const fromMember = members.find(m => m.id === fromMemberId);
+  const toMember   = members.find(m => m.id === toMemberId);
+  if (!fromMember || !toMember || !activeTripId) return;
+  currency = currency || state.trip?.currency || "EUR";
+  const sym = currencySymbol(currency);
+  if (!confirm(`Record that ${fromMember.name} pays ${toMember.name} ${sym}${amount.toFixed(2)}?`)) return;
+  try {
+    await addDoc(collection(db, "trips", activeTripId, "expenses"), {
+      description: `${fromMember.name} → ${toMember.name} (settle up)`,
+      amount,
+      currency,
+      category: "Settlement",
+      date: new Date().toISOString().slice(0, 10),
+      townId: null,
+      paymentMethod: "",
+      note: "",
+      isEstimated: false,
+      isSettlement: true,
+      paidBy: fromMemberId,
+      splitType: "custom",
+      splits: [{ memberId: toMemberId, owed: amount }],
+      createdAt: serverTimestamp(),
+    });
+  } catch (err) {
+    alert("Failed to record settlement: " + err.message);
   }
 }
 
@@ -7647,7 +7893,11 @@ function renderBudget() {
   if (entries.length === 0) {
     Object.values(budgetChartInstances).forEach(c => c.destroy());
     budgetChartInstances = {};
-    content.innerHTML = `<p style="color:var(--text-3);font-size:0.9375rem;padding:8px 0">No prices added yet — edit any spot and enter a price to start tracking your budget.</p>`;
+    const gbHTML = renderGroupBalances();
+    content.innerHTML = gbHTML + `<p style="color:var(--text-3);font-size:0.9375rem;padding:8px 0">No prices added yet — edit any spot and enter a price to start tracking your budget.</p>`;
+    content.querySelectorAll(".balance-settle-btn").forEach(btn => {
+      btn.addEventListener("click", () => settleUp(btn.dataset.from, btn.dataset.to, parseFloat(btn.dataset.amount), btn.dataset.currency));
+    });
     return;
   }
 
@@ -7801,7 +8051,12 @@ function renderBudget() {
       ${transitBlocksHTML}
     </div>`;
 
-  content.innerHTML = sgdSummary + sectionsHTML + unbookedHTML + transitLogHTML;
+  content.innerHTML = renderGroupBalances() + sgdSummary + sectionsHTML + unbookedHTML + transitLogHTML;
+
+  // Settle-up buttons (group balances card)
+  content.querySelectorAll(".balance-settle-btn").forEach(btn => {
+    btn.addEventListener("click", () => settleUp(btn.dataset.from, btn.dataset.to, parseFloat(btn.dataset.amount), btn.dataset.currency));
+  });
 
   // Refresh exchange rates
   document.getElementById("budget-refresh-rates-btn")?.addEventListener("click", e => {
@@ -9029,6 +9284,152 @@ document.getElementById("create-trip-overlay")?.addEventListener("click", (e) =>
    TRIP SETTINGS DRAWER
    ───────────────────────────────────────────────────────────── */
 let _tsExtraCurrencies = []; // working copy of destination currencies while settings drawer is open
+let _tsMembers = [];          // working copy of trip participants while settings drawer is open
+
+const MEMBER_COLORS = [
+  "#4E8774","#5B8CCC","#C86B4B","#8E6BBE",
+  "#B8874E","#4DA6A8","#CC6B8E","#7A9E3E",
+];
+
+function emailToName(email) {
+  return email.split("@")[0]
+    .replace(/[._+-]/g, " ")
+    .replace(/\b\w/g, c => c.toUpperCase())
+    .trim();
+}
+
+function membersWithCollaborators(trip) {
+  // Returns a members array that always includes every collaborator.
+  // Existing members (by email) are preserved; new collaborators are appended.
+  const allEmails = [...new Set([trip.createdBy, ...(trip.allowedUsers || [])].filter(Boolean))];
+  const current   = (trip.members || []).map(m => ({ ...m }));
+  allEmails.forEach((email, i) => {
+    if (!current.some(m => m.email === email)) {
+      current.push({
+        id:    "mbr-" + Date.now().toString(36) + i,
+        name:  emailToName(email),
+        color: MEMBER_COLORS[current.length % MEMBER_COLORS.length],
+        email,
+      });
+    }
+  });
+  return current;
+}
+
+function renderTripSettingsMembers() {
+  const container = document.getElementById("ts-members-list");
+  if (!container) return;
+  if (!_tsMembers.length) {
+    container.innerHTML = `<div style="font-size:0.8125rem;color:var(--text-3);font-style:italic;padding:4px 0">No participants yet.</div>`;
+    return;
+  }
+  container.innerHTML = _tsMembers.map(m => `
+    <div class="ts-member-item">
+      <div class="ts-member-avatar" style="background:${escapeHtml(m.color || "#888")}">${escapeHtml(m.name.charAt(0).toUpperCase())}</div>
+      <span class="ts-member-name">${escapeHtml(m.name)}</span>
+      <button class="ts-member-remove" data-remove-id="${escapeHtml(m.id)}" title="Remove" type="button">×</button>
+    </div>`).join("");
+  container.querySelectorAll(".ts-member-remove").forEach(btn => {
+    btn.addEventListener("click", () => {
+      _tsMembers = _tsMembers.filter(m => m.id !== btn.dataset.removeId);
+      renderTripSettingsMembers();
+    });
+  });
+}
+
+function calculateGroupBalances() {
+  const members = state.trip?.members;
+  if (!members || members.length < 2) return {};
+  const splitExpenses = (state.expenses || []).filter(e => e.paidBy && e.splits?.length);
+  // Net balance per currency per member
+  const netByCurrency = {};
+  splitExpenses.forEach(exp => {
+    const cur = exp.currency || state.trip?.currency || "EUR";
+    if (!netByCurrency[cur]) {
+      const obj = {};
+      members.forEach(m => { obj[m.id] = 0; });
+      netByCurrency[cur] = obj;
+    }
+    const net = netByCurrency[cur];
+    if (!(exp.paidBy in net)) return;
+    net[exp.paidBy] += exp.amount || 0;
+    (exp.splits || []).forEach(s => { if (s.memberId in net) net[s.memberId] -= s.owed; });
+  });
+  // Greedy simplification per currency
+  const result = {};
+  Object.entries(netByCurrency).forEach(([cur, net]) => {
+    const creditors = members
+      .filter(m => net[m.id] > 0.005)
+      .map(m => ({ ...m, bal: net[m.id] }))
+      .sort((a, b) => b.bal - a.bal);
+    const debtors = members
+      .filter(m => net[m.id] < -0.005)
+      .map(m => ({ ...m, bal: -net[m.id] }))
+      .sort((a, b) => b.bal - a.bal);
+    const txns = [];
+    let ci = 0, di = 0;
+    while (ci < creditors.length && di < debtors.length) {
+      const c = creditors[ci], d = debtors[di];
+      const transfer = Math.min(c.bal, d.bal);
+      txns.push({ from: d, to: c, amount: transfer, currency: cur });
+      c.bal -= transfer; d.bal -= transfer;
+      if (c.bal < 0.005) ci++;
+      if (d.bal < 0.005) di++;
+    }
+    if (txns.length) result[cur] = txns;
+  });
+  return result;
+}
+
+function renderGroupBalances() {
+  const members = state.trip?.members;
+  if (!members || members.length < 2) return "";
+  const splitExpenses = (state.expenses || []).filter(e => e.paidBy && e.splits?.length);
+  if (!splitExpenses.length) return `
+    <div class="group-balances-card">
+      <div class="group-balances-heading">Group Balances</div>
+      <p style="font-size:0.875rem;color:var(--text-3);margin:0">No split expenses yet — add an expense and assign a payer.</p>
+    </div>`;
+  const balances = calculateGroupBalances();
+  const homeCurrency = state.trip?.currency || "EUR";
+  const currencies = Object.keys(balances).sort((a, b) => {
+    if (a === homeCurrency) return -1; if (b === homeCurrency) return 1;
+    return a.localeCompare(b);
+  });
+  if (!currencies.length) return `
+    <div class="group-balances-card">
+      <div class="group-balances-heading">Group Balances</div>
+      <p style="font-size:0.875rem;color:var(--text-3);margin:0">All settled up! ✓</p>
+    </div>`;
+  const fmt = n => n.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  let rowsHTML = "";
+  currencies.forEach(cur => {
+    const sym = currencySymbol(cur);
+    (balances[cur] || []).forEach(t => {
+      rowsHTML += `
+        <div class="balance-row">
+          <div class="balance-from">
+            <div class="balance-avatar" style="background:${escapeHtml(t.from.color || "#888")}">${escapeHtml(t.from.name.charAt(0).toUpperCase())}</div>
+            <span>${escapeHtml(t.from.name)}</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13" style="color:var(--text-3);flex-shrink:0"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            <div class="balance-avatar" style="background:${escapeHtml(t.to.color || "#888")}">${escapeHtml(t.to.name.charAt(0).toUpperCase())}</div>
+            <span>${escapeHtml(t.to.name)}</span>
+          </div>
+          <span class="balance-amount">${sym}${fmt(t.amount)}</span>
+          <button class="balance-settle-btn"
+            data-from="${escapeHtml(t.from.id)}"
+            data-to="${escapeHtml(t.to.id)}"
+            data-amount="${t.amount}"
+            data-currency="${escapeHtml(cur)}">Settle up</button>
+        </div>`;
+    });
+  });
+  return `
+    <div class="group-balances-card" id="group-balances-card">
+      <div class="group-balances-heading">Group Balances</div>
+      ${rowsHTML}
+    </div>`;
+}
 
 function renderExtraCurrencyChips() {
   const container = document.getElementById("ts-extra-currencies");
@@ -9102,6 +9503,26 @@ function openTripSettings(tripId) {
   document.getElementById("ts-email").value = "";
   document.getElementById("ts-add-error").style.display = "none";
 
+  // Participants (expense splitting) — always include all collaborators
+  _tsMembers = membersWithCollaborators(trip);
+  renderTripSettingsMembers();
+  document.getElementById("ts-member-name").value = "";
+  document.getElementById("ts-member-error").style.display = "none";
+  document.getElementById("ts-add-member-btn").onclick = () => {
+    const nameInput = document.getElementById("ts-member-name");
+    const errEl = document.getElementById("ts-member-error");
+    const name = nameInput.value.trim();
+    if (!name) { errEl.textContent = "Enter a name."; errEl.style.display = "block"; return; }
+    if (_tsMembers.some(m => m.name.toLowerCase() === name.toLowerCase())) {
+      errEl.textContent = "A participant with this name already exists."; errEl.style.display = "block"; return;
+    }
+    errEl.style.display = "none";
+    const color = MEMBER_COLORS[_tsMembers.length % MEMBER_COLORS.length];
+    _tsMembers.push({ id: "mbr-" + Date.now().toString(36), name, color });
+    nameInput.value = "";
+    renderTripSettingsMembers();
+  };
+
   // Danger zone — creator only
   const isCreator = trip.createdBy === state.user?.email?.toLowerCase();
   document.getElementById("ts-danger-section").style.display = isCreator ? "block" : "none";
@@ -9170,6 +9591,7 @@ async function saveTripSettings() {
       endDate: document.getElementById("ts-end").value || null,
       currency: document.getElementById("ts-currency").value,
       extraCurrencies: _tsExtraCurrencies,
+      members: _tsMembers,
     });
     // Reflect in active trip sidebar label before closing
     if (savedTripId === activeTripId) {
@@ -9197,10 +9619,21 @@ async function addTripCollaborator() {
   }
   errEl.style.display = "none";
   try {
-    await updateDoc(doc(db, "trips", _tripSettingsId), { allowedUsers: arrayUnion(email) });
+    // Build the updated members list — append new collaborator if not already a participant
+    const updatedMembers = membersWithCollaborators({
+      ...trip,
+      allowedUsers: [...(trip.allowedUsers || []), email],
+    });
+    await updateDoc(doc(db, "trips", _tripSettingsId), {
+      allowedUsers: arrayUnion(email),
+      members: updatedMembers,
+    });
     document.getElementById("ts-email").value = "";
-    const updated = { ...trip, allowedUsers: [...(trip.allowedUsers || []), email] };
+    const updated = { ...trip, allowedUsers: [...(trip.allowedUsers || []), email], members: updatedMembers };
     renderTripSettingsCollaborators(updated);
+    // Refresh participants list in the same settings drawer
+    _tsMembers = updatedMembers.map(m => ({ ...m }));
+    renderTripSettingsMembers();
   } catch (err) {
     errEl.textContent = "Failed to add collaborator: " + (err.message || err.code);
     errEl.style.display = "block";
@@ -9924,6 +10357,47 @@ document.getElementById("exp-estimated-toggle")?.addEventListener("click", () =>
   _expEstimated = !_expEstimated;
   document.getElementById("exp-estimated-switch").classList.toggle("on", _expEstimated);
 });
+
+document.getElementById("exp-split-toggle")?.addEventListener("click", () => {
+  _expSplitEqual = !_expSplitEqual;
+  document.getElementById("exp-split-equal-switch").classList.toggle("on", _expSplitEqual);
+  const customDiv = document.getElementById("exp-custom-splits");
+  customDiv.style.display = _expSplitEqual ? "none" : "block";
+  if (!_expSplitEqual) renderCustomSplits(state.trip?.members || []);
+});
+
+// Enter key in ts-member-name triggers Add
+document.getElementById("ts-member-name")?.addEventListener("keydown", e => {
+  if (e.key === "Enter") { e.preventDefault(); document.getElementById("ts-add-member-btn")?.click(); }
+});
+
+/**
+ * prepareSplitwisePayload — build a Splitwise-compatible expense array
+ * for all split expenses in the active trip.
+ * Usage (browser console): prepareSplitwisePayload()
+ */
+function prepareSplitwisePayload(tripData) {
+  const members  = (tripData?.members  || state.trip?.members  || []);
+  const expenses = (tripData?.expenses || state.expenses || []);
+  return expenses
+    .filter(e => e.paidBy && e.splits?.length && !e.isSettlement)
+    .map(e => ({
+      cost:          e.amount.toFixed(2),
+      currency_code: e.currency,
+      description:   e.description,
+      details:       e.note || "",
+      date:          e.date,
+      users: members.map(m => {
+        const split = (e.splits || []).find(s => s.memberId === m.id);
+        return {
+          user_id:    m.id,
+          paid_share: m.id === e.paidBy ? e.amount.toFixed(2) : "0.00",
+          owed_share: split ? split.owed.toFixed(2) : "0.00",
+        };
+      }),
+    }));
+}
+window.prepareSplitwisePayload = prepareSplitwisePayload;
 
 init().catch((err) => {
   console.error("Boot error:", err);
