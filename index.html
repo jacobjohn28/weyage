@@ -2477,6 +2477,27 @@
   }
   .ts-member-remove:hover { color: var(--danger); }
 
+  /* Collapsible sections in Trip Settings */
+  .ts-collapsible-section { border-top: 1px solid var(--border); padding-top: 20px; }
+  .ts-section-toggle {
+    display: flex; align-items: center; gap: 10px;
+    cursor: pointer; user-select: none;
+    width: 100%; background: none; border: none; padding: 0; text-align: left;
+  }
+  .ts-section-toggle-title {
+    font-size: 0.6875rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--text-3); flex: 1;
+  }
+  .ts-section-count {
+    font-size: 0.75rem; font-weight: 500; color: var(--text-3);
+    background: var(--surface-2); border: 1px solid var(--border);
+    padding: 1px 8px; border-radius: 100px; flex-shrink: 0;
+  }
+  .ts-section-chevron { transition: transform 200ms; color: var(--text-3); flex-shrink: 0; }
+  .ts-collapsible-section.open .ts-section-chevron { transform: rotate(180deg); }
+  .ts-section-body { display: none; padding-top: 14px; }
+  .ts-collapsible-section.open .ts-section-body { display: block; }
+
   /* Payer chips (expense modal "Who paid?" selector) */
   .payer-chips { display: flex; flex-wrap: wrap; gap: 6px; }
   .payer-chip {
@@ -3762,34 +3783,51 @@ body.share-mode .transit-entry-del { display: none !important; }
           </div>
           <div style="font-size:0.75rem;color:var(--text-3);margin-top:4px">Currencies you'll spend in — shown in all price dropdowns.</div>
         </div>
+      </div>
+
+      <!-- Collaborators (collapsible) -->
+      <div class="ts-collapsible-section" id="ts-collab-section">
+        <button class="ts-section-toggle" id="ts-collab-toggle" type="button">
+          <span class="ts-section-toggle-title">Collaborators</span>
+          <span class="ts-section-count" id="ts-collab-count"></span>
+          <svg class="ts-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="ts-section-body">
+          <div id="ts-access-list" style="margin-bottom:16px"></div>
+          <div class="field-group">
+            <label class="field-label">Invite collaborator</label>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+              <input class="field-input" type="text" id="ts-collab-name" placeholder="Their name" autocomplete="off" maxlength="60">
+              <input class="field-input" type="email" id="ts-email" placeholder="name@example.com">
+            </div>
+            <button class="modal-btn-primary" id="ts-add-btn" style="width:100%">Add collaborator</button>
+            <div id="ts-add-error" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(184,83,66,0.08);border:1px solid rgba(184,83,66,0.2);color:var(--danger);border-radius:var(--radius-sm);font-size:0.8125rem"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Participants (collapsible) -->
+      <div class="ts-collapsible-section" id="ts-members-section">
+        <button class="ts-section-toggle" id="ts-members-toggle" type="button">
+          <span class="ts-section-toggle-title">Participants</span>
+          <span class="ts-section-count" id="ts-members-count"></span>
+          <svg class="ts-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="ts-section-body">
+          <div style="font-size:0.8125rem;color:var(--text-3);margin-bottom:12px">People in your group who share expenses.</div>
+          <div id="ts-members-list" style="margin-bottom:12px"></div>
+          <div style="display:flex;gap:8px">
+            <input class="field-input" type="text" id="ts-member-name" placeholder="Name (e.g. Alice)" autocomplete="off" maxlength="40" style="flex:1">
+            <button type="button" id="ts-add-member-btn" class="modal-btn-secondary" style="flex-shrink:0">Add</button>
+          </div>
+          <div id="ts-member-error" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(184,83,66,0.08);border:1px solid rgba(184,83,66,0.2);color:var(--danger);border-radius:var(--radius-sm);font-size:0.8125rem"></div>
+        </div>
+      </div>
+
+      <!-- Save -->
+      <div>
         <div id="ts-save-error" style="display:none;padding:8px 12px;background:rgba(184,83,66,0.08);border:1px solid rgba(184,83,66,0.2);color:var(--danger);border-radius:var(--radius-sm);font-size:0.8125rem;margin-bottom:10px"></div>
         <button class="modal-btn-primary" id="ts-save-btn" style="width:100%">Save changes</button>
-      </div>
-
-      <!-- Collaborators -->
-      <div>
-        <div style="font-size:0.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-3);margin-bottom:14px">Collaborators</div>
-        <div id="ts-access-list" style="margin-bottom:16px"></div>
-        <div class="field-group">
-          <label class="field-label">Invite by email</label>
-          <div style="display:flex;gap:8px">
-            <input class="field-input" type="email" id="ts-email" placeholder="name@example.com" style="flex:1">
-            <button class="modal-btn-primary" id="ts-add-btn" style="flex-shrink:0">Add</button>
-          </div>
-          <div id="ts-add-error" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(184,83,66,0.08);border:1px solid rgba(184,83,66,0.2);color:var(--danger);border-radius:var(--radius-sm);font-size:0.8125rem"></div>
-        </div>
-      </div>
-
-      <!-- Participants (expense splitting) -->
-      <div>
-        <div style="font-size:0.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-3);margin-bottom:6px">Participants</div>
-        <div style="font-size:0.8125rem;color:var(--text-3);margin-bottom:12px">People in your group who share expenses.</div>
-        <div id="ts-members-list" style="margin-bottom:12px"></div>
-        <div style="display:flex;gap:8px">
-          <input class="field-input" type="text" id="ts-member-name" placeholder="Name (e.g. Alice)" autocomplete="off" maxlength="40" style="flex:1">
-          <button type="button" id="ts-add-member-btn" class="modal-btn-secondary" style="flex-shrink:0">Add</button>
-        </div>
-        <div id="ts-member-error" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(184,83,66,0.08);border:1px solid rgba(184,83,66,0.2);color:var(--danger);border-radius:var(--radius-sm);font-size:0.8125rem"></div>
       </div>
 
       <!-- Danger zone (creator only) -->
@@ -9301,13 +9339,18 @@ function emailToName(email) {
 function membersWithCollaborators(trip) {
   // Returns a members array that always includes every collaborator.
   // Existing members (by email) are preserved; new collaborators are appended.
-  const allEmails = [...new Set([trip.createdBy, ...(trip.allowedUsers || [])].filter(Boolean))];
-  const current   = (trip.members || []).map(m => ({ ...m }));
+  const allEmails   = [...new Set([trip.createdBy, ...(trip.allowedUsers || [])].filter(Boolean))];
+  const storedNames = trip.collaboratorNames || {};
+  const current     = (trip.members || []).map(m => ({ ...m }));
   allEmails.forEach((email, i) => {
     if (!current.some(m => m.email === email)) {
+      // Priority: explicitly stored name → current user's display name → email-derived fallback
+      const name = storedNames[email]
+        || (email === state.user?.email?.toLowerCase() ? state.user?.displayName : null)
+        || emailToName(email);
       current.push({
         id:    "mbr-" + Date.now().toString(36) + i,
-        name:  emailToName(email),
+        name,
         color: MEMBER_COLORS[current.length % MEMBER_COLORS.length],
         email,
       });
@@ -9319,6 +9362,8 @@ function membersWithCollaborators(trip) {
 function renderTripSettingsMembers() {
   const container = document.getElementById("ts-members-list");
   if (!container) return;
+  const countEl = document.getElementById("ts-members-count");
+  if (countEl) countEl.textContent = _tsMembers.length || "";
   if (!_tsMembers.length) {
     container.innerHTML = `<div style="font-size:0.8125rem;color:var(--text-3);font-style:italic;padding:4px 0">No participants yet.</div>`;
     return;
@@ -9498,8 +9543,18 @@ function openTripSettings(tripId) {
   const saveBtn = document.getElementById("ts-save-btn");
   saveBtn.textContent = "Save changes"; saveBtn.disabled = false;
 
+  // Collapsible section toggles
+  ["ts-collab-section", "ts-members-section"].forEach(id => {
+    const section = document.getElementById(id);
+    if (!section) return;
+    section.classList.remove("open");
+    const toggle = section.querySelector(".ts-section-toggle");
+    toggle.onclick = () => section.classList.toggle("open");
+  });
+
   // Collaborators
   renderTripSettingsCollaborators(trip);
+  document.getElementById("ts-collab-name").value = "";
   document.getElementById("ts-email").value = "";
   document.getElementById("ts-add-error").style.display = "none";
 
@@ -9540,6 +9595,8 @@ function renderTripSettingsCollaborators(trip) {
   const container = document.getElementById("ts-access-list");
   if (!container || !trip) return;
   const users = trip.allowedUsers || [];
+  const countEl = document.getElementById("ts-collab-count");
+  if (countEl) countEl.textContent = users.length || "";
   const isCreator = trip.createdBy === state.user?.email?.toLowerCase();
   const currentEmail = state.user?.email?.toLowerCase();
   if (!users.length) {
@@ -9607,9 +9664,10 @@ async function saveTripSettings() {
 }
 
 async function addTripCollaborator() {
-  const email = document.getElementById("ts-email").value.trim().toLowerCase();
-  const errEl = document.getElementById("ts-add-error");
-  const trip = state.allTrips.find(t => t.id === _tripSettingsId);
+  const email      = document.getElementById("ts-email").value.trim().toLowerCase();
+  const collabName = document.getElementById("ts-collab-name").value.trim();
+  const errEl      = document.getElementById("ts-add-error");
+  const trip       = state.allTrips.find(t => t.id === _tripSettingsId);
   if (!trip) return;
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     errEl.textContent = "Enter a valid email address."; errEl.style.display = "block"; return;
@@ -9619,19 +9677,18 @@ async function addTripCollaborator() {
   }
   errEl.style.display = "none";
   try {
-    // Build the updated members list — append new collaborator if not already a participant
-    const updatedMembers = membersWithCollaborators({
-      ...trip,
-      allowedUsers: [...(trip.allowedUsers || []), email],
-    });
+    // Store name so membersWithCollaborators can use it without guessing from email
+    const updatedNames = { ...(trip.collaboratorNames || {}), [email]: collabName || emailToName(email) };
+    const updatedTrip  = { ...trip, allowedUsers: [...(trip.allowedUsers || []), email], collaboratorNames: updatedNames };
+    const updatedMembers = membersWithCollaborators(updatedTrip);
     await updateDoc(doc(db, "trips", _tripSettingsId), {
-      allowedUsers: arrayUnion(email),
-      members: updatedMembers,
+      allowedUsers:      arrayUnion(email),
+      collaboratorNames: updatedNames,
+      members:           updatedMembers,
     });
     document.getElementById("ts-email").value = "";
-    const updated = { ...trip, allowedUsers: [...(trip.allowedUsers || []), email], members: updatedMembers };
-    renderTripSettingsCollaborators(updated);
-    // Refresh participants list in the same settings drawer
+    document.getElementById("ts-collab-name").value = "";
+    renderTripSettingsCollaborators(updatedTrip);
     _tsMembers = updatedMembers.map(m => ({ ...m }));
     renderTripSettingsMembers();
   } catch (err) {
