@@ -2601,6 +2601,90 @@
     border-color: var(--accent); background: var(--accent-bg); color: var(--accent);
   }
 
+  /* ── Expenses tab ───────────────────────────────────────── */
+  .exp-controls { margin-bottom: 16px; }
+  .exp-sort-row {
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .exp-sort-label { font-size: 0.75rem; color: var(--text-3); white-space: nowrap; margin-right: 2px; }
+  .exp-sort-btn {
+    font-size: 0.75rem; padding: 4px 10px; border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border); background: var(--surface-2);
+    cursor: pointer; color: var(--text-2);
+    transition: border-color 120ms, background 120ms;
+  }
+  .exp-sort-btn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+  .exp-filter-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .exp-filter-pill {
+    font-size: 0.75rem; padding: 3px 10px; border-radius: 100px;
+    border: 1.5px solid var(--border); cursor: pointer;
+    background: var(--surface-2); color: var(--text-2);
+    transition: border-color 120ms, background 120ms;
+  }
+  .exp-filter-pill.active { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); }
+  .exp-person-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .exp-person-pill {
+    font-size: 0.75rem; padding: 3px 10px; border-radius: 100px;
+    border: 1.5px solid var(--border); cursor: pointer;
+    background: var(--surface-2); color: var(--text-2);
+    transition: border-color 120ms, background 120ms;
+  }
+  .exp-person-pill.active { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); }
+  .exp-clear-btn {
+    font-size: 0.75rem; padding: 4px 10px; border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border); background: transparent;
+    cursor: pointer; color: var(--text-3);
+    margin-left: auto;
+  }
+  .exp-clear-btn:hover { background: var(--surface-2); }
+  .exp-summary {
+    font-size: 0.8125rem; color: var(--text-3); margin-bottom: 12px;
+    padding-bottom: 10px; border-bottom: 1px solid var(--border);
+  }
+  .exp-empty { color: var(--text-3); font-size: 0.9375rem; padding: 24px 0; }
+  .exp-row {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px 0; border-bottom: 1px solid var(--border);
+  }
+  .exp-row:last-child { border-bottom: none; }
+  .exp-source-badge {
+    flex-shrink: 0; font-size: 0.625rem; font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase; color: #fff; padding: 2px 6px;
+    border-radius: 4px; margin-top: 2px; white-space: nowrap;
+  }
+  .exp-row-body { flex: 1; min-width: 0; }
+  .exp-row-name {
+    font-size: 0.9375rem; font-weight: 500; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    margin-bottom: 3px;
+  }
+  .exp-row-meta {
+    display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    font-size: 0.75rem; color: var(--text-3);
+  }
+  .exp-est-badge {
+    font-size: 0.6875rem; color: var(--text-3); background: var(--surface-2);
+    border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px;
+  }
+  .exp-row-payer { font-size: 0.75rem; color: var(--text-3); margin-top: 3px; }
+  .exp-row-right {
+    display: flex; align-items: center; gap: 8px; flex-shrink: 0; padding-top: 2px;
+  }
+  .exp-row-amount {
+    font-size: 0.9375rem; font-weight: 600; font-variant-numeric: tabular-nums;
+    color: var(--text);
+  }
+  .exp-edit-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border); background: var(--surface-2);
+    cursor: pointer; color: var(--text-2);
+    transition: background 120ms, border-color 120ms;
+    flex-shrink: 0;
+  }
+  .exp-edit-btn:hover { background: var(--surface-3, var(--surface)); border-color: var(--accent); color: var(--accent); }
+
   /* Budget drawer person filter row */
   .bd-person-filter-row {
     display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
@@ -3560,6 +3644,10 @@ body.share-mode .transit-entry-del { display: none !important; }
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
       Budget
     </button>
+    <button class="nav-item" data-view="expenses">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1" ry="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
+      Expenses
+    </button>
     <button class="nav-item" data-view="documents">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
       Documents
@@ -3678,6 +3766,17 @@ body.share-mode .transit-entry-del { display: none !important; }
         <div id="budget-content"></div>
       </section>
 
+      <section class="view" id="view-expenses">
+        <div class="section-header" style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <h1 class="section-title">Expenses</h1>
+          <button class="btn-primary" id="expenses-add-btn" style="padding:8px 16px;font-size:0.875rem;flex-shrink:0">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add expense
+          </button>
+        </div>
+        <div id="expenses-content"></div>
+      </section>
+
       <section class="view" id="view-documents">
         <div class="section-header" style="margin-bottom:20px">
           <h1 class="section-title">Documents</h1>
@@ -3725,6 +3824,10 @@ body.share-mode .transit-entry-del { display: none !important; }
       <div id="mobile-more-backdrop" style="position:absolute;inset:0;background:rgba(0,0,0,0.4)"></div>
       <div style="position:absolute;bottom:0;left:0;right:0;background:var(--surface);border-radius:20px 20px 0 0;padding:16px 0 32px">
         <div style="width:36px;height:4px;background:var(--border-strong);border-radius:2px;margin:0 auto 20px"></div>
+        <button class="bottom-nav-item" data-view="expenses" style="width:100%;flex-direction:row;gap:14px;padding:14px 24px;justify-content:flex-start;font-size:1rem" id="sheet-expenses-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1" ry="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
+          Expenses
+        </button>
         <button class="bottom-nav-item" data-view="documents" style="width:100%;flex-direction:row;gap:14px;padding:14px 24px;justify-content:flex-start;font-size:1rem" id="sheet-documents-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
           Documents
@@ -4620,7 +4723,7 @@ function setView(viewName) {
   document.querySelectorAll(".nav-item, .bottom-nav-item").forEach(b => {
     b.classList.toggle("active", b.dataset.view === viewName);
   });
-  const titles = { dashboard: "Overview", itinerary: "Itinerary", guides: "Guides", budget: "Budget", documents: "Documents" };
+  const titles = { dashboard: "Overview", itinerary: "Itinerary", guides: "Guides", budget: "Budget", expenses: "Expenses", documents: "Documents" };
   document.getElementById("topbar-title").textContent = titles[viewName] || "Dashboard";
   if (viewName === "itinerary") {
     // Only auto-scroll to today when the user hasn't explicitly clicked a specific town
@@ -4635,6 +4738,7 @@ function setView(viewName) {
   }
   if (viewName === "guides") renderGuides();
   if (viewName === "budget") renderBudget();
+  if (viewName === "expenses") renderExpenses();
   if (viewName === "documents") renderDocuments();
 }
 document.querySelectorAll(".nav-item, .bottom-nav-item").forEach(btn => {
@@ -4648,6 +4752,11 @@ document.getElementById("mobile-more-btn")?.addEventListener("click", () => {
 });
 document.getElementById("mobile-more-backdrop")?.addEventListener("click", () => {
   moreSheet.style.display = "none";
+});
+
+document.getElementById("sheet-expenses-btn")?.addEventListener("click", () => {
+  moreSheet.style.display = "none";
+  setView("expenses");
 });
 
 document.getElementById("sheet-documents-btn")?.addEventListener("click", () => {
@@ -4848,6 +4957,7 @@ function listenToTrip(tripId) {
       expenses.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
       setState({ expenses });
       if (state.currentView === "budget") renderBudget();
+      if (state.currentView === "expenses") renderExpenses();
       // Keep open budget drawer in sync (e.g. after save/edit)
       if (document.getElementById("spot-drawer-overlay")?.classList.contains("visible") && currentDrawerBudgetMode) {
         _bdEntries = aggregateBudget().filter(e => e.currency === _bdCurrency);
@@ -5836,6 +5946,7 @@ subscribe(() => {
   if (state.currentView === "itinerary") renderItinerary();
   if (state.currentView === "guides") renderGuides();
   if (state.currentView === "budget") renderBudget();
+  if (state.currentView === "expenses") renderExpenses();
   if (state.currentView === "documents") renderDocuments();
   // Keep drawer in sync if it's open and the spot was updated
   if (currentDrawerSpot) {
@@ -8368,6 +8479,233 @@ function loadChartJs() {
   return _chartJsPromise;
 }
 
+/* ─────────────────────────────────────────────────────────────
+   EXPENSES TAB
+   ───────────────────────────────────────────────────────────── */
+let _expTabSort    = "date";
+let _expTabDir     = "desc";
+let _expTabCatFilter  = new Set();
+let _expTabCityFilter = new Set();
+let _expTabPersonFilter = null; // null | "paid" | "owe"
+
+const SOURCE_COLORS = {
+  spot:          "#6BAA8D",
+  accommodation: "#6B7DB3",
+  transit:       "#7BB3A8",
+  expense:       "#B39E6B",
+};
+const SOURCE_LABELS = {
+  spot:          "Spot",
+  accommodation: "Accom",
+  transit:       "Transit",
+  expense:       "Expense",
+};
+
+function renderExpenses() {
+  const content = document.getElementById("expenses-content");
+  if (!content) return;
+
+  const fmt2 = n => n.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const myMemberId = currentUserMemberId();
+
+  // Full unfiltered list for building pill options
+  const allEntries = aggregateBudget();
+  const categories = [...new Set(allEntries.map(e => e.category))].sort();
+  const cities = [...new Set(
+    allEntries.map(e => state.towns.find(t => t.id === e.townId)?.name || "Other")
+  )].sort();
+
+  // Build filtered + sorted entries
+  let entries = allEntries.slice();
+
+  if (_expTabPersonFilter === "paid" && myMemberId) {
+    entries = entries.filter(e => e.paidBy === myMemberId);
+  } else if (_expTabPersonFilter === "owe" && myMemberId) {
+    entries = entries.filter(e =>
+      e.paidBy && e.paidBy !== myMemberId &&
+      (e.splits || []).some(s => s.memberId === myMemberId && s.owed > 0.005)
+    );
+  }
+  if (_expTabCatFilter.size > 0) {
+    entries = entries.filter(e => _expTabCatFilter.has(e.category));
+  }
+  if (_expTabCityFilter.size > 0) {
+    entries = entries.filter(e => {
+      const city = state.towns.find(t => t.id === e.townId)?.name || "Other";
+      return _expTabCityFilter.has(city);
+    });
+  }
+
+  // Sort
+  entries.sort((a, b) => {
+    if (_expTabSort === "value") {
+      return _expTabDir === "desc" ? b.amount - a.amount : a.amount - b.amount;
+    }
+    // date sort: undated goes to bottom
+    const aKey = (a.scheduledDate || "0000-00-00") + "T" + (a.scheduledTime || "00:00") + String(a.order ?? 9999).padStart(6, "0");
+    const bKey = (b.scheduledDate || "0000-00-00") + "T" + (b.scheduledTime || "00:00") + String(b.order ?? 9999).padStart(6, "0");
+    return _expTabDir === "desc" ? bKey.localeCompare(aKey) : aKey.localeCompare(bKey);
+  });
+
+  const hasActiveFilter = _expTabCatFilter.size + _expTabCityFilter.size > 0 || _expTabPersonFilter;
+
+  // Totals
+  const totalByCur = {};
+  entries.forEach(e => { totalByCur[e.currency] = (totalByCur[e.currency] || 0) + e.amount; });
+  const totalStr = Object.entries(totalByCur)
+    .map(([c, a]) => `${currencySymbol(c)}${fmt2(a)}`).join(" · ");
+
+  // Person filter label
+  const personFilterLabel = { paid: "I paid", owe: "I owe" };
+
+  const controlsHTML = `
+    <div class="exp-controls">
+      <div class="exp-sort-row">
+        <span class="exp-sort-label">Sort</span>
+        <button class="exp-sort-btn${_expTabSort === "date"  ? " active" : ""}" data-expsort="date">Date${_expTabSort === "date"  ? (_expTabDir === "desc" ? " ↓" : " ↑") : ""}</button>
+        <button class="exp-sort-btn${_expTabSort === "value" ? " active" : ""}" data-expsort="value">Amount${_expTabSort === "value" ? (_expTabDir === "desc" ? " ↓" : " ↑") : ""}</button>
+        ${myMemberId ? `
+        <div style="display:flex;gap:6px;margin-left:8px">
+          <button class="exp-person-pill${!_expTabPersonFilter ? " active" : ""}" data-expperson="">All</button>
+          <button class="exp-person-pill${_expTabPersonFilter === "paid" ? " active" : ""}" data-expperson="paid">I paid</button>
+          <button class="exp-person-pill${_expTabPersonFilter === "owe"  ? " active" : ""}" data-expperson="owe">I owe</button>
+        </div>` : ""}
+        ${hasActiveFilter ? `<button class="exp-clear-btn" id="exp-clear-filters-btn">Clear filters</button>` : ""}
+      </div>
+      ${categories.length > 0 ? `
+      <div class="exp-filter-row">
+        ${categories.map(c => `<button class="exp-filter-pill${_expTabCatFilter.has(c) ? " active" : ""}" data-expcat="${escapeHtml(c)}">${escapeHtml(c)}</button>`).join("")}
+      </div>` : ""}
+      ${cities.length > 1 ? `
+      <div class="exp-filter-row">
+        ${cities.map(c => `<button class="exp-filter-pill${_expTabCityFilter.has(c) ? " active" : ""}" data-expcity="${escapeHtml(c)}">${escapeHtml(c)}</button>`).join("")}
+      </div>` : ""}
+    </div>`;
+
+  const summaryHTML = entries.length > 0 ? `
+    <div class="exp-summary">${entries.length} expense${entries.length !== 1 ? "s" : ""}${totalStr ? " · " + totalStr : ""}</div>` : "";
+
+  const listHTML = entries.length === 0
+    ? `<p class="exp-empty">No expenses match the current filters.</p>`
+    : entries.map(e => {
+        const town   = state.towns.find(t => t.id === e.townId);
+        const members = state.trip?.members || [];
+        const payer  = e.paidBy ? members.find(m => m.id === e.paidBy) : null;
+        const myOwed = myMemberId
+          ? (e.splits || []).find(s => s.memberId === myMemberId)?.owed
+          : undefined;
+        const dateStr = e.scheduledDate
+          ? new Date(e.scheduledDate + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })
+          : "";
+        const metaParts = [
+          town ? escapeHtml(town.name) : null,
+          dateStr || null,
+          escapeHtml(e.category),
+        ].filter(Boolean).map(s => `<span>${s}</span>`).join("");
+        const estBadge = e.isEstimated ? `<span class="exp-est-badge">est.</span>` : "";
+        const payerLine = payer
+          ? `<div class="exp-row-payer">Paid by ${escapeHtml(payer.name)}${myOwed != null && myOwed > 0 ? ` · My share: ${currencySymbol(e.currency)}${fmt2(myOwed)}` : ""}</div>`
+          : "";
+
+        return `
+          <div class="exp-row">
+            <span class="exp-source-badge" style="background:${SOURCE_COLORS[e.source] || "#888"}">${SOURCE_LABELS[e.source] || e.source}</span>
+            <div class="exp-row-body">
+              <div class="exp-row-name">${escapeHtml(e.name)}</div>
+              <div class="exp-row-meta">${metaParts}${estBadge}</div>
+              ${payerLine}
+            </div>
+            <div class="exp-row-right">
+              <div class="exp-row-amount">${currencySymbol(e.currency)}${fmt2(e.amount)}</div>
+              <button class="exp-edit-btn"
+                data-expsource="${escapeHtml(e.source)}"
+                data-expid="${escapeHtml(e.id)}"
+                data-exptownid="${escapeHtml(e.townId || "")}"
+                aria-label="Edit">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </button>
+            </div>
+          </div>`;
+      }).join("");
+
+  content.innerHTML = controlsHTML + summaryHTML + listHTML;
+
+  // Sort buttons
+  content.querySelectorAll(".exp-sort-btn[data-expsort]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      if (btn.dataset.expsort === _expTabSort) {
+        _expTabDir = _expTabDir === "desc" ? "asc" : "desc";
+      } else {
+        _expTabSort = btn.dataset.expsort;
+        _expTabDir  = "desc";
+      }
+      renderExpenses();
+    });
+  });
+
+  // Person pills
+  content.querySelectorAll(".exp-person-pill[data-expperson]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      _expTabPersonFilter = btn.dataset.expperson || null;
+      renderExpenses();
+    });
+  });
+
+  // Category filter pills
+  content.querySelectorAll(".exp-filter-pill[data-expcat]").forEach(pill => {
+    pill.addEventListener("click", () => {
+      const c = pill.dataset.expcat;
+      if (_expTabCatFilter.has(c)) _expTabCatFilter.delete(c);
+      else _expTabCatFilter.add(c);
+      renderExpenses();
+    });
+  });
+
+  // City filter pills
+  content.querySelectorAll(".exp-filter-pill[data-expcity]").forEach(pill => {
+    pill.addEventListener("click", () => {
+      const c = pill.dataset.expcity;
+      if (_expTabCityFilter.has(c)) _expTabCityFilter.delete(c);
+      else _expTabCityFilter.add(c);
+      renderExpenses();
+    });
+  });
+
+  // Clear all filters
+  content.getElementById?.("exp-clear-filters-btn")?.addEventListener("click", () => {
+    _expTabCatFilter.clear();
+    _expTabCityFilter.clear();
+    _expTabPersonFilter = null;
+    renderExpenses();
+  });
+  content.querySelector("#exp-clear-filters-btn")?.addEventListener("click", () => {
+    _expTabCatFilter.clear();
+    _expTabCityFilter.clear();
+    _expTabPersonFilter = null;
+    renderExpenses();
+  });
+
+  // Edit buttons
+  content.querySelectorAll(".exp-edit-btn[data-expsource]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const { expsource: source, expid: id, exptownid: townId } = btn.dataset;
+      if (source === "expense") {
+        openExpenseModal(id);
+      } else if (source === "spot") {
+        const spot = state.spots.find(s => s.id === id);
+        if (spot) openModal(spot);
+      } else if (source === "accommodation") {
+        const town = state.towns.find(t => t.id === townId);
+        if (town) openAccomModal(town);
+      } else if (source === "transit") {
+        const town = state.towns.find(t => t.id === townId);
+        const entry = (town?.transitExpenses || []).find(e => e.id === id);
+        if (entry) await showTransitSheet(townId, entry.date, entry);
+      }
+    });
+  });
+}
+
 function renderBudget() {
   const entries = aggregateBudget();
   const fmt = n => n.toLocaleString("en-GB", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
@@ -8545,68 +8883,7 @@ function renderBudget() {
         <span class="budget-unbooked-amount">~${currencySymbol(e.currency)}${fmt(e.amount)}</span>
       </div>`).join("")}` : "";
 
-  // Transit log section — collapsible cities, entries grouped by date
-  const fmtAmt = n => n.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const transitBlocksHTML = state.towns.map(t => {
-    const tEntries = [...(t.transitExpenses || [])]
-      .sort((a, b) => (b.date || "").localeCompare(a.date || ""));
-    // Per-city total per currency
-    const byCur = {};
-    tEntries.forEach(e => { byCur[e.currency] = (byCur[e.currency] || 0) + e.amount; });
-    const totalStr = Object.entries(byCur)
-      .map(([cur, amt]) => `${currencySymbol(cur)}${fmtAmt(amt)}`).join(" · ");
-
-    // Group entries by date
-    const byDate = {};
-    tEntries.forEach(e => {
-      const dk = e.date || "undated";
-      if (!byDate[dk]) byDate[dk] = [];
-      byDate[dk].push(e);
-    });
-
-    const dateGroupsHTML = Object.entries(byDate).map(([dk, dayEntries]) => {
-      const dateLabel = dk === "undated" ? "No date" :
-        new Date(dk + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
-      const rowsHTML = dayEntries.map(e => `
-        <div class="transit-entry-row">
-          <span class="transit-entry-type">${escapeHtml(TRANSIT_TYPES[e.type] || e.type)}</span>
-          ${e.note ? `<span class="transit-entry-note">${escapeHtml(e.note)}</span>` : `<span class="transit-entry-note"></span>`}
-          <span class="transit-entry-amount">${currencySymbol(e.currency)}${fmtAmt(e.amount)}</span>
-          <button class="transit-entry-edit" data-town-id="${escapeHtml(t.id)}" data-entry-id="${escapeHtml(e.id)}" aria-label="Edit">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          </button>
-          <button class="transit-entry-del" data-town-id="${escapeHtml(t.id)}" data-entry-id="${escapeHtml(e.id)}" aria-label="Delete">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
-        </div>`).join("");
-      return `<div class="transit-date-group">
-        <div class="transit-date-header">
-          <svg class="transit-date-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="11" height="11"><polyline points="6 9 12 15 18 9"/></svg>
-          ${escapeHtml(dateLabel)}
-        </div>
-        <div class="transit-date-rows">${rowsHTML}</div>
-      </div>`;
-    }).join("");
-
-    return `
-      <div class="transit-city-block" data-town-id="${escapeHtml(t.id)}">
-        <div class="transit-city-bar" style="cursor:pointer">
-          <svg class="transit-city-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 12 15 18 9"/></svg>
-          <span class="transit-city-name">${escapeHtml(t.name)}</span>
-          ${totalStr ? `<span class="transit-city-total">${totalStr}</span>` : ""}
-          <button class="transit-city-add-btn" data-town-id="${escapeHtml(t.id)}">+ Add</button>
-        </div>
-        <div class="transit-city-entries">${tEntries.length ? dateGroupsHTML : `<p style="font-size:0.8125rem;color:var(--text-3);padding:4px 0 8px">No transit expenses yet.</p>`}</div>
-      </div>`;
-  }).join("");
-
-  const transitLogHTML = `
-    <div class="transit-log-section">
-      <div class="transit-log-heading">City transit</div>
-      ${transitBlocksHTML}
-    </div>`;
-
-  content.innerHTML = renderGroupBalances() + sgdSummary + myFilterRowHTML + sectionsHTML + unbookedHTML + transitLogHTML;
+  content.innerHTML = renderGroupBalances() + sgdSummary + myFilterRowHTML + sectionsHTML + unbookedHTML;
 
   // My-portion filter pills
   content.querySelectorAll(".budget-person-pill[data-myfilter]").forEach(pill => {
@@ -8630,33 +8907,6 @@ function renderBudget() {
   content.querySelectorAll(".budget-currency-header").forEach(header => {
     header.addEventListener("click", () => {
       header.closest(".budget-currency-section").classList.toggle("expanded");
-    });
-  });
-
-  // Transit log: collapse city, collapse date, add, edit, delete
-  content.querySelectorAll(".transit-date-header").forEach(hdr => {
-    hdr.addEventListener("click", () => hdr.closest(".transit-date-group").classList.toggle("collapsed"));
-  });
-  content.querySelectorAll(".transit-city-bar").forEach(bar => {
-    bar.addEventListener("click", e => {
-      if (e.target.closest(".transit-city-add-btn")) return;
-      bar.closest(".transit-city-block").classList.toggle("collapsed");
-    });
-  });
-  content.querySelectorAll(".transit-city-add-btn").forEach(btn => {
-    btn.addEventListener("click", () => showTransitSheet(btn.dataset.townId, null));
-  });
-  content.querySelectorAll(".transit-entry-edit").forEach(btn => {
-    btn.addEventListener("click", async () => {
-      const town = state.towns.find(t => t.id === btn.dataset.townId);
-      const entry = (town?.transitExpenses || []).find(e => e.id === btn.dataset.entryId);
-      if (entry) await showTransitSheet(btn.dataset.townId, entry.date, entry);
-    });
-  });
-  content.querySelectorAll(".transit-entry-del").forEach(btn => {
-    btn.addEventListener("click", async () => {
-      btn.disabled = true;
-      await deleteTransitExpense(btn.dataset.townId, btn.dataset.entryId);
     });
   });
 
@@ -11068,6 +11318,7 @@ document.getElementById("trips-search-input")?.addEventListener("input", e => {
 
 // ── Standalone expense modal ─────────────────────────────────
 document.getElementById("budget-add-expense-btn")?.addEventListener("click", () => openExpenseModal());
+document.getElementById("expenses-add-btn")?.addEventListener("click", () => openExpenseModal());
 document.getElementById("expense-modal-close")?.addEventListener("click", closeExpenseModal);
 document.getElementById("exp-cancel-btn")?.addEventListener("click", closeExpenseModal);
 document.getElementById("exp-save-btn")?.addEventListener("click", saveExpense);
