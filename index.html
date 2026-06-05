@@ -1829,6 +1829,8 @@
   body.share-mode #drawer-delete-btn,
   body.share-mode #drawer-visited-btn { display: none !important; }
   body.share-mode .share-link-btn { display: none !important; }
+  body.share-mode #budget-add-expense-btn { display: none !important; }
+  body.share-mode .bd-expense-actions { display: none !important; }
 
   /* Spot list (sortable container) */
   .spot-list {
@@ -2407,6 +2409,54 @@
   .budget-unbooked-row:last-child { border-bottom: none; }
   .budget-unbooked-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .budget-unbooked-amount { font-variant-numeric: tabular-nums; color: var(--text-2); flex-shrink: 0; }
+
+  /* Expense entry edit/delete action buttons (in budget drawer) */
+  .bd-expense-actions { display: flex; gap: 4px; flex-shrink: 0; }
+  .bd-expense-btn {
+    background: none; border: none; cursor: pointer; padding: 4px 6px;
+    border-radius: var(--radius-sm); color: var(--text-3); font-size: 0.75rem;
+    line-height: 1; transition: color 150ms, background 150ms;
+  }
+  .bd-expense-btn:hover { color: var(--text); background: var(--surface-2); }
+  .bd-expense-btn.del:hover { color: var(--danger); }
+
+  /* Standalone expense modal */
+  #expense-modal-overlay {
+    position: fixed; inset: 0; z-index: 400;
+    background: rgba(0,0,0,0.45);
+    display: none; align-items: flex-end; justify-content: center;
+  }
+  #expense-modal-overlay.visible { display: flex; }
+  @media (min-width: 601px) {
+    #expense-modal-overlay { align-items: center; }
+  }
+  #expense-modal {
+    background: var(--surface); border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    width: 100%; max-width: 520px; max-height: 90vh;
+    display: flex; flex-direction: column; overflow: hidden;
+    box-shadow: var(--shadow-lg);
+  }
+  @media (min-width: 601px) {
+    #expense-modal { border-radius: var(--radius-xl); max-height: 85vh; }
+  }
+  #expense-modal-handle { display: flex; justify-content: center; padding: 12px 0 0; flex-shrink: 0; }
+  #expense-modal-handle::before {
+    content: ""; width: 32px; height: 4px; border-radius: 100px; background: var(--border-strong);
+  }
+  @media (min-width: 601px) { #expense-modal-handle { display: none; } }
+  #expense-modal-header {
+    padding: 16px 20px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+  }
+  #expense-modal-title { font-size: 0.9375rem; font-weight: 600; flex: 1; }
+  #expense-modal-body {
+    overflow-y: auto; flex: 1; padding: 20px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  #expense-modal-footer {
+    padding: 14px 20px; border-top: 1px solid var(--border);
+    display: flex; gap: 10px; flex-shrink: 0;
+  }
 
   /* Documents view */
   .docs-town-group { margin-bottom: 32px; }
@@ -3460,8 +3510,12 @@ body.share-mode .transit-entry-del { display: none !important; }
       </section>
 
       <section class="view" id="view-budget">
-        <div class="section-header" style="margin-bottom:20px">
+        <div class="section-header" style="margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:12px">
           <h1 class="section-title">Budget</h1>
+          <button class="btn-primary" id="budget-add-expense-btn" style="padding:8px 16px;font-size:0.875rem;flex-shrink:0">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add expense
+          </button>
         </div>
         <div id="budget-content"></div>
       </section>
@@ -4048,6 +4102,81 @@ body.share-mode .transit-entry-del { display: none !important; }
 </div>
 
 <!-- ============================================================
+     STANDALONE EXPENSE MODAL
+     ============================================================ -->
+<div id="expense-modal-overlay">
+  <div id="expense-modal">
+    <div id="expense-modal-handle"></div>
+    <div id="expense-modal-header">
+      <span id="expense-modal-title">Add expense</span>
+      <button class="icon-btn" id="expense-modal-close" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div id="expense-modal-body">
+      <!-- Description -->
+      <div class="form-field">
+        <div class="form-label">Description</div>
+        <input id="exp-description" class="form-input" type="text" placeholder="e.g. Airport taxi, Souvenir" autocomplete="off" maxlength="120">
+      </div>
+      <!-- Amount + currency -->
+      <div class="form-field">
+        <div class="form-label">Amount</div>
+        <div style="display:flex;gap:8px">
+          <select id="exp-currency" class="form-input" style="width:100px;flex-shrink:0;padding-left:8px"></select>
+          <input id="exp-amount" class="form-input" type="number" min="0" step="0.01" placeholder="0.00" style="flex:1">
+        </div>
+      </div>
+      <!-- Category + Date side by side -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-field">
+          <div class="form-label">Category</div>
+          <select id="exp-category" class="form-input"></select>
+        </div>
+        <div class="form-field">
+          <div class="form-label">Date</div>
+          <input id="exp-date" class="form-input" type="date">
+        </div>
+      </div>
+      <!-- City (optional) + Payment method -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-field">
+          <div class="form-label">City <span style="font-weight:400;color:var(--text-3)">(optional)</span></div>
+          <select id="exp-town" class="form-input">
+            <option value="">No specific city</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <div class="form-label">Payment</div>
+          <select id="exp-payment" class="form-input"></select>
+        </div>
+      </div>
+      <!-- Paid / Estimated toggle -->
+      <div class="visited-toggle" id="exp-estimated-toggle" role="button" tabindex="0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span class="visited-toggle-label" style="font-size:0.875rem">Mark as estimated (not yet paid)</span>
+        <div class="toggle-switch" id="exp-estimated-switch"></div>
+      </div>
+      <!-- Note -->
+      <div class="form-field">
+        <div class="form-label">Note <span style="font-weight:400;color:var(--text-3)">(optional)</span></div>
+        <input id="exp-note" class="form-input" type="text" placeholder="Any extra detail…" maxlength="200" autocomplete="off">
+      </div>
+      <div id="exp-error" style="display:none;padding:8px 12px;background:rgba(184,83,66,0.08);border:1px solid rgba(184,83,66,0.2);color:var(--danger);border-radius:var(--radius-sm);font-size:0.8125rem"></div>
+    </div>
+    <div id="expense-modal-footer">
+      <button class="btn-ghost" id="exp-delete-btn" style="color:var(--danger);display:none">Delete</button>
+      <div style="flex:1"></div>
+      <button class="btn-ghost" id="exp-cancel-btn">Cancel</button>
+      <button class="btn-primary" id="exp-save-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add expense
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
      TOWN EDIT MODAL
      ============================================================ -->
 <div class="modal-overlay" id="town-edit-overlay">
@@ -4136,7 +4265,7 @@ const FIREBASE_BASE = `https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}`;
 
 let initializeApp, getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, signInAnonymously;
 let initializeFirestore, persistentLocalCache, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs;
-let onSnapshot, writeBatch, serverTimestamp, arrayUnion;
+let onSnapshot, writeBatch, serverTimestamp, arrayUnion, addDoc;
 let query, where, arrayRemove;
 
 /* ─────────────────────────────────────────────────────────────
@@ -4179,6 +4308,7 @@ const state = {
   trip: null,
   towns: [],
   spots: [],
+  expenses: [],
   allTrips: [],
   currentView: "itinerary",
   focusTownId: null,
@@ -4311,7 +4441,7 @@ async function initFirebase() {
   initializeApp = appMod.initializeApp;
   ({ getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, signInAnonymously } = authMod);
   ({ initializeFirestore, persistentLocalCache, doc, getDoc, setDoc, updateDoc, deleteDoc,
-     collection, getDocs, onSnapshot, writeBatch, serverTimestamp, arrayUnion, query, where, arrayRemove } = fsMod);
+     collection, getDocs, onSnapshot, writeBatch, serverTimestamp, arrayUnion, addDoc, query, where, arrayRemove } = fsMod);
 
   app = initializeApp(FIREBASE_CONFIG);
   auth = getAuth(app);
@@ -4398,14 +4528,15 @@ function setupUserChip(user) {
    ───────────────────────────────────────────────────────────── */
 
 // Listener unsubscribe handles — stored so we can detach when switching trips
-let _tripUnsub = null, _townsUnsub = null, _spotsUnsub = null;
+let _tripUnsub = null, _townsUnsub = null, _spotsUnsub = null, _expensesUnsub = null;
 let tripSearchQuery = "";
 const collapsedYears = new Set();
 let _allTripsUnsub = null;
 
 function detachTripListeners() {
-  _tripUnsub?.(); _townsUnsub?.(); _spotsUnsub?.();
-  _tripUnsub = _townsUnsub = _spotsUnsub = null;
+  _tripUnsub?.(); _townsUnsub?.(); _spotsUnsub?.(); _expensesUnsub?.();
+  _tripUnsub = _townsUnsub = _spotsUnsub = _expensesUnsub = null;
+  setState({ expenses: [] });
 }
 
 function listenToTrip(tripId) {
@@ -4474,6 +4605,24 @@ function listenToTrip(tripId) {
     },
     (err) => {
       console.error("Spots listener error — check Firestore subcollection rules:", err.code);
+    }
+  );
+  // Standalone expenses subcollection
+  _expensesUnsub = onSnapshot(
+    collection(db, "trips", tripId, "expenses"),
+    (snap) => {
+      const expenses = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      expenses.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+      setState({ expenses });
+      if (state.currentView === "budget") renderBudget();
+      // Keep open budget drawer in sync (e.g. after save/edit)
+      if (document.getElementById("spot-drawer-overlay")?.classList.contains("visible") && currentDrawerBudgetMode) {
+        _bdEntries = aggregateBudget().filter(e => e.currency === _bdCurrency);
+        _renderBudgetDrawerList();
+      }
+    },
+    (err) => {
+      console.error("Expenses listener error:", err.code);
     }
   );
 }
@@ -7167,6 +7316,121 @@ function populateCurrencySelect(el, selectedValue) {
   }
 }
 
+/* ─────────────────────────────────────────────────────────────
+   STANDALONE EXPENSE MODAL
+   ───────────────────────────────────────────────────────────── */
+let _editingExpenseId = null;
+let _expEstimated = false;
+
+function openExpenseModal(expenseId = null) {
+  _editingExpenseId = expenseId;
+  _expEstimated = false;
+
+  const existing = expenseId ? (state.expenses || []).find(e => e.id === expenseId) : null;
+  const trip = state.trip;
+
+  document.getElementById("expense-modal-title").textContent = existing ? "Edit expense" : "Add expense";
+  document.getElementById("exp-save-btn").innerHTML = existing
+    ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save`
+    : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add expense`;
+  document.getElementById("exp-delete-btn").style.display = existing ? "inline-flex" : "none";
+
+  // Populate currency dropdown
+  populateCurrencySelect(document.getElementById("exp-currency"), existing?.currency);
+
+  // Populate category dropdown from trip
+  const cats = trip?.categories || ["Food","Sights","Transport","Lodging","Shopping","Other"];
+  const catSel = document.getElementById("exp-category");
+  catSel.innerHTML = cats.map(c =>
+    `<option value="${escapeHtml(c)}"${c === (existing?.category || "Other") ? " selected" : ""}>${escapeHtml(c)}</option>`
+  ).join("");
+
+  // Populate payment method dropdown
+  const methods = trip?.paymentMethods || ["Card","Cash"];
+  const paySel = document.getElementById("exp-payment");
+  paySel.innerHTML = methods.map(m =>
+    `<option value="${escapeHtml(m)}"${m === (existing?.paymentMethod || methods[0]) ? " selected" : ""}>${escapeHtml(m)}</option>`
+  ).join("");
+
+  // Populate city dropdown
+  const townSel = document.getElementById("exp-town");
+  townSel.innerHTML = `<option value="">No specific city</option>` +
+    (state.towns || []).map(t =>
+      `<option value="${escapeHtml(t.id)}"${t.id === existing?.townId ? " selected" : ""}>${escapeHtml(t.name)}</option>`
+    ).join("");
+
+  // Pre-fill fields
+  document.getElementById("exp-description").value = existing?.description || "";
+  document.getElementById("exp-amount").value = existing?.amount || "";
+  document.getElementById("exp-date").value = existing?.date || new Date().toISOString().slice(0, 10);
+  document.getElementById("exp-note").value = existing?.note || "";
+
+  // Estimated toggle
+  _expEstimated = existing?.isEstimated ?? false;
+  document.getElementById("exp-estimated-switch").classList.toggle("on", _expEstimated);
+
+  document.getElementById("exp-error").style.display = "none";
+  document.getElementById("expense-modal-overlay").classList.add("visible");
+  document.body.style.overflow = "hidden";
+  setTimeout(() => document.getElementById("exp-description").focus(), 80);
+}
+
+function closeExpenseModal() {
+  document.getElementById("expense-modal-overlay").classList.remove("visible");
+  document.body.style.overflow = "";
+  _editingExpenseId = null;
+}
+
+async function saveExpense() {
+  const description = document.getElementById("exp-description").value.trim();
+  const amount = parseFloat(document.getElementById("exp-amount").value);
+  const currency = document.getElementById("exp-currency").value;
+  const category = document.getElementById("exp-category").value;
+  const date = document.getElementById("exp-date").value;
+  const townId = document.getElementById("exp-town").value || null;
+  const paymentMethod = document.getElementById("exp-payment").value;
+  const note = document.getElementById("exp-note").value.trim();
+  const errEl = document.getElementById("exp-error");
+
+  if (!description) { errEl.textContent = "Description is required."; errEl.style.display = "block"; return; }
+  if (!amount || amount <= 0) { errEl.textContent = "Enter a valid amount."; errEl.style.display = "block"; return; }
+  errEl.style.display = "none";
+
+  const saveBtn = document.getElementById("exp-save-btn");
+  saveBtn.disabled = true;
+
+  const data = { description, amount, currency, category, date, townId, paymentMethod, note, isEstimated: _expEstimated };
+
+  try {
+    if (_editingExpenseId) {
+      await updateDoc(doc(db, "trips", activeTripId, "expenses", _editingExpenseId), data);
+    } else {
+      await addDoc(collection(db, "trips", activeTripId, "expenses"), { ...data, createdAt: serverTimestamp() });
+    }
+    closeExpenseModal();
+  } catch (err) {
+    errEl.textContent = "Failed to save — " + err.message;
+    errEl.style.display = "block";
+  } finally {
+    saveBtn.disabled = false;
+  }
+}
+
+async function deleteExpense(expenseId) {
+  if (!expenseId || !activeTripId) return;
+  // Optimistic removal so the drawer refreshes immediately
+  setState({ expenses: (state.expenses || []).filter(e => e.id !== expenseId) });
+  _bdEntries = _bdEntries.filter(e => !(e.source === "expense" && e.id === expenseId));
+  if (document.getElementById("spot-drawer-overlay")?.classList.contains("visible") && currentDrawerBudgetMode) {
+    _renderBudgetDrawerList();
+  }
+  try {
+    await deleteDoc(doc(db, "trips", activeTripId, "expenses", expenseId));
+  } catch (err) {
+    alert("Could not delete expense: " + err.message);
+  }
+}
+
 function aggregateBudget() {
   const entries = [];
   state.spots.forEach(s => {
@@ -7208,6 +7472,24 @@ function aggregateBudget() {
         scheduledTime: null,
         order: 99998,
       });
+    });
+  });
+  // Standalone expenses (manually logged, not tied to a spot)
+  (state.expenses || []).forEach(e => {
+    if (!e.amount) return;
+    entries.push({
+      source: "expense", id: e.id, townId: e.townId || null,
+      name: e.description || "Expense",
+      category: e.category || "Other",
+      amount: e.amount,
+      currency: e.currency || (state.trip?.currency || "EUR"),
+      isEstimated: e.isEstimated ?? false,
+      isBooked: !e.isEstimated,
+      scheduledDate: e.date || null,
+      scheduledTime: null,
+      paymentMethod: e.paymentMethod || "",
+      note: e.note || "",
+      order: 99999,
     });
   });
   return entries;
@@ -7720,10 +8002,14 @@ function _renderBudgetDrawerList() {
       ? new Date(e.scheduledDate + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })
       : "";
     const timeStr = e.scheduledTime ? ` · ${e.scheduledTime}` : "";
-    // Show the "other dimension" as a sub-label depending on mode
     const subLabel = _bdMode === "city"
       ? `<span style="font-size:0.75rem;color:var(--text-3)">${escapeHtml(e.category)}</span>`
       : (town ? `<span style="font-size:0.75rem;color:var(--text-3)">${escapeHtml(town.name)}</span>` : "");
+    const expenseActions = e.source === "expense" ? `
+      <div class="bd-expense-actions">
+        <button class="bd-expense-btn" data-expense-edit="${escapeHtml(e.id)}" title="Edit expense">✏</button>
+        <button class="bd-expense-btn del" data-expense-del="${escapeHtml(e.id)}" title="Delete expense">✕</button>
+      </div>` : "";
     return `
       <div style="padding:10px 0;border-bottom:1px solid var(--border)">
         <div style="display:flex;align-items:flex-start;gap:8px">
@@ -7733,12 +8019,27 @@ function _renderBudgetDrawerList() {
               ${subLabel}
               ${dateStr ? `<span style="font-size:0.75rem;color:var(--text-3)">${dateStr}${timeStr}</span>` : ""}
               ${e.isEstimated ? `<span style="font-size:0.6875rem;color:var(--text-3);background:var(--surface-2);border:1px solid var(--border);border-radius:4px;padding:1px 5px">est.</span>` : ""}
+              ${e.source === "expense" ? `<span style="font-size:0.6875rem;color:var(--accent);background:rgba(var(--accent-rgb,78,135,116),0.08);border:1px solid rgba(var(--accent-rgb,78,135,116),0.2);border-radius:4px;padding:1px 5px">manual</span>` : ""}
             </div>
           </div>
-          <div style="font-size:0.9375rem;font-weight:600;color:${e.isEstimated ? "var(--text-2)" : "var(--text)"};flex-shrink:0;font-variant-numeric:tabular-nums">${sym}${fmt(e.amount)}</div>
+          <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+            <div style="font-size:0.9375rem;font-weight:600;color:${e.isEstimated ? "var(--text-2)" : "var(--text)"};font-variant-numeric:tabular-nums">${sym}${fmt(e.amount)}</div>
+            ${expenseActions}
+          </div>
         </div>
       </div>`;
   }).join("");
+
+  // Wire edit/delete buttons for manual expense entries
+  list.querySelectorAll("[data-expense-edit]").forEach(btn => {
+    btn.addEventListener("click", (ev) => { ev.stopPropagation(); openExpenseModal(btn.dataset.expenseEdit); });
+  });
+  list.querySelectorAll("[data-expense-del]").forEach(btn => {
+    btn.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      if (confirm("Delete this expense?")) deleteExpense(btn.dataset.expenseDel);
+    });
+  });
 }
 
 function openBudgetDrawer(groupLabel, currency, entries, mode = "") {
@@ -9601,6 +9902,27 @@ document.getElementById("trips-main-signout-btn")?.addEventListener("click", () 
 document.getElementById("trips-search-input")?.addEventListener("input", e => {
   tripSearchQuery = e.target.value;
   renderTripCards();
+});
+
+// ── Standalone expense modal ─────────────────────────────────
+document.getElementById("budget-add-expense-btn")?.addEventListener("click", () => openExpenseModal());
+document.getElementById("expense-modal-close")?.addEventListener("click", closeExpenseModal);
+document.getElementById("exp-cancel-btn")?.addEventListener("click", closeExpenseModal);
+document.getElementById("exp-save-btn")?.addEventListener("click", saveExpense);
+document.getElementById("exp-delete-btn")?.addEventListener("click", async () => {
+  if (!_editingExpenseId) return;
+  if (!confirm("Delete this expense?")) return;
+  const id = _editingExpenseId;
+  closeExpenseModal();
+  await deleteExpense(id);
+});
+document.getElementById("expense-modal-overlay")?.addEventListener("click", (e) => {
+  if (e.target === document.getElementById("expense-modal-overlay")) closeExpenseModal();
+});
+// Estimated toggle
+document.getElementById("exp-estimated-toggle")?.addEventListener("click", () => {
+  _expEstimated = !_expEstimated;
+  document.getElementById("exp-estimated-switch").classList.toggle("on", _expEstimated);
 });
 
 init().catch((err) => {
