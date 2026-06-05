@@ -2564,6 +2564,57 @@
   .balance-settle-btn:hover { background: var(--accent-soft); }
   body.share-mode .balance-settle-btn { display: none !important; }
 
+  /* 3-way split mode selector (Equal / On me / Custom) */
+  .split-mode-row { display: flex; gap: 6px; margin-bottom: 4px; }
+  .split-mode-btn {
+    flex: 1; padding: 7px 4px; border-radius: var(--radius-sm);
+    font-size: 0.8125rem; font-weight: 500;
+    border: 1.5px solid var(--border); background: var(--surface-2);
+    cursor: pointer; text-align: center; color: var(--text-2);
+    transition: border-color 120ms, background 120ms, color 120ms;
+  }
+  .split-mode-btn.active {
+    border-color: var(--accent); background: var(--accent-bg); color: var(--accent);
+  }
+
+  /* Dual-column budget summary */
+  .budget-summary-cols {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;
+  }
+  @media (max-width: 600px) { .budget-summary-cols { grid-template-columns: 1fr; } }
+  .budget-col-label {
+    font-size: 0.625rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--text-3); margin-bottom: 10px;
+  }
+  .budget-my-card {
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px;
+  }
+  .budget-person-filter { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+  .budget-person-pill {
+    font-size: 0.75rem; padding: 3px 10px; border-radius: 100px;
+    border: 1.5px solid var(--border); cursor: pointer; background: var(--surface);
+    transition: border-color 120ms, background 120ms; color: var(--text-2);
+  }
+  .budget-person-pill.active {
+    border-color: var(--accent); background: var(--accent-bg); color: var(--accent);
+  }
+
+  /* Budget drawer person filter row */
+  .bd-person-filter-row {
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    padding: 8px 0 0;
+  }
+  .bd-person-filter-label { font-size: 0.75rem; color: var(--text-3); flex-shrink: 0; }
+  .bd-person-pill {
+    font-size: 0.75rem; padding: 3px 10px; border-radius: 100px;
+    border: 1.5px solid var(--border); cursor: pointer; background: var(--surface-2);
+    transition: border-color 120ms, background 120ms; color: var(--text-2);
+  }
+  .bd-person-pill.active {
+    border-color: var(--accent); background: var(--accent-bg); color: var(--accent);
+  }
+
   /* Documents view */
   .docs-town-group { margin-bottom: 32px; }
   .docs-town-label {
@@ -4044,10 +4095,10 @@ body.share-mode .transit-entry-del { display: none !important; }
       <div id="spot-split-section" style="display:none">
         <div class="form-label" style="margin-bottom:8px">Who paid?</div>
         <div id="spot-payer-chips" class="payer-chips"></div>
-        <div class="visited-toggle" id="spot-split-toggle" role="button" tabindex="0" style="margin-top:10px">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="16" height="16"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          <span class="visited-toggle-label" style="font-size:0.875rem">Split equally among all</span>
-          <div class="toggle-switch" id="spot-split-equal-switch"></div>
+        <div class="split-mode-row" id="spot-split-mode-row" style="margin-top:10px">
+          <button class="split-mode-btn active" data-mode="equal">Equal</button>
+          <button class="split-mode-btn" data-mode="solo">On me</button>
+          <button class="split-mode-btn" data-mode="custom">Custom</button>
         </div>
         <div id="spot-custom-splits" style="display:none;margin-top:10px"></div>
       </div>
@@ -4145,6 +4196,18 @@ body.share-mode .transit-entry-del { display: none !important; }
         <div class="toggle-switch" id="accom-booked-switch"></div>
       </div>
 
+      <!-- Split section (shown only when trip has 2+ participants) -->
+      <div id="accom-split-section" style="display:none">
+        <div class="form-label" style="margin-bottom:8px">Who paid?</div>
+        <div id="accom-payer-chips" class="payer-chips"></div>
+        <div class="split-mode-row" id="accom-split-mode-row" style="margin-top:10px">
+          <button class="split-mode-btn active" data-mode="equal">Equal</button>
+          <button class="split-mode-btn" data-mode="solo">On me</button>
+          <button class="split-mode-btn" data-mode="custom">Custom</button>
+        </div>
+        <div id="accom-custom-splits" style="display:none;margin-top:10px"></div>
+      </div>
+
       <!-- Notes -->
       <div class="form-field">
         <label class="form-label" for="accom-notes">Notes</label>
@@ -4238,6 +4301,17 @@ body.share-mode .transit-entry-del { display: none !important; }
       <input id="transit-amount" class="form-input" type="number" min="0" step="0.01" placeholder="0.00" style="flex:1">
     </div>
     <input id="transit-note" class="form-input" type="text" maxlength="80" placeholder="Note — optional (e.g. airport → hotel)">
+    <!-- Split section (shown only when trip has 2+ participants) -->
+    <div id="transit-split-section" style="display:none;margin-top:10px">
+      <div style="font-size:0.8125rem;font-weight:600;margin-bottom:8px">Who paid?</div>
+      <div id="transit-payer-chips" class="payer-chips"></div>
+      <div class="split-mode-row" id="transit-split-mode-row" style="margin-top:10px">
+        <button class="split-mode-btn active" data-mode="equal">Equal</button>
+        <button class="split-mode-btn" data-mode="solo">On me</button>
+        <button class="split-mode-btn" data-mode="custom">Custom</button>
+      </div>
+      <div id="transit-custom-splits" style="display:none;margin-top:10px"></div>
+    </div>
     <div id="transit-actions">
       <button id="transit-cancel" class="btn-secondary">Cancel</button>
       <button id="transit-save" class="btn-primary" style="flex:1;justify-content:center">
@@ -4313,10 +4387,10 @@ body.share-mode .transit-entry-del { display: none !important; }
       <div id="exp-split-section" style="display:none">
         <div class="form-label" style="margin-bottom:8px">Who paid?</div>
         <div id="exp-payer-chips" class="payer-chips"></div>
-        <div class="visited-toggle" id="exp-split-toggle" role="button" tabindex="0" style="margin-top:10px">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="16" height="16"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          <span class="visited-toggle-label" style="font-size:0.875rem">Split equally among all</span>
-          <div class="toggle-switch" id="exp-split-equal-switch"></div>
+        <div class="split-mode-row" id="exp-split-mode-row" style="margin-top:10px">
+          <button class="split-mode-btn active" data-mode="equal">Equal</button>
+          <button class="split-mode-btn" data-mode="solo">On me</button>
+          <button class="split-mode-btn" data-mode="custom">Custom</button>
         </div>
         <div id="exp-custom-splits" style="display:none;margin-top:10px"></div>
       </div>
@@ -6960,18 +7034,17 @@ function openModal(spot = null, presets = {}) {
   const spotSplitSection = document.getElementById("spot-split-section");
   if (spotMembers.length >= 2) {
     spotSplitSection.style.display = "block";
-    _spotPayerId = spot?.paidBy
-      || spotMembers.find(m => m.name.toLowerCase() === (state.user?.displayName || "").toLowerCase())?.id
-      || spotMembers[0]?.id
-      || null;
-    _spotSplitEqual = spot?.splitType !== "custom";
+    _spotPayerId = spot?.paidBy || currentUserMemberId() || null;
+    _spotSplitMode = spot?.splitType || "equal";
     _spotCustomSplits = {};
     if (spot?.splits) spot.splits.forEach(s => { _spotCustomSplits[s.memberId] = s.owed; });
     renderSpotPayerChips(spotMembers);
-    document.getElementById("spot-split-equal-switch").classList.toggle("on", _spotSplitEqual);
+    document.querySelectorAll("#spot-split-mode-row .split-mode-btn").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.mode === _spotSplitMode);
+    });
     const spotCustomDiv = document.getElementById("spot-custom-splits");
-    spotCustomDiv.style.display = _spotSplitEqual ? "none" : "block";
-    if (!_spotSplitEqual) renderSpotCustomSplits(spotMembers);
+    spotCustomDiv.style.display = _spotSplitMode === "custom" ? "block" : "none";
+    if (_spotSplitMode === "custom") renderSpotCustomSplits(spotMembers);
   } else {
     spotSplitSection.style.display = "none";
   }
@@ -7028,6 +7101,26 @@ function openAccomModal(town) {
   const sw = document.getElementById("accom-booked-switch");
   sw.classList.toggle("on", accomBooked);
 
+  // Split section
+  const accomMembers = state.trip?.members || [];
+  const accomSplitSection = document.getElementById("accom-split-section");
+  if (accomMembers.length >= 2) {
+    accomSplitSection.style.display = "block";
+    _accomPayerId = a.paidBy || currentUserMemberId() || null;
+    _accomSplitMode = a.splitType || "equal";
+    _accomCustomSplits = {};
+    if (a.splits) a.splits.forEach(s => { _accomCustomSplits[s.memberId] = s.owed; });
+    renderAccomPayerChips(accomMembers);
+    document.querySelectorAll("#accom-split-mode-row .split-mode-btn").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.mode === _accomSplitMode);
+    });
+    const accomCustomDiv = document.getElementById("accom-custom-splits");
+    accomCustomDiv.style.display = _accomSplitMode === "custom" ? "block" : "none";
+    if (_accomSplitMode === "custom") renderAccomCustomSplits(accomMembers);
+  } else {
+    accomSplitSection.style.display = "none";
+  }
+
   const saveBtn = document.getElementById("accom-modal-save-btn");
   saveBtn.disabled = false;
   saveBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save`;
@@ -7050,6 +7143,25 @@ async function saveAccommodation() {
     return;
   }
 
+  const accomPrice = parseFloat(document.getElementById("accom-price").value) || null;
+  const accomMembers = state.trip?.members || [];
+  let accomSplitData = {};
+  if (accomMembers.length >= 2 && _accomPayerId && accomPrice) {
+    accomSplitData.paidBy = _accomPayerId;
+    if (_accomSplitMode === "solo") {
+      accomSplitData.splitType = "solo";
+      accomSplitData.splits = accomMembers.map(m => ({ memberId: m.id, owed: m.id === _accomPayerId ? accomPrice : 0 }));
+    } else if (_accomSplitMode === "custom") {
+      accomSplitData.splitType = "custom";
+      accomSplitData.splits = accomMembers.map(m => ({ memberId: m.id, owed: _accomCustomSplits[m.id] || 0 }));
+    } else {
+      accomSplitData.splitType = "equal";
+      accomSplitData.splits = accomMembers.map(m => ({ memberId: m.id, owed: accomPrice / accomMembers.length }));
+    }
+  } else {
+    accomSplitData = { paidBy: null, splitType: null, splits: null };
+  }
+
   const data = {
     name,
     address:       document.getElementById("accom-address").value.trim()     || null,
@@ -7058,10 +7170,11 @@ async function saveAccommodation() {
     checkinTime:   document.getElementById("accom-checkin-time").value       || null,
     checkoutTime:  document.getElementById("accom-checkout-time").value      || null,
     bookingRef:    document.getElementById("accom-booking-ref").value.trim() || null,
-    price:         parseFloat(document.getElementById("accom-price").value)  || null,
+    price:         accomPrice,
     priceCurrency: document.getElementById("accom-price-currency").value     || "EUR",
     notes:         document.getElementById("accom-notes").value.trim()       || null,
     booked:        accomBooked,
+    ...accomSplitData,
   };
 
   const btn = document.getElementById("accom-modal-save-btn");
@@ -7292,13 +7405,18 @@ document.getElementById("modal-save-btn").addEventListener("click", async () => 
   // Attach split data when trip has participants and a price is set
   const splitMembers = state.trip?.members || [];
   if (splitMembers.length >= 2 && _spotPayerId && data.price) {
-    data.paidBy    = _spotPayerId;
-    data.splitType = _spotSplitEqual ? "equal" : "custom";
-    data.splits    = _spotSplitEqual
-      ? splitMembers.map(m => ({ memberId: m.id, owed: data.price / splitMembers.length }))
-      : splitMembers.map(m => ({ memberId: m.id, owed: _spotCustomSplits[m.id] || 0 }));
+    data.paidBy = _spotPayerId;
+    if (_spotSplitMode === "solo") {
+      data.splitType = "solo";
+      data.splits = splitMembers.map(m => ({ memberId: m.id, owed: m.id === _spotPayerId ? data.price : 0 }));
+    } else if (_spotSplitMode === "custom") {
+      data.splitType = "custom";
+      data.splits = splitMembers.map(m => ({ memberId: m.id, owed: _spotCustomSplits[m.id] || 0 }));
+    } else {
+      data.splitType = "equal";
+      data.splits = splitMembers.map(m => ({ memberId: m.id, owed: data.price / splitMembers.length }));
+    }
   } else {
-    // Clear stale split data if price was removed
     data.paidBy    = null;
     data.splitType = null;
     data.splits    = null;
@@ -7384,6 +7502,34 @@ function showTransitSheet(townId, date, existingEntry = null) {
     saveBtn.disabled = false;
     saveBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> ${existingEntry ? "Save changes" : "Add expense"}`;
 
+    // Split section
+    const transitMembers = state.trip?.members || [];
+    const transitSplitSection = document.getElementById("transit-split-section");
+    if (transitMembers.length >= 2) {
+      transitSplitSection.style.display = "block";
+      _transitPayerId = existingEntry?.paidBy || currentUserMemberId() || null;
+      _transitSplitMode = existingEntry?.splitType || "equal";
+      _transitCustomSplits = {};
+      if (existingEntry?.splits) existingEntry.splits.forEach(s => { _transitCustomSplits[s.memberId] = s.owed; });
+      renderTransitPayerChips(transitMembers);
+      overlay.querySelectorAll("#transit-split-mode-row .split-mode-btn").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.mode === _transitSplitMode);
+      });
+      const transitCustomDiv = document.getElementById("transit-custom-splits");
+      transitCustomDiv.style.display = _transitSplitMode === "custom" ? "block" : "none";
+      if (_transitSplitMode === "custom") renderTransitCustomSplits(transitMembers);
+      overlay.querySelectorAll("#transit-split-mode-row .split-mode-btn").forEach(btn => {
+        btn.onclick = () => {
+          _transitSplitMode = btn.dataset.mode;
+          overlay.querySelectorAll("#transit-split-mode-row .split-mode-btn").forEach(b => b.classList.toggle("active", b === btn));
+          transitCustomDiv.style.display = _transitSplitMode === "custom" ? "block" : "none";
+          if (_transitSplitMode === "custom") renderTransitCustomSplits(transitMembers);
+        };
+      });
+    } else {
+      transitSplitSection.style.display = "none";
+    }
+
     // Set type selection
     let selectedType = existingEntry?.type || "metro";
     overlay.querySelectorAll(".transit-type-btn").forEach(btn => {
@@ -7422,6 +7568,21 @@ function showTransitSheet(townId, date, existingEntry = null) {
         note: noteInput.value.trim() || null,
         date: existingEntry?.date || date || localDateStr(new Date()),
       };
+      // Attach split data
+      const tMembers = state.trip?.members || [];
+      if (tMembers.length >= 2 && _transitPayerId) {
+        entry.paidBy = _transitPayerId;
+        if (_transitSplitMode === "solo") {
+          entry.splitType = "solo";
+          entry.splits = tMembers.map(m => ({ memberId: m.id, owed: m.id === _transitPayerId ? amount : 0 }));
+        } else if (_transitSplitMode === "custom") {
+          entry.splitType = "custom";
+          entry.splits = tMembers.map(m => ({ memberId: m.id, owed: _transitCustomSplits[m.id] || 0 }));
+        } else {
+          entry.splitType = "equal";
+          entry.splits = tMembers.map(m => ({ memberId: m.id, owed: amount / tMembers.length }));
+        }
+      }
       saveBtn.disabled = true;
       saveBtn.textContent = "Saving…";
       if (existingEntry) {
@@ -7515,10 +7676,10 @@ function populateCurrencySelect(el, selectedValue) {
    STANDALONE EXPENSE MODAL
    ───────────────────────────────────────────────────────────── */
 let _editingExpenseId = null;
-let _expEstimated = false;
-let _expPayerId = null;
-let _expSplitEqual = true;
-let _expCustomSplits = {};
+let _expEstimated     = false;
+let _expPayerId       = null;
+let _expSplitMode     = "equal"; // "equal" | "solo" | "custom"
+let _expCustomSplits  = {};
 
 function renderPayerChips(members) {
   const container = document.getElementById("exp-payer-chips");
@@ -7587,8 +7748,16 @@ function renderCustomSplits(members) {
    SPOT SPLIT STATE
    ───────────────────────────────────────────────────────────── */
 let _spotPayerId     = null;
-let _spotSplitEqual  = true;
+let _spotSplitMode   = "equal"; // "equal" | "solo" | "custom"
 let _spotCustomSplits = {};
+
+let _accomPayerId     = null;
+let _accomSplitMode   = "equal";
+let _accomCustomSplits = {};
+
+let _transitPayerId    = null;
+let _transitSplitMode  = "equal";
+let _transitCustomSplits = {};
 
 function renderSpotPayerChips(members) {
   const container = document.getElementById("spot-payer-chips");
@@ -7653,6 +7822,149 @@ function renderSpotCustomSplits(members) {
   updateSpotSplitTotalCheck();
 }
 
+function currentUserMemberId() {
+  const members = state.trip?.members || [];
+  const email = state.user?.email?.toLowerCase();
+  const name  = (state.user?.displayName || "").toLowerCase();
+  return (
+    members.find(m => m.email && m.email.toLowerCase() === email)?.id ||
+    members.find(m => m.name.toLowerCase() === name)?.id ||
+    members[0]?.id ||
+    null
+  );
+}
+
+/* ── Accom split render helpers ─────────────────────────── */
+function renderAccomPayerChips(members) {
+  const container = document.getElementById("accom-payer-chips");
+  if (!container) return;
+  container.innerHTML = members.map(m => `
+    <div class="payer-chip${m.id === _accomPayerId ? " selected" : ""}" data-member-id="${escapeHtml(m.id)}">
+      <div class="payer-chip-avatar" style="background:${escapeHtml(m.color || "#888")}">${escapeHtml(m.name.charAt(0).toUpperCase())}</div>
+      ${escapeHtml(m.name)}
+    </div>`).join("");
+  container.querySelectorAll(".payer-chip").forEach(chip => {
+    chip.addEventListener("click", () => {
+      _accomPayerId = chip.dataset.memberId;
+      renderAccomPayerChips(members);
+    });
+  });
+}
+
+function updateAccomSplitTotalCheck() {
+  const checkEl = document.getElementById("accom-split-total-check");
+  if (!checkEl) return;
+  const members = state.trip?.members || [];
+  const total = parseFloat(document.getElementById("accom-price").value) || 0;
+  const splitTotal = Object.values(_accomCustomSplits).reduce((s, v) => s + v, 0);
+  const diff = Math.abs(total - splitTotal);
+  if (total > 0 && diff < 0.01) {
+    checkEl.textContent = "✓ Splits add up correctly";
+    checkEl.style.color = "var(--accent)";
+  } else if (total > 0) {
+    checkEl.textContent = `Splits total ${splitTotal.toFixed(2)}, expected ${total.toFixed(2)}`;
+    checkEl.style.color = "var(--danger)";
+  } else {
+    checkEl.textContent = "";
+  }
+}
+
+function renderAccomCustomSplits(members) {
+  const container = document.getElementById("accom-custom-splits");
+  if (!container) return;
+  const total = parseFloat(document.getElementById("accom-price").value) || 0;
+  const perPerson = members.length > 0 ? total / members.length : 0;
+  const currency = document.getElementById("accom-price-currency").value;
+  container.innerHTML = `
+    <div style="font-size:0.8125rem;color:var(--text-3);margin-bottom:8px">Custom amounts owed (${currency}):</div>
+    ${members.map(m => {
+      const owed = _accomCustomSplits[m.id] !== undefined ? _accomCustomSplits[m.id] : parseFloat(perPerson.toFixed(2));
+      if (_accomCustomSplits[m.id] === undefined) _accomCustomSplits[m.id] = parseFloat(perPerson.toFixed(2));
+      return `
+        <div class="split-row">
+          <div class="split-row-name">
+            <div class="balance-avatar" style="background:${escapeHtml(m.color || "#888")};width:20px;height:20px;font-size:0.6rem">${escapeHtml(m.name.charAt(0).toUpperCase())}</div>
+            ${escapeHtml(m.name)}
+          </div>
+          <input class="split-row-input" type="number" min="0" step="0.01"
+            data-member-id="${escapeHtml(m.id)}" value="${owed.toFixed(2)}">
+        </div>`;
+    }).join("")}
+    <div id="accom-split-total-check" style="font-size:0.75rem;margin-top:8px;text-align:right"></div>`;
+  container.querySelectorAll(".split-row-input").forEach(input => {
+    input.addEventListener("input", () => {
+      _accomCustomSplits[input.dataset.memberId] = parseFloat(input.value) || 0;
+      updateAccomSplitTotalCheck();
+    });
+  });
+  updateAccomSplitTotalCheck();
+}
+
+/* ── Transit split render helpers ───────────────────────── */
+function renderTransitPayerChips(members) {
+  const container = document.getElementById("transit-payer-chips");
+  if (!container) return;
+  container.innerHTML = members.map(m => `
+    <div class="payer-chip${m.id === _transitPayerId ? " selected" : ""}" data-member-id="${escapeHtml(m.id)}">
+      <div class="payer-chip-avatar" style="background:${escapeHtml(m.color || "#888")}">${escapeHtml(m.name.charAt(0).toUpperCase())}</div>
+      ${escapeHtml(m.name)}
+    </div>`).join("");
+  container.querySelectorAll(".payer-chip").forEach(chip => {
+    chip.addEventListener("click", () => {
+      _transitPayerId = chip.dataset.memberId;
+      renderTransitPayerChips(members);
+    });
+  });
+}
+
+function updateTransitSplitTotalCheck() {
+  const checkEl = document.getElementById("transit-split-total-check");
+  if (!checkEl) return;
+  const total = parseFloat(document.getElementById("transit-amount").value) || 0;
+  const splitTotal = Object.values(_transitCustomSplits).reduce((s, v) => s + v, 0);
+  const diff = Math.abs(total - splitTotal);
+  if (total > 0 && diff < 0.01) {
+    checkEl.textContent = "✓ Splits add up correctly";
+    checkEl.style.color = "var(--accent)";
+  } else if (total > 0) {
+    checkEl.textContent = `Splits total ${splitTotal.toFixed(2)}, expected ${total.toFixed(2)}`;
+    checkEl.style.color = "var(--danger)";
+  } else {
+    checkEl.textContent = "";
+  }
+}
+
+function renderTransitCustomSplits(members) {
+  const container = document.getElementById("transit-custom-splits");
+  if (!container) return;
+  const total = parseFloat(document.getElementById("transit-amount").value) || 0;
+  const perPerson = members.length > 0 ? total / members.length : 0;
+  const currency = document.getElementById("transit-currency").value;
+  container.innerHTML = `
+    <div style="font-size:0.8125rem;color:var(--text-3);margin-bottom:8px">Custom amounts owed (${currency}):</div>
+    ${members.map(m => {
+      const owed = _transitCustomSplits[m.id] !== undefined ? _transitCustomSplits[m.id] : parseFloat(perPerson.toFixed(2));
+      if (_transitCustomSplits[m.id] === undefined) _transitCustomSplits[m.id] = parseFloat(perPerson.toFixed(2));
+      return `
+        <div class="split-row">
+          <div class="split-row-name">
+            <div class="balance-avatar" style="background:${escapeHtml(m.color || "#888")};width:20px;height:20px;font-size:0.6rem">${escapeHtml(m.name.charAt(0).toUpperCase())}</div>
+            ${escapeHtml(m.name)}
+          </div>
+          <input class="split-row-input" type="number" min="0" step="0.01"
+            data-member-id="${escapeHtml(m.id)}" value="${owed.toFixed(2)}">
+        </div>`;
+    }).join("")}
+    <div id="transit-split-total-check" style="font-size:0.75rem;margin-top:8px;text-align:right"></div>`;
+  container.querySelectorAll(".split-row-input").forEach(input => {
+    input.addEventListener("input", () => {
+      _transitCustomSplits[input.dataset.memberId] = parseFloat(input.value) || 0;
+      updateTransitSplitTotalCheck();
+    });
+  });
+  updateTransitSplitTotalCheck();
+}
+
 function openExpenseModal(expenseId = null) {
   _editingExpenseId = expenseId;
   _expEstimated = false;
@@ -7705,19 +8017,17 @@ function openExpenseModal(expenseId = null) {
   const splitSection = document.getElementById("exp-split-section");
   if (members.length >= 2) {
     splitSection.style.display = "block";
-    // Default payer: match logged-in user's name, else first member
-    _expPayerId = existing?.paidBy
-      || members.find(m => m.name.toLowerCase() === (state.user?.displayName || "").toLowerCase())?.id
-      || members[0]?.id
-      || null;
-    _expSplitEqual = existing?.splitType !== "custom";
+    _expPayerId = existing?.paidBy || currentUserMemberId() || null;
+    _expSplitMode = existing?.splitType || "equal";
     _expCustomSplits = {};
     if (existing?.splits) existing.splits.forEach(s => { _expCustomSplits[s.memberId] = s.owed; });
     renderPayerChips(members);
-    document.getElementById("exp-split-equal-switch").classList.toggle("on", _expSplitEqual);
+    document.querySelectorAll("#exp-split-mode-row .split-mode-btn").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.mode === _expSplitMode);
+    });
     const customDiv = document.getElementById("exp-custom-splits");
-    customDiv.style.display = _expSplitEqual ? "none" : "block";
-    if (!_expSplitEqual) renderCustomSplits(members);
+    customDiv.style.display = _expSplitMode === "custom" ? "block" : "none";
+    if (_expSplitMode === "custom") renderCustomSplits(members);
   } else {
     splitSection.style.display = "none";
   }
@@ -7758,11 +8068,11 @@ async function saveExpense() {
   const members = state.trip?.members || [];
   if (members.length >= 2 && _expPayerId) {
     data.paidBy = _expPayerId;
-    data.splitType = _expSplitEqual ? "equal" : "custom";
-    if (_expSplitEqual) {
-      const perPerson = amount / members.length;
-      data.splits = members.map(m => ({ memberId: m.id, owed: perPerson }));
-    } else {
+    if (_expSplitMode === "solo") {
+      data.splitType = "solo";
+      data.splits = members.map(m => ({ memberId: m.id, owed: m.id === _expPayerId ? amount : 0 }));
+    } else if (_expSplitMode === "custom") {
+      data.splitType = "custom";
       data.splits = members.map(m => ({ memberId: m.id, owed: _expCustomSplits[m.id] || 0 }));
       const splitTotal = data.splits.reduce((s, x) => s + x.owed, 0);
       if (Math.abs(splitTotal - amount) > 0.05) {
@@ -7771,6 +8081,10 @@ async function saveExpense() {
         saveBtn.disabled = false;
         return;
       }
+    } else {
+      data.splitType = "equal";
+      const perPerson = amount / members.length;
+      data.splits = members.map(m => ({ memberId: m.id, owed: perPerson }));
     }
   }
 
@@ -7847,6 +8161,9 @@ function aggregateBudget() {
       scheduledDate: s.scheduledDate || null,
       scheduledTime: s.scheduledTime || null,
       order: s.order ?? 9999,
+      paidBy: s.paidBy || null,
+      splitType: s.splitType || null,
+      splits: s.splits || null,
     });
   });
   state.towns.forEach(t => {
@@ -7861,6 +8178,9 @@ function aggregateBudget() {
       scheduledDate: t.accommodation.checkinDate || null,
       scheduledTime: null,
       order: 9999,
+      paidBy: t.accommodation.paidBy || null,
+      splitType: t.accommodation.splitType || null,
+      splits: t.accommodation.splits || null,
     });
     (t.transitExpenses || []).forEach(e => {
       entries.push({
@@ -7874,6 +8194,9 @@ function aggregateBudget() {
         scheduledDate: e.date || null,
         scheduledTime: null,
         order: 99998,
+        paidBy: e.paidBy || null,
+        splitType: e.splitType || null,
+        splits: e.splits || null,
       });
     });
   });
@@ -7893,6 +8216,9 @@ function aggregateBudget() {
       paymentMethod: e.paymentMethod || "",
       note: e.note || "",
       order: 99999,
+      paidBy: e.paidBy || null,
+      splitType: e.splitType || null,
+      splits: e.splits || null,
     });
   });
   return entries;
@@ -8078,6 +8404,11 @@ function renderBudget() {
   budgetChartInstances = {};
 
   const sgdSummary = buildSgdSummaryHTML(entries, budgetTargets, fmt);
+  const myMemberId = currentUserMemberId();
+  const myExpHTML  = buildMyExpensesHTML(entries, myMemberId, fmt);
+  const summaryColsHTML = myMemberId
+    ? `<div class="budget-summary-cols">${myExpHTML}${sgdSummary}</div>`
+    : sgdSummary;
 
   const sectionsHTML = currencyList.map(cur => {
     const ces = byCurrency[cur];
@@ -8208,7 +8539,15 @@ function renderBudget() {
       ${transitBlocksHTML}
     </div>`;
 
-  content.innerHTML = renderGroupBalances() + sgdSummary + sectionsHTML + unbookedHTML + transitLogHTML;
+  content.innerHTML = renderGroupBalances() + summaryColsHTML + sectionsHTML + unbookedHTML + transitLogHTML;
+
+  // My-expenses filter pills
+  content.querySelectorAll(".budget-person-pill[data-myfilter]").forEach(pill => {
+    pill.addEventListener("click", () => {
+      _myExpFilter = pill.dataset.myfilter;
+      renderBudget();
+    });
+  });
 
   // Settle-up buttons (group balances card)
   content.querySelectorAll(".balance-settle-btn").forEach(btn => {
@@ -8352,6 +8691,74 @@ let _bdSort = "date";         // "date" | "value"
 let _bdDir  = "desc";         // "desc" | "asc"
 let _bdMode = "";             // "city" | "category" (which chart was clicked)
 let _bdActiveFilters = new Set(); // active filter pill values; empty = show all
+let _bdPersonFilter  = null;  // memberId or null = all
+
+let _myExpFilter = "all";     // "all" | "paid" | "owe"
+
+function buildMyExpensesHTML(entries, myMemberId, fmt) {
+  if (!myMemberId) return "";
+
+  const paidEntries = entries.filter(e => e.paidBy === myMemberId);
+  const oweEntries  = entries.filter(e =>
+    e.paidBy && e.paidBy !== myMemberId &&
+    (e.splits || []).some(s => s.memberId === myMemberId && s.owed > 0.005)
+  );
+  const allRelevant = [...new Map([...paidEntries, ...oweEntries].map(e => [e.id, e])).values()];
+
+  if (allRelevant.length === 0) return `
+    <div class="budget-my-card">
+      <div style="font-size:0.75rem;font-weight:600;color:var(--text-3);margin-bottom:10px;letter-spacing:0.05em;text-transform:uppercase">My Expenses</div>
+      <p style="font-size:0.8125rem;color:var(--text-3);margin:0">No split expenses yet.</p>
+    </div>`;
+
+  const filtered = _myExpFilter === "paid" ? paidEntries
+    : _myExpFilter === "owe" ? oweEntries
+    : allRelevant;
+
+  const getMyAmount = (e) => {
+    if (e.paidBy === myMemberId) {
+      // Amount net of what I owe myself — full amount from payer's perspective
+      return e.amount;
+    }
+    return (e.splits || []).find(s => s.memberId === myMemberId)?.owed || 0;
+  };
+
+  const byCur = {};
+  filtered.forEach(e => {
+    const amt = getMyAmount(e);
+    byCur[e.currency] = (byCur[e.currency] || 0) + amt;
+  });
+
+  const totalsHTML = Object.entries(byCur)
+    .map(([cur, amt]) => `<span style="font-size:1.125rem;font-weight:600;font-variant-numeric:tabular-nums">${currencySymbol(cur)}${fmt(amt)}</span>`)
+    .join(`<span style="color:var(--border-strong,var(--border));margin:0 4px">·</span>`);
+
+  const listHTML = filtered.slice(0, 10).map(e => {
+    const myAmt  = getMyAmount(e);
+    const isPayer = e.paidBy === myMemberId;
+    return `
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
+        <div style="flex:1;min-width:0;font-size:0.8125rem;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(e.name)}</div>
+        <span style="font-size:0.6875rem;padding:1px 5px;border-radius:4px;flex-shrink:0;border:1px solid ${isPayer ? "rgba(var(--accent-rgb,78,135,116),0.3)" : "var(--border)"};background:${isPayer ? "rgba(var(--accent-rgb,78,135,116),0.08)" : "var(--surface-2)"};color:${isPayer ? "var(--accent)" : "var(--text-3)"}">${isPayer ? "paid" : "owe"}</span>
+        <div style="font-size:0.8125rem;font-variant-numeric:tabular-nums;flex-shrink:0;font-weight:500">${currencySymbol(e.currency)}${fmt(myAmt)}</div>
+      </div>`;
+  }).join("");
+
+  const moreCount = filtered.length > 10 ? filtered.length - 10 : 0;
+
+  return `
+    <div class="budget-my-card">
+      <div style="font-size:0.75rem;font-weight:600;color:var(--text-3);margin-bottom:10px;letter-spacing:0.05em;text-transform:uppercase">My Expenses</div>
+      <div class="budget-person-filter">
+        <button class="budget-person-pill${_myExpFilter === "all"  ? " active" : ""}" data-myfilter="all">All</button>
+        <button class="budget-person-pill${_myExpFilter === "paid" ? " active" : ""}" data-myfilter="paid">I paid</button>
+        <button class="budget-person-pill${_myExpFilter === "owe"  ? " active" : ""}" data-myfilter="owe">I owe</button>
+      </div>
+      <div style="margin-bottom:12px;margin-top:4px">${filtered.length === 0 ? `<span style="font-size:0.875rem;color:var(--text-3)">No expenses match this filter.</span>` : totalsHTML}</div>
+      ${listHTML}
+      ${moreCount > 0 ? `<div style="font-size:0.75rem;color:var(--text-3);padding:6px 0">+${moreCount} more</div>` : ""}
+    </div>`;
+}
 
 function _sortBudgetEntries(entries) {
   return [...entries].sort((a, b) => {
@@ -8385,14 +8792,22 @@ function _renderBudgetDrawerList() {
   const clearBtn = document.getElementById("bd-filter-clear-btn");
   if (clearBtn) clearBtn.classList.toggle("visible", _bdActiveFilters.size > 0);
 
-  // Apply filter
-  const filtered = _bdActiveFilters.size === 0
+  // Apply category/city filter
+  const afterCatFilter = _bdActiveFilters.size === 0
     ? _bdEntries
     : _bdEntries.filter(e => {
         if (_bdMode === "city") return _bdActiveFilters.has(e.category);
         const cityName = state.towns.find(t => t.id === e.townId)?.name || "Other";
         return _bdActiveFilters.has(cityName);
       });
+
+  // Apply person filter
+  const filtered = _bdPersonFilter
+    ? afterCatFilter.filter(e =>
+        e.paidBy === _bdPersonFilter ||
+        (e.splits || []).some(s => s.memberId === _bdPersonFilter)
+      )
+    : afterCatFilter;
 
   // Update totals to reflect the current filtered set
   const fTotal    = filtered.reduce((s, e) => s + e.amount, 0);
@@ -8459,12 +8874,13 @@ function openBudgetDrawer(groupLabel, currency, entries, mode = "") {
   currentDrawerAccomTownId = null;
   currentDrawerBudgetMode = true;
 
-  _bdEntries      = entries;
-  _bdCurrency     = currency;
-  _bdSort         = "date";
-  _bdDir          = "desc";
-  _bdMode         = mode;
+  _bdEntries       = entries;
+  _bdCurrency      = currency;
+  _bdSort          = "date";
+  _bdDir           = "desc";
+  _bdMode          = mode;
   _bdActiveFilters = new Set();
+  _bdPersonFilter  = null;
 
   const sym  = currencySymbol(currency);
   const fmt2 = n => n.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -8499,6 +8915,18 @@ function openBudgetDrawer(groupLabel, currency, entries, mode = "") {
           <button class="bd-filter-clear" id="bd-filter-clear-btn">Clear</button>
         </div>`;
       })()}
+      ${(() => {
+        // Person filter pills — only when entries have split data
+        const members = state.trip?.members || [];
+        const relevant = members.filter(m =>
+          entries.some(e => e.paidBy === m.id || (e.splits || []).some(s => s.memberId === m.id))
+        );
+        if (relevant.length < 2) return "";
+        return `<div class="bd-person-filter-row">
+          <span class="bd-filter-label" style="font-size:0.75rem;color:var(--text-3);white-space:nowrap">Person</span>
+          ${relevant.map(m => `<button class="bd-person-pill" data-member-id="${escapeHtml(m.id)}" style="--member-color:${escapeHtml(m.color || "#888")}">${escapeHtml(m.name)}</button>`).join("")}
+        </div>`;
+      })()}
     </div>
     <div id="budget-drawer-list"></div>`;
 
@@ -8527,6 +8955,16 @@ function openBudgetDrawer(groupLabel, currency, entries, mode = "") {
   body.querySelector("#bd-filter-clear-btn")?.addEventListener("click", () => {
     _bdActiveFilters.clear();
     _renderBudgetDrawerList();
+  });
+
+  // Wire person filter pills
+  body.querySelectorAll(".bd-person-pill").forEach(pill => {
+    pill.addEventListener("click", () => {
+      const id = pill.dataset.memberId;
+      _bdPersonFilter = _bdPersonFilter === id ? null : id;
+      body.querySelectorAll(".bd-person-pill").forEach(p => p.classList.toggle("active", p.dataset.memberId === _bdPersonFilter));
+      _renderBudgetDrawerList();
+    });
   });
 
   _renderBudgetDrawerList();
@@ -9505,7 +9943,7 @@ function calculateGroupBalances() {
   const members = state.trip?.members;
   if (!members || members.length < 2) return {};
 
-  // Combine standalone expenses + priced spots into one iterable
+  // Combine all split-tracked items: expenses, spots, accommodation, transit
   const splitItems = [
     ...(state.expenses || [])
       .filter(e => e.paidBy && e.splits?.length)
@@ -9513,6 +9951,14 @@ function calculateGroupBalances() {
     ...(state.spots || [])
       .filter(s => s.paidBy && s.splits?.length && s.price)
       .map(s => ({ currency: s.priceCurrency || state.trip?.currency || "EUR", amount: s.price || 0, paidBy: s.paidBy, splits: s.splits })),
+    ...(state.towns || [])
+      .filter(t => t.accommodation?.paidBy && t.accommodation?.splits?.length && t.accommodation?.price)
+      .map(t => ({ currency: t.accommodation.priceCurrency || state.trip?.currency || "EUR", amount: t.accommodation.price || 0, paidBy: t.accommodation.paidBy, splits: t.accommodation.splits })),
+    ...(state.towns || []).flatMap(t =>
+      (t.transitExpenses || [])
+        .filter(e => e.paidBy && e.splits?.length)
+        .map(e => ({ currency: e.currency || state.trip?.currency || "EUR", amount: e.amount || 0, paidBy: e.paidBy, splits: e.splits }))
+    ),
   ];
 
   // Net balance per currency per member
@@ -9560,7 +10006,9 @@ function renderGroupBalances() {
   if (!members || members.length < 2) return "";
   const hasSplitItems =
     (state.expenses || []).some(e => e.paidBy && e.splits?.length) ||
-    (state.spots   || []).some(s => s.paidBy && s.splits?.length && s.price);
+    (state.spots   || []).some(s => s.paidBy && s.splits?.length && s.price) ||
+    (state.towns   || []).some(t => t.accommodation?.paidBy && t.accommodation?.splits?.length) ||
+    (state.towns   || []).some(t => (t.transitExpenses || []).some(e => e.paidBy && e.splits?.length));
   if (!hasSplitItems) return `
     <div class="group-balances-card">
       <div class="group-balances-heading">Group Balances</div>
@@ -10546,20 +10994,37 @@ document.getElementById("exp-estimated-toggle")?.addEventListener("click", () =>
   document.getElementById("exp-estimated-switch").classList.toggle("on", _expEstimated);
 });
 
-document.getElementById("exp-split-toggle")?.addEventListener("click", () => {
-  _expSplitEqual = !_expSplitEqual;
-  document.getElementById("exp-split-equal-switch").classList.toggle("on", _expSplitEqual);
-  const customDiv = document.getElementById("exp-custom-splits");
-  customDiv.style.display = _expSplitEqual ? "none" : "block";
-  if (!_expSplitEqual) renderCustomSplits(state.trip?.members || []);
+// Expense split mode buttons
+document.querySelectorAll("#exp-split-mode-row .split-mode-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    _expSplitMode = btn.dataset.mode;
+    document.querySelectorAll("#exp-split-mode-row .split-mode-btn").forEach(b => b.classList.toggle("active", b === btn));
+    const customDiv = document.getElementById("exp-custom-splits");
+    customDiv.style.display = _expSplitMode === "custom" ? "block" : "none";
+    if (_expSplitMode === "custom") renderCustomSplits(state.trip?.members || []);
+  });
 });
 
-document.getElementById("spot-split-toggle")?.addEventListener("click", () => {
-  _spotSplitEqual = !_spotSplitEqual;
-  document.getElementById("spot-split-equal-switch").classList.toggle("on", _spotSplitEqual);
-  const customDiv = document.getElementById("spot-custom-splits");
-  customDiv.style.display = _spotSplitEqual ? "none" : "block";
-  if (!_spotSplitEqual) renderSpotCustomSplits(state.trip?.members || []);
+// Spot split mode buttons
+document.querySelectorAll("#spot-split-mode-row .split-mode-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    _spotSplitMode = btn.dataset.mode;
+    document.querySelectorAll("#spot-split-mode-row .split-mode-btn").forEach(b => b.classList.toggle("active", b === btn));
+    const customDiv = document.getElementById("spot-custom-splits");
+    customDiv.style.display = _spotSplitMode === "custom" ? "block" : "none";
+    if (_spotSplitMode === "custom") renderSpotCustomSplits(state.trip?.members || []);
+  });
+});
+
+// Accom split mode buttons
+document.querySelectorAll("#accom-split-mode-row .split-mode-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    _accomSplitMode = btn.dataset.mode;
+    document.querySelectorAll("#accom-split-mode-row .split-mode-btn").forEach(b => b.classList.toggle("active", b === btn));
+    const customDiv = document.getElementById("accom-custom-splits");
+    customDiv.style.display = _accomSplitMode === "custom" ? "block" : "none";
+    if (_accomSplitMode === "custom") renderAccomCustomSplits(state.trip?.members || []);
+  });
 });
 
 // Enter key in ts-member-name triggers Add
