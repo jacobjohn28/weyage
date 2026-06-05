@@ -2390,9 +2390,10 @@
   }
   .budget-target-row .form-label { margin: 0; white-space: nowrap; font-size: 0.8125rem; }
   .budget-charts-row {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px;
+    display: flex; flex-direction: column; gap: 20px; margin-top: 16px;
   }
-  @media (max-width: 600px) { .budget-charts-row { grid-template-columns: 1fr; } }
+  /* equal-width columns — prevent content from blowing out fr units */
+  .budget-summary-cols > div { min-width: 0; overflow: hidden; }
   .budget-chart-label {
     font-size: 0.6875rem; font-weight: 600; text-transform: uppercase;
     letter-spacing: 0.12em; color: var(--text-3); margin-bottom: 8px;
@@ -4498,7 +4499,7 @@ const FIREBASE_BASE = `https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}`;
 let initializeApp, getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, signInAnonymously;
 let initializeFirestore, persistentLocalCache, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs;
 let onSnapshot, writeBatch, serverTimestamp, arrayUnion, addDoc;
-let query, where, arrayRemove;
+let query, where, arrayRemove, deleteField;
 
 /* ─────────────────────────────────────────────────────────────
    FIREBASE CONFIG
@@ -4673,7 +4674,7 @@ async function initFirebase() {
   initializeApp = appMod.initializeApp;
   ({ getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, signInAnonymously } = authMod);
   ({ initializeFirestore, persistentLocalCache, doc, getDoc, setDoc, updateDoc, deleteDoc,
-     collection, getDocs, onSnapshot, writeBatch, serverTimestamp, arrayUnion, addDoc, query, where, arrayRemove } = fsMod);
+     collection, getDocs, onSnapshot, writeBatch, serverTimestamp, arrayUnion, addDoc, query, where, arrayRemove, deleteField } = fsMod);
 
   app = initializeApp(FIREBASE_CONFIG);
   auth = getAuth(app);
@@ -8421,26 +8422,51 @@ function renderBudget() {
     // Group totals
     const totalActual  = ces.filter(e => !e.isEstimated).reduce((s, e) => s + e.amount, 0);
     const totalPlanned = ces.reduce((s, e) => s + e.amount, 0);
-    const budget = budgetTargets[cur] || 0;
-    const denominator = budget || totalPlanned;
-    const pctActual  = denominator > 0 ? Math.min(Math.round((totalActual  / denominator) * 100), 100) : 0;
-    const pctPlanned = denominator > 0 ? Math.min(Math.round((totalPlanned / denominator) * 100), 100) : 0;
-    const overBudget = budget && totalPlanned > budget;
-    const remaining  = budget ? budget - totalPlanned : null;
+    const grpBudget    = budgetTargets[cur] || 0;
+    const grpDenom     = grpBudget || totalPlanned;
+    const grpPctActual  = grpDenom > 0 ? Math.min(Math.round((totalActual  / grpDenom) * 100), 100) : 0;
+    const grpPctPlanned = grpDenom > 0 ? Math.min(Math.round((totalPlanned / grpDenom) * 100), 100) : 0;
+    const grpOver       = grpBudget && totalPlanned > grpBudget;
+    const grpRemaining  = grpBudget ? grpBudget - totalPlanned : null;
 
     // My portion column (left)
     let myColHTML = "";
     if (myMemberId) {
-      const myCes = filterMyEntries(ces, myMemberId, _myExpFilter);
+      const myCes         = filterMyEntries(ces, myMemberId, _myExpFilter);
       const myTotalActual  = myCes.filter(e => !e.isEstimated).reduce((s, e) => s + getMyPortionAmount(e, myMemberId), 0);
       const myTotalPlanned = myCes.reduce((s, e) => s + getMyPortionAmount(e, myMemberId), 0);
+      const myBudget       = state.trip?.memberBudgetTargets?.[myMemberId]?.[cur] || 0;
+      const myDenom        = myBudget || myTotalPlanned;
+      const myPctActual    = myDenom > 0 ? Math.min(Math.round((myTotalActual  / myDenom) * 100), 100) : 0;
+      const myPctPlanned   = myDenom > 0 ? Math.min(Math.round((myTotalPlanned / myDenom) * 100), 100) : 0;
+      const myOver         = myBudget && myTotalPlanned > myBudget;
+      const myRemaining    = myBudget ? myBudget - myTotalPlanned : null;
+
       myColHTML = `
         <div>
           <div class="budget-col-label">My portion</div>
+          <div class="budget-target-row" style="margin-bottom:10px">
+            <label class="form-label">My budget (${escapeHtml(cur)})</label>
+            <input class="form-input" id="my-budget-target-${escapeHtml(cur)}" type="number" min="0" step="100"
+              placeholder="e.g. ${cur === "EUR" ? "1500" : "250"}" value="${myBudget || ""}" style="width:110px">
+            <button class="btn-ghost" data-my-budget-save="${escapeHtml(cur)}" style="padding:6px 12px;font-size:0.8125rem">Set</button>
+          </div>
           <div class="budget-total-row">
             <span class="budget-total-actual">${sym}${fmt(myTotalActual)}</span>
-            <span class="budget-total-planned">paid · ${sym}${fmt(myTotalPlanned)} planned</span>
+            <span class="budget-total-planned">paid · ${sym}${fmt(myTotalPlanned)} planned${myBudget ? ` · ${sym}${fmt(myBudget)} budget` : ""}</span>
           </div>
+          ${myDenom > 0 ? `
+            <div class="budget-progress-track" title="Planned vs my budget">
+              <div class="budget-progress-fill" style="width:${myPctPlanned}%;opacity:0.35;background:var(--accent)"></div>
+            </div>
+            <div class="budget-progress-track" style="margin-top:4px" title="Paid vs my budget">
+              <div class="budget-progress-fill" style="width:${myPctActual}%;background:${myOver ? "var(--danger)" : "var(--success)"}"></div>
+            </div>
+            <div class="budget-progress-label" style="color:${myOver ? "var(--danger)" : "var(--text-3)"}">
+              ${myBudget
+                ? `${sym}${fmt(myTotalPlanned)} of ${sym}${fmt(myBudget)} (${myPctPlanned}%) · ${myRemaining >= 0 ? sym+fmt(myRemaining)+" remaining" : sym+fmt(-myRemaining)+" over budget"}`
+                : `${sym}${fmt(myTotalActual)} paid · ${sym}${fmt(myTotalPlanned)} planned`}
+            </div>` : ""}
           <div class="budget-charts-row">
             <div class="budget-chart-block">
               <div class="budget-chart-label">By city</div>
@@ -8458,19 +8484,25 @@ function renderBudget() {
     const groupColHTML = `
       <div>
         ${myMemberId ? `<div class="budget-col-label">Group</div>` : ""}
+        <div class="budget-target-row" style="margin-bottom:10px">
+          <label class="form-label">Group budget (${escapeHtml(cur)})</label>
+          <input class="form-input" id="budget-target-${escapeHtml(cur)}" type="number" min="0" step="100"
+            placeholder="${cur === "EUR" ? "e.g. 3000" : "e.g. 500"}" value="${grpBudget || ""}" style="width:110px">
+          <button class="btn-ghost" data-budget-save="${escapeHtml(cur)}" style="padding:6px 12px;font-size:0.8125rem">Set</button>
+        </div>
         <div class="budget-total-row">
           <span class="budget-total-actual">${sym}${fmt(totalActual)}</span>
-          <span class="budget-total-planned">paid · ${sym}${fmt(totalPlanned)} planned${budget ? ` · ${sym}${fmt(budget)} budget` : ""}</span>
+          <span class="budget-total-planned">paid · ${sym}${fmt(totalPlanned)} planned${grpBudget ? ` · ${sym}${fmt(grpBudget)} budget` : ""}</span>
         </div>
         <div class="budget-progress-track" title="Planned vs budget">
-          <div class="budget-progress-fill" style="width:${pctPlanned}%;opacity:0.35;background:var(--accent)"></div>
+          <div class="budget-progress-fill" style="width:${grpPctPlanned}%;opacity:0.35;background:var(--accent)"></div>
         </div>
         <div class="budget-progress-track" style="margin-top:4px" title="Paid vs budget">
-          <div class="budget-progress-fill" style="width:${pctActual}%;background:${overBudget ? "var(--danger)" : "var(--success)"}"></div>
+          <div class="budget-progress-fill" style="width:${grpPctActual}%;background:${grpOver ? "var(--danger)" : "var(--success)"}"></div>
         </div>
-        <div class="budget-progress-label" style="color:${overBudget ? "var(--danger)" : "var(--text-3)"}">
-          ${budget
-            ? `${sym}${fmt(totalPlanned)} of ${sym}${fmt(budget)} (${pctPlanned}%) · ${remaining >= 0 ? sym+fmt(remaining)+" remaining" : sym+fmt(-remaining)+" over budget"}`
+        <div class="budget-progress-label" style="color:${grpOver ? "var(--danger)" : "var(--text-3)"}">
+          ${grpBudget
+            ? `${sym}${fmt(totalPlanned)} of ${sym}${fmt(grpBudget)} (${grpPctPlanned}%) · ${grpRemaining >= 0 ? sym+fmt(grpRemaining)+" remaining" : sym+fmt(-grpRemaining)+" over budget"}`
             : `${sym}${fmt(totalActual)} paid · ${sym}${fmt(totalPlanned)} total planned`}
         </div>
         <div class="budget-charts-row">
@@ -8491,7 +8523,7 @@ function renderBudget() {
           <div class="budget-currency-code">${escapeHtml(cur)}</div>
           <div class="budget-currency-totals">
             <div class="budget-currency-paid">${sym}${fmt(totalActual)}</div>
-            <div class="budget-currency-planned">${sym}${fmt(totalPlanned)} planned${budget ? ` · ${sym}${fmt(budget)} budget` : ""}</div>
+            <div class="budget-currency-planned">${sym}${fmt(totalPlanned)} planned${grpBudget ? ` · ${sym}${fmt(grpBudget)} budget` : ""}</div>
           </div>
           <svg class="budget-currency-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polyline points="18 15 12 9 6 15"/></svg>
         </div>
@@ -8499,12 +8531,6 @@ function renderBudget() {
           ${myMemberId
             ? `<div class="budget-summary-cols" style="margin-bottom:0">${myColHTML}${groupColHTML}</div>`
             : groupColHTML}
-          <div class="budget-target-row">
-            <label class="form-label">Budget target (${escapeHtml(cur)})</label>
-            <input class="form-input" id="budget-target-${escapeHtml(cur)}" type="number" min="0" step="100"
-              placeholder="${cur === "EUR" ? "e.g. 3000" : "e.g. 500"}" value="${budget || ""}" style="width:120px">
-            <button class="btn-ghost" data-budget-save="${escapeHtml(cur)}" style="padding:6px 12px;font-size:0.8125rem">Set</button>
-          </div>
         </div>
       </div>`;
   }).join("");
@@ -8642,6 +8668,18 @@ function renderBudget() {
       const targets = { ...(state.trip?.budgetTargets || {}) };
       if (val) targets[cur] = val; else delete targets[cur];
       await updateDoc(doc(db, "trips", activeTripId), { budgetTargets: targets });
+    });
+  });
+
+  // Personal budget target save
+  content.querySelectorAll("[data-my-budget-save]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const cur = btn.dataset.myBudgetSave;
+      const mid = currentUserMemberId();
+      if (!mid) return;
+      const val = parseFloat(document.getElementById(`my-budget-target-${cur}`)?.value) || null;
+      const fieldPath = `memberBudgetTargets.${mid}.${cur}`;
+      await updateDoc(doc(db, "trips", activeTripId), { [fieldPath]: val ?? deleteField() });
     });
   });
 
