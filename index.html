@@ -8405,14 +8405,20 @@ function renderBudget() {
 
   const sgdSummary = buildSgdSummaryHTML(entries, budgetTargets, fmt);
   const myMemberId = currentUserMemberId();
-  const myExpHTML  = buildMyExpensesHTML(entries, myMemberId, fmt);
-  const summaryColsHTML = myMemberId
-    ? `<div class="budget-summary-cols">${myExpHTML}${sgdSummary}</div>`
-    : sgdSummary;
+
+  const myFilterRowHTML = myMemberId ? `
+    <div class="budget-person-filter" style="margin-bottom:4px">
+      <span style="font-size:0.75rem;color:var(--text-3);align-self:center;margin-right:4px;white-space:nowrap">My portion:</span>
+      <button class="budget-person-pill${_myExpFilter === "all"  ? " active" : ""}" data-myfilter="all">All</button>
+      <button class="budget-person-pill${_myExpFilter === "paid" ? " active" : ""}" data-myfilter="paid">I paid</button>
+      <button class="budget-person-pill${_myExpFilter === "owe"  ? " active" : ""}" data-myfilter="owe">I owe</button>
+    </div>` : "";
 
   const sectionsHTML = currencyList.map(cur => {
     const ces = byCurrency[cur];
     const sym = currencySymbol(cur);
+
+    // Group totals
     const totalActual  = ces.filter(e => !e.isEstimated).reduce((s, e) => s + e.amount, 0);
     const totalPlanned = ces.reduce((s, e) => s + e.amount, 0);
     const budget = budgetTargets[cur] || 0;
@@ -8421,6 +8427,63 @@ function renderBudget() {
     const pctPlanned = denominator > 0 ? Math.min(Math.round((totalPlanned / denominator) * 100), 100) : 0;
     const overBudget = budget && totalPlanned > budget;
     const remaining  = budget ? budget - totalPlanned : null;
+
+    // My portion column (left)
+    let myColHTML = "";
+    if (myMemberId) {
+      const myCes = filterMyEntries(ces, myMemberId, _myExpFilter);
+      const myTotalActual  = myCes.filter(e => !e.isEstimated).reduce((s, e) => s + getMyPortionAmount(e, myMemberId), 0);
+      const myTotalPlanned = myCes.reduce((s, e) => s + getMyPortionAmount(e, myMemberId), 0);
+      myColHTML = `
+        <div>
+          <div class="budget-col-label">My portion</div>
+          <div class="budget-total-row">
+            <span class="budget-total-actual">${sym}${fmt(myTotalActual)}</span>
+            <span class="budget-total-planned">paid · ${sym}${fmt(myTotalPlanned)} planned</span>
+          </div>
+          <div class="budget-charts-row">
+            <div class="budget-chart-block">
+              <div class="budget-chart-label">By city</div>
+              <canvas id="budget-chart-${escapeHtml(cur)}-city-mine"></canvas>
+            </div>
+            <div class="budget-chart-block">
+              <div class="budget-chart-label">By category</div>
+              <canvas id="budget-chart-${escapeHtml(cur)}-cat-mine"></canvas>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    // Group column (right)
+    const groupColHTML = `
+      <div>
+        ${myMemberId ? `<div class="budget-col-label">Group</div>` : ""}
+        <div class="budget-total-row">
+          <span class="budget-total-actual">${sym}${fmt(totalActual)}</span>
+          <span class="budget-total-planned">paid · ${sym}${fmt(totalPlanned)} planned${budget ? ` · ${sym}${fmt(budget)} budget` : ""}</span>
+        </div>
+        <div class="budget-progress-track" title="Planned vs budget">
+          <div class="budget-progress-fill" style="width:${pctPlanned}%;opacity:0.35;background:var(--accent)"></div>
+        </div>
+        <div class="budget-progress-track" style="margin-top:4px" title="Paid vs budget">
+          <div class="budget-progress-fill" style="width:${pctActual}%;background:${overBudget ? "var(--danger)" : "var(--success)"}"></div>
+        </div>
+        <div class="budget-progress-label" style="color:${overBudget ? "var(--danger)" : "var(--text-3)"}">
+          ${budget
+            ? `${sym}${fmt(totalPlanned)} of ${sym}${fmt(budget)} (${pctPlanned}%) · ${remaining >= 0 ? sym+fmt(remaining)+" remaining" : sym+fmt(-remaining)+" over budget"}`
+            : `${sym}${fmt(totalActual)} paid · ${sym}${fmt(totalPlanned)} total planned`}
+        </div>
+        <div class="budget-charts-row">
+          <div class="budget-chart-block">
+            <div class="budget-chart-label">By city</div>
+            <canvas id="budget-chart-${escapeHtml(cur)}-city"></canvas>
+          </div>
+          <div class="budget-chart-block">
+            <div class="budget-chart-label">By category</div>
+            <canvas id="budget-chart-${escapeHtml(cur)}-cat"></canvas>
+          </div>
+        </div>
+      </div>`;
 
     return `
       <div class="budget-currency-section expanded" data-currency="${escapeHtml(cur)}">
@@ -8433,36 +8496,14 @@ function renderBudget() {
           <svg class="budget-currency-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polyline points="18 15 12 9 6 15"/></svg>
         </div>
         <div class="budget-currency-body">
-          <div class="budget-total-row">
-            <span class="budget-total-actual">${sym}${fmt(totalActual)}</span>
-            <span class="budget-total-planned">paid · ${sym}${fmt(totalPlanned)} planned${budget ? ` · ${sym}${fmt(budget)} budget` : ""}</span>
-          </div>
-          <div class="budget-progress-track" title="Planned vs budget">
-            <div class="budget-progress-fill" style="width:${pctPlanned}%;opacity:0.35;background:var(--accent)"></div>
-          </div>
-          <div class="budget-progress-track" style="margin-top:4px" title="Paid vs budget">
-            <div class="budget-progress-fill" style="width:${pctActual}%;background:${overBudget ? "var(--danger)" : "var(--success)"}"></div>
-          </div>
-          <div class="budget-progress-label" style="color:${overBudget ? "var(--danger)" : "var(--text-3)"}">
-            ${budget
-              ? `${sym}${fmt(totalPlanned)} of ${sym}${fmt(budget)} (${pctPlanned}%) · ${remaining >= 0 ? sym+fmt(remaining)+" remaining" : sym+fmt(-remaining)+" over budget"}`
-              : `${sym}${fmt(totalActual)} paid · ${sym}${fmt(totalPlanned)} total planned`}
-          </div>
+          ${myMemberId
+            ? `<div class="budget-summary-cols" style="margin-bottom:0">${myColHTML}${groupColHTML}</div>`
+            : groupColHTML}
           <div class="budget-target-row">
             <label class="form-label">Budget target (${escapeHtml(cur)})</label>
             <input class="form-input" id="budget-target-${escapeHtml(cur)}" type="number" min="0" step="100"
               placeholder="${cur === "EUR" ? "e.g. 3000" : "e.g. 500"}" value="${budget || ""}" style="width:120px">
             <button class="btn-ghost" data-budget-save="${escapeHtml(cur)}" style="padding:6px 12px;font-size:0.8125rem">Set</button>
-          </div>
-          <div class="budget-charts-row">
-            <div class="budget-chart-block">
-              <div class="budget-chart-label">By city</div>
-              <canvas id="budget-chart-${escapeHtml(cur)}-city"></canvas>
-            </div>
-            <div class="budget-chart-block">
-              <div class="budget-chart-label">By category</div>
-              <canvas id="budget-chart-${escapeHtml(cur)}-cat"></canvas>
-            </div>
           </div>
         </div>
       </div>`;
@@ -8539,9 +8580,9 @@ function renderBudget() {
       ${transitBlocksHTML}
     </div>`;
 
-  content.innerHTML = renderGroupBalances() + summaryColsHTML + sectionsHTML + unbookedHTML + transitLogHTML;
+  content.innerHTML = renderGroupBalances() + sgdSummary + myFilterRowHTML + sectionsHTML + unbookedHTML + transitLogHTML;
 
-  // My-expenses filter pills
+  // My-portion filter pills
   content.querySelectorAll(".budget-person-pill[data-myfilter]").forEach(pill => {
     pill.addEventListener("click", () => {
       _myExpFilter = pill.dataset.myfilter;
@@ -8612,6 +8653,8 @@ function renderBudget() {
 
 function renderBudgetCharts(byCurrency, fmt, allEntries) {
   if (typeof Chart === "undefined") return;
+  const myMemberId = currentUserMemberId();
+
   Object.entries(byCurrency).forEach(([cur, ces]) => {
     const sym = currencySymbol(cur);
     const baseOpts = {
@@ -8627,7 +8670,9 @@ function renderBudgetCharts(byCurrency, fmt, allEntries) {
       },
     };
 
-    // By city
+    // ── Group charts ───────────────────────────────────────────
+
+    // By city (group)
     const cityCtx = document.getElementById(`budget-chart-${cur}-city`);
     if (cityCtx) {
       const byCity = {};
@@ -8657,7 +8702,7 @@ function renderBudgetCharts(byCurrency, fmt, allEntries) {
       });
     }
 
-    // By category
+    // By category (group)
     const catCtx = document.getElementById(`budget-chart-${cur}-cat`);
     if (catCtx) {
       const byCat = {};
@@ -8680,6 +8725,61 @@ function renderBudgetCharts(byCurrency, fmt, allEntries) {
         },
       });
     }
+
+    // ── My-portion charts ──────────────────────────────────────
+    if (!myMemberId) return;
+    const myCes = filterMyEntries(ces, myMemberId, _myExpFilter);
+
+    // By city (mine)
+    const cityCMine = document.getElementById(`budget-chart-${cur}-city-mine`);
+    if (cityCMine) {
+      const byCity = {};
+      myCes.forEach(e => {
+        const name = state.towns.find(t => t.id === e.townId)?.name || "Other";
+        byCity[name] = (byCity[name] || 0) + getMyPortionAmount(e, myMemberId);
+      });
+      const cityLabels = Object.keys(byCity).sort((a, b) => byCity[b] - byCity[a]);
+      const cityData   = cityLabels.map(k => byCity[k]);
+      const cityColors = cityLabels.map((_, i) => CITY_PALETTE[i % CITY_PALETTE.length]);
+      budgetChartInstances[`${cur}-city-mine`] = new Chart(cityCMine, {
+        type: "bar",
+        data: { labels: cityLabels, datasets: [{ data: cityData, backgroundColor: cityColors, borderRadius: 4, borderSkipped: false }] },
+        options: {
+          ...baseOpts,
+          onHover: (event, elements) => { cityCMine.style.cursor = elements.length ? "pointer" : "default"; },
+          onClick: (event, elements) => {
+            if (!elements.length) return;
+            const cityName = cityLabels[elements[0].index];
+            const cityEntries = myCes.filter(e => (state.towns.find(t => t.id === e.townId)?.name || "Other") === cityName);
+            openBudgetDrawer(cityName, cur, cityEntries, "city");
+          },
+        },
+      });
+    }
+
+    // By category (mine)
+    const catCMine = document.getElementById(`budget-chart-${cur}-cat-mine`);
+    if (catCMine) {
+      const byCat = {};
+      myCes.forEach(e => { byCat[e.category] = (byCat[e.category] || 0) + getMyPortionAmount(e, myMemberId); });
+      const catLabels = Object.keys(byCat).sort((a, b) => byCat[b] - byCat[a]);
+      const catData   = catLabels.map(k => byCat[k]);
+      const catColors = catLabels.map(c => CATEGORY_COLORS[c] || "#888");
+      budgetChartInstances[`${cur}-cat-mine`] = new Chart(catCMine, {
+        type: "bar",
+        data: { labels: catLabels, datasets: [{ data: catData, backgroundColor: catColors, borderRadius: 4, borderSkipped: false }] },
+        options: {
+          ...baseOpts,
+          onHover: (event, elements) => { catCMine.style.cursor = elements.length ? "pointer" : "default"; },
+          onClick: (event, elements) => {
+            if (!elements.length) return;
+            const category = catLabels[elements[0].index];
+            const catEntries = myCes.filter(e => e.category === category);
+            openBudgetDrawer(category, cur, catEntries, "category");
+          },
+        },
+      });
+    }
   });
 }
 
@@ -8695,69 +8795,24 @@ let _bdPersonFilter  = null;  // memberId or null = all
 
 let _myExpFilter = "all";     // "all" | "paid" | "owe"
 
-function buildMyExpensesHTML(entries, myMemberId, fmt) {
-  if (!myMemberId) return "";
+function getMyPortionAmount(e, myMemberId) {
+  if (!myMemberId) return 0;
+  if (e.splits?.length) return (e.splits || []).find(s => s.memberId === myMemberId)?.owed || 0;
+  return e.paidBy === myMemberId ? e.amount : 0;
+}
 
-  const paidEntries = entries.filter(e => e.paidBy === myMemberId);
-  const oweEntries  = entries.filter(e =>
+function filterMyEntries(entries, myMemberId, filter) {
+  if (!myMemberId) return [];
+  if (filter === "paid") return entries.filter(e => e.paidBy === myMemberId);
+  if (filter === "owe")  return entries.filter(e =>
     e.paidBy && e.paidBy !== myMemberId &&
     (e.splits || []).some(s => s.memberId === myMemberId && s.owed > 0.005)
   );
-  const allRelevant = [...new Map([...paidEntries, ...oweEntries].map(e => [e.id, e])).values()];
-
-  if (allRelevant.length === 0) return `
-    <div class="budget-my-card">
-      <div style="font-size:0.75rem;font-weight:600;color:var(--text-3);margin-bottom:10px;letter-spacing:0.05em;text-transform:uppercase">My Expenses</div>
-      <p style="font-size:0.8125rem;color:var(--text-3);margin:0">No split expenses yet.</p>
-    </div>`;
-
-  const filtered = _myExpFilter === "paid" ? paidEntries
-    : _myExpFilter === "owe" ? oweEntries
-    : allRelevant;
-
-  const getMyAmount = (e) => {
-    if (e.paidBy === myMemberId) {
-      // Amount net of what I owe myself — full amount from payer's perspective
-      return e.amount;
-    }
-    return (e.splits || []).find(s => s.memberId === myMemberId)?.owed || 0;
-  };
-
-  const byCur = {};
-  filtered.forEach(e => {
-    const amt = getMyAmount(e);
-    byCur[e.currency] = (byCur[e.currency] || 0) + amt;
-  });
-
-  const totalsHTML = Object.entries(byCur)
-    .map(([cur, amt]) => `<span style="font-size:1.125rem;font-weight:600;font-variant-numeric:tabular-nums">${currencySymbol(cur)}${fmt(amt)}</span>`)
-    .join(`<span style="color:var(--border-strong,var(--border));margin:0 4px">·</span>`);
-
-  const listHTML = filtered.slice(0, 10).map(e => {
-    const myAmt  = getMyAmount(e);
-    const isPayer = e.paidBy === myMemberId;
-    return `
-      <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
-        <div style="flex:1;min-width:0;font-size:0.8125rem;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(e.name)}</div>
-        <span style="font-size:0.6875rem;padding:1px 5px;border-radius:4px;flex-shrink:0;border:1px solid ${isPayer ? "rgba(var(--accent-rgb,78,135,116),0.3)" : "var(--border)"};background:${isPayer ? "rgba(var(--accent-rgb,78,135,116),0.08)" : "var(--surface-2)"};color:${isPayer ? "var(--accent)" : "var(--text-3)"}">${isPayer ? "paid" : "owe"}</span>
-        <div style="font-size:0.8125rem;font-variant-numeric:tabular-nums;flex-shrink:0;font-weight:500">${currencySymbol(e.currency)}${fmt(myAmt)}</div>
-      </div>`;
-  }).join("");
-
-  const moreCount = filtered.length > 10 ? filtered.length - 10 : 0;
-
-  return `
-    <div class="budget-my-card">
-      <div style="font-size:0.75rem;font-weight:600;color:var(--text-3);margin-bottom:10px;letter-spacing:0.05em;text-transform:uppercase">My Expenses</div>
-      <div class="budget-person-filter">
-        <button class="budget-person-pill${_myExpFilter === "all"  ? " active" : ""}" data-myfilter="all">All</button>
-        <button class="budget-person-pill${_myExpFilter === "paid" ? " active" : ""}" data-myfilter="paid">I paid</button>
-        <button class="budget-person-pill${_myExpFilter === "owe"  ? " active" : ""}" data-myfilter="owe">I owe</button>
-      </div>
-      <div style="margin-bottom:12px;margin-top:4px">${filtered.length === 0 ? `<span style="font-size:0.875rem;color:var(--text-3)">No expenses match this filter.</span>` : totalsHTML}</div>
-      ${listHTML}
-      ${moreCount > 0 ? `<div style="font-size:0.75rem;color:var(--text-3);padding:6px 0">+${moreCount} more</div>` : ""}
-    </div>`;
+  // "all": paid or in splits
+  return entries.filter(e =>
+    e.paidBy === myMemberId ||
+    (e.splits || []).some(s => s.memberId === myMemberId && s.owed > 0.005)
+  );
 }
 
 function _sortBudgetEntries(entries) {
