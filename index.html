@@ -105,6 +105,9 @@
     --warning: #C99744;
     --danger: #B85342;
 
+    /* Column tint — My Portion */
+    --mine-bg: rgba(194, 85, 61, 0.055);
+
     /* Type-specific tints */
     --tint-sight: #5B7A99;
     --tint-food: #C99744;
@@ -142,6 +145,8 @@
     --accent: #E67E4D;
     --accent-soft: #6B3A26;
     --accent-bg: rgba(230, 126, 77, 0.12);
+
+    --mine-bg: rgba(230, 126, 77, 0.09);
 
     --success: #8AA582;
     --warning: #D9A85C;
@@ -2345,22 +2350,44 @@
     font-size: 0.75rem; color: var(--text-3);
     margin-top: 10px; display: flex; flex-wrap: wrap; gap: 4px 14px;
   }
+  /* Dashboard column header — desktop only, sits above all cards */
+  .budget-dash-col-headers {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 10px;
+  }
+  @media (max-width: 600px) { .budget-dash-col-headers { display: none; } }
+  .budget-dash-col-header {
+    font-size: 1.0625rem; font-weight: 700; letter-spacing: -0.02em;
+    color: var(--text-1); padding: 8px 12px; border-radius: var(--radius-sm);
+  }
+
+  /* My Portion tint — applied to any column or cell that belongs to the user */
+  .budget-col-mine { background: var(--mine-bg); border-radius: var(--radius-sm); }
+  /* Give the per-currency mine column a little inset padding */
+  .budget-summary-cols .budget-col-mine { padding: 10px 12px; }
+
   /* Two-column layout inside the SGD card */
   .budget-sgd-cols {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
     border-top: 1px solid var(--border); padding-top: 14px; margin-top: 10px;
   }
-  @media (max-width: 600px) { .budget-sgd-cols { grid-template-columns: 1fr; gap: 16px; } }
-  .budget-sgd-col { padding: 0 14px; min-width: 0; }
-  .budget-sgd-col:first-child { padding-left: 0; border-right: 1px solid var(--border); }
-  .budget-sgd-col:last-child  { padding-right: 0; }
+  @media (max-width: 600px) { .budget-sgd-cols { grid-template-columns: 1fr; gap: 12px; } }
+  .budget-sgd-col { padding: 10px 12px; min-width: 0; border-radius: var(--radius-sm); }
   @media (max-width: 600px) {
-    .budget-sgd-col:first-child { border-right: none; border-bottom: 1px solid var(--border); padding-bottom: 14px; }
+    .budget-sgd-col:first-child { border-bottom: 1px solid var(--border); padding-bottom: 14px; border-radius: var(--radius-sm) var(--radius-sm) 0 0; }
   }
   .budget-sgd-col-title {
     font-size: 0.625rem; font-weight: 700; text-transform: uppercase;
     letter-spacing: 0.1em; color: var(--text-3);
     text-align: center; margin-bottom: 8px;
+  }
+  /* Hide inner column titles on desktop — the outer headers take their place */
+  @media (min-width: 601px) {
+    .budget-sgd-col-title { display: none; }
+    .budget-col-label     { display: none; }
+  }
+  /* Center-align inner titles on mobile */
+  @media (max-width: 600px) {
+    .budget-col-label { text-align: center; margin-bottom: 10px; }
   }
   .budget-sgd-col-filters {
     display: flex; justify-content: center; gap: 5px; flex-wrap: wrap;
@@ -2609,6 +2636,7 @@
   .budget-col-label {
     font-size: 0.625rem; font-weight: 700; text-transform: uppercase;
     letter-spacing: 0.1em; color: var(--text-3); margin-bottom: 10px;
+    text-align: center;
   }
   .budget-my-card {
     background: var(--surface-2); border: 1px solid var(--border);
@@ -8521,7 +8549,7 @@ function buildSgdSummaryHTML(entries, budgetTargets, fmt, myMemberId, myExpFilte
   const noRatesMsg = `<p style="font-size:0.8125rem;color:var(--text-3);margin:8px 0">Refresh rates to calculate.</p>`;
 
   const myColHTML = myMemberId ? `
-    <div class="budget-sgd-col">
+    <div class="budget-sgd-col budget-col-mine">
       <div class="budget-sgd-col-title">My Portion</div>
       <div class="budget-sgd-col-filters">
         <button class="budget-person-pill${(myExpFilter||"all")==="all" ?" active":""}" data-myfilter="all">All</button>
@@ -8959,7 +8987,7 @@ function renderBudget() {
       const myRemaining    = myBudget ? myBudget - myTotalPlanned : null;
 
       myColHTML = `
-        <div>
+        <div class="budget-col-mine">
           <div class="budget-col-label">My portion</div>
           <div class="budget-target-row" style="margin-bottom:10px">
             <label class="form-label">My budget (${escapeHtml(cur)})</label>
@@ -9062,7 +9090,13 @@ function renderBudget() {
         <span class="budget-unbooked-amount">~${currencySymbol(e.currency)}${fmt(e.amount)}</span>
       </div>`).join("")}` : "";
 
-  content.innerHTML = renderGroupBalances() + sgdSummary + sectionsHTML + unbookedHTML;
+  const colHeadersHTML = myMemberId ? `
+    <div class="budget-dash-col-headers">
+      <div class="budget-dash-col-header budget-col-mine">My Portion</div>
+      <div class="budget-dash-col-header">Group</div>
+    </div>` : "";
+
+  content.innerHTML = renderGroupBalances() + colHeadersHTML + sgdSummary + sectionsHTML + unbookedHTML;
 
   // My-portion filter pills
   content.querySelectorAll(".budget-person-pill[data-myfilter]").forEach(pill => {
