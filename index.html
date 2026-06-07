@@ -2360,7 +2360,7 @@
     padding: 12px 16px 14px; border-radius: var(--radius-sm); text-align: center;
   }
   .budget-dash-col-title {
-    font-size: 1.0625rem; font-weight: 700; letter-spacing: -0.02em; color: var(--text-1);
+    font-size: 2rem; font-weight: 700; letter-spacing: -0.04em; color: var(--text-1);
   }
   .budget-dash-col-filters {
     display: flex; justify-content: center; gap: 5px; flex-wrap: wrap;
@@ -3923,8 +3923,7 @@ body.share-mode .transit-entry-del { display: none !important; }
       </section>
 
       <section class="view" id="view-budget">
-        <div class="section-header" style="margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:12px">
-          <h1 class="section-title">Budget</h1>
+        <div class="section-header" style="margin-bottom:20px;display:flex;align-items:center;justify-content:flex-end;gap:12px">
           <button class="btn-primary" id="budget-add-expense-btn" style="padding:8px 16px;font-size:0.875rem;flex-shrink:0">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add expense
@@ -8631,6 +8630,7 @@ function buildAllTabHTML(entries, budgetTargets, fmt, myMemberId, myExpFilter, g
 
   const myColHTML = myMemberId ? `
     <div class="budget-all-col budget-col-mine">
+      <div class="budget-col-label">My Portion</div>
       ${hasRates ? `
         <div class="budget-all-total">${homeSym}${fmt(Math.round(totalPaidMine))}</div>
         <div class="budget-all-subtext">paid · ${homeSym}${fmt(Math.round(totalPlannedMine))} planned${myLeft !== null ? ` · <span style="color:${myOver?"var(--danger)":"var(--text-3)"}">${myOver ? homeSym+fmt(-myLeft)+" over" : homeSym+fmt(myLeft)+" left"}</span>` : ""}</div>
@@ -8647,6 +8647,7 @@ function buildAllTabHTML(entries, budgetTargets, fmt, myMemberId, myExpFilter, g
 
   const grpColHTML = `
     <div class="budget-all-col">
+      <div class="budget-col-label">Group${grpFiltered ? `<span style="font-size:0.6875rem;font-weight:400;color:var(--accent);margin-left:4px;text-transform:none;letter-spacing:0">· filtered</span>` : ""}</div>
       ${hasRates ? `
         <div class="budget-all-total">${homeSym}${fmt(Math.round(totalPaidGroup))}</div>
         <div class="budget-all-subtext">paid · ${homeSym}${fmt(Math.round(totalPlannedGroup))} planned${!grpFiltered && grpLeft !== null ? ` · <span style="color:${grpOver?"var(--danger)":"var(--text-3)"}">${grpOver ? homeSym+fmt(-grpLeft)+" over" : homeSym+fmt(grpLeft)+" left"}</span>` : ""}</div>
@@ -9112,6 +9113,13 @@ function renderBudget() {
     if (a === home) return -1; if (b === home) return 1;
     return a.localeCompare(b);
   });
+  // Restore persisted currency order when the trip changes (handles refresh and trip switching)
+  const _tripId = state.trip?.id || null;
+  if (_currencyOrderTripId !== _tripId) {
+    _currencyOrder      = _loadCurrencyOrder(_tripId);
+    _currencyOrderTripId = _tripId;
+  }
+
   // Apply manual drag order (only reorders currencies that still exist)
   if (_currencyOrder) {
     const known = new Set(currencyList);
@@ -9220,7 +9228,9 @@ function renderBudget() {
       if (si < 0 || ti < 0) return;
       next.splice(si, 1);
       next.splice(ti, 0, src);
-      _currencyOrder = next;
+      _currencyOrder      = next;
+      _currencyOrderTripId = state.trip?.id || null;
+      _saveCurrencyOrder(_currencyOrderTripId, _currencyOrder);
       renderBudget();
     });
   });
@@ -9527,10 +9537,19 @@ let _bdMineFilter    = "all";       // "all" | "paid" | "owe"  (left column draw
 let _bdGroupFilter   = new Set();   // participant IDs  (right column drawer, empty = all)
 let _bdFiltersOpen   = false;       // filter panel expanded?
 
-let _myExpFilter       = "all";      // left column top-level: "all" | "paid" | "owe"
-let _groupMemberFilter = new Set();  // right column top-level: participant IDs (empty = all)
-let _budgetTab         = "all";      // active budget tab: "all" | currency code
-let _currencyOrder     = null;       // null = default sort | string[] = manual drag order
+let _myExpFilter        = "all";      // left column top-level: "all" | "paid" | "owe"
+let _groupMemberFilter  = new Set();  // right column top-level: participant IDs (empty = all)
+let _budgetTab          = "all";      // active budget tab: "all" | currency code
+let _currencyOrder      = null;       // null = default sort | string[] = manual drag order
+let _currencyOrderTripId = null;      // tracks which trip _currencyOrder belongs to (for cross-trip safety)
+
+function _loadCurrencyOrder(tripId) {
+  try { const s = localStorage.getItem(`currency-order-${tripId}`); return s ? JSON.parse(s) : null; }
+  catch { return null; }
+}
+function _saveCurrencyOrder(tripId, order) {
+  try { localStorage.setItem(`currency-order-${tripId}`, JSON.stringify(order)); } catch {}
+}
 
 function getMyPortionAmount(e, myMemberId) {
   if (!myMemberId) return 0;
