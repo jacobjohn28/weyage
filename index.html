@@ -2356,8 +2356,14 @@
   }
   @media (max-width: 600px) { .budget-dash-col-headers { display: none; } }
   .budget-dash-col-header {
-    font-size: 1.0625rem; font-weight: 700; letter-spacing: -0.02em;
-    color: var(--text-1); padding: 8px 12px; border-radius: var(--radius-sm);
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    padding: 12px 16px 14px; border-radius: var(--radius-sm); text-align: center;
+  }
+  .budget-dash-col-title {
+    font-size: 1.0625rem; font-weight: 700; letter-spacing: -0.02em; color: var(--text-1);
+  }
+  .budget-dash-col-filters {
+    display: flex; justify-content: center; gap: 5px; flex-wrap: wrap;
   }
 
   /* My Portion tint — applied to any column or cell that belongs to the user */
@@ -2393,6 +2399,8 @@
     display: flex; justify-content: center; gap: 5px; flex-wrap: wrap;
     margin-bottom: 12px;
   }
+  /* Hide in-card filters on desktop — they live in the outer column header instead */
+  @media (min-width: 601px) { .budget-sgd-col-filters { display: none; } }
   /* Smaller total figure when in a narrow column */
   .budget-sgd-col .budget-sgd-total { font-size: 1.875rem; }
   .budget-currency-section {
@@ -9090,10 +9098,30 @@ function renderBudget() {
         <span class="budget-unbooked-amount">~${currencySymbol(e.currency)}${fmt(e.amount)}</span>
       </div>`).join("")}` : "";
 
+  // Members who appear in at least one expense (for Group filter pills)
+  const dashGrpMembers = (state.trip?.members || []).filter(m =>
+    entries.some(e => e.paidBy === m.id || (e.splits || []).some(s => s.memberId === m.id))
+  );
+  const grpFiltered = _groupMemberFilter.size > 0;
+
   const colHeadersHTML = myMemberId ? `
     <div class="budget-dash-col-headers">
-      <div class="budget-dash-col-header budget-col-mine">My Portion</div>
-      <div class="budget-dash-col-header">Group</div>
+      <div class="budget-dash-col-header budget-col-mine">
+        <div class="budget-dash-col-title">My Portion</div>
+        <div class="budget-dash-col-filters">
+          <button class="budget-person-pill${_myExpFilter === "all"  ? " active" : ""}" data-myfilter="all">All</button>
+          <button class="budget-person-pill${_myExpFilter === "paid" ? " active" : ""}" data-myfilter="paid">I paid</button>
+          <button class="budget-person-pill${_myExpFilter === "owe"  ? " active" : ""}" data-myfilter="owe">I owe</button>
+        </div>
+      </div>
+      <div class="budget-dash-col-header">
+        <div class="budget-dash-col-title">Group${grpFiltered ? `<span style="font-size:0.75rem;font-weight:400;color:var(--accent);margin-left:5px">· filtered</span>` : ""}</div>
+        ${dashGrpMembers.length > 1 ? `
+        <div class="budget-dash-col-filters">
+          <button class="grp-member-pill${!grpFiltered ? " active" : ""}" data-grpmember="">All</button>
+          ${dashGrpMembers.map(m => `<button class="grp-member-pill${_groupMemberFilter.has(m.id) ? " active" : ""}" data-grpmember="${escapeHtml(m.id)}">${escapeHtml(m.name)}</button>`).join("")}
+        </div>` : ""}
+      </div>
     </div>` : "";
 
   content.innerHTML = renderGroupBalances() + colHeadersHTML + sgdSummary + sectionsHTML + unbookedHTML;
