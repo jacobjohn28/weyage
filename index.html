@@ -3669,6 +3669,150 @@ body.share-mode .transit-entry-del { display: none !important; }
 @media (max-width: 600px) {
   .photo-picker-grid { grid-template-columns: 1fr; }
 }
+
+  /* ═══════════════════════════════════════════════════════════
+     DISRUPTION RECOVERY HUB
+     ═══════════════════════════════════════════════════════════ */
+
+  /* Cancelled transport card — itinerary view */
+  .spot-card.cancelled { opacity: 0.5; }
+  .spot-card.cancelled .spot-name { text-decoration: line-through; text-decoration-color: var(--danger); }
+  .spot-cancelled-badge {
+    font-size: 0.5625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em;
+    background: rgba(184,83,66,0.12); color: var(--danger);
+    border: 1px solid rgba(184,83,66,0.25); border-radius: 100px; padding: 2px 7px;
+    flex-shrink: 0; margin-left: auto; white-space: nowrap;
+  }
+  /* Rebooked badge on the replacement transport card */
+  .spot-rebooked-badge {
+    font-size: 0.5625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em;
+    background: rgba(111,139,104,0.13); color: var(--success);
+    border: 1px solid rgba(111,139,104,0.28); border-radius: 100px; padding: 2px 7px;
+    flex-shrink: 0; white-space: nowrap;
+  }
+  /* Danger button (used in drawer footer for cancel action) */
+  .btn-cancel-transport {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 10px 14px; border-radius: var(--radius-sm); font-size: 0.875rem; font-weight: 500;
+    cursor: pointer; border: 1px solid rgba(184,83,66,0.35);
+    background: rgba(184,83,66,0.08); color: var(--danger);
+    transition: background 140ms var(--ease);
+    flex: 1; justify-content: center;
+  }
+  .btn-cancel-transport:hover { background: rgba(184,83,66,0.15); }
+  .btn-cancel-transport.is-cancelled {
+    background: rgba(111,139,104,0.1); color: var(--success);
+    border-color: rgba(111,139,104,0.3);
+  }
+  .btn-cancel-transport.is-cancelled:hover { background: rgba(111,139,104,0.18); }
+
+  /* ── Hub view layout ──────────────────────────────────────── */
+  .disruption-empty {
+    text-align: center; padding: 72px 20px 48px; color: var(--text-3);
+  }
+  .disruption-empty svg { display: block; margin: 0 auto 16px; opacity: 0.25; }
+  .disruption-empty-title { font-size: 1rem; font-weight: 600; color: var(--text-2); margin-bottom: 6px; }
+  .disruption-empty-sub { font-size: 0.875rem; line-height: 1.5; }
+  .disruption-summary-bar {
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(184,83,66,0.06); border: 1px solid rgba(184,83,66,0.18);
+    border-radius: var(--radius); padding: 12px 16px; margin-bottom: 20px;
+    font-size: 0.875rem; color: var(--text-2);
+  }
+  .disruption-summary-bar svg { flex-shrink: 0; color: var(--danger); }
+  .disruption-summary-bar strong { color: var(--danger); font-weight: 600; }
+
+  /* ── Recovery card ────────────────────────────────────────── */
+  .disruption-card {
+    border: 1px solid var(--border); border-radius: var(--radius);
+    margin-bottom: 14px; overflow: hidden; background: var(--surface);
+  }
+  .disruption-card-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 13px 16px; cursor: pointer; user-select: none;
+    background: rgba(184,83,66,0.04); border-bottom: 1px solid transparent;
+    transition: background 120ms var(--ease);
+  }
+  .disruption-card.open .disruption-card-header { border-bottom-color: var(--border); }
+  .disruption-card-header:hover { background: rgba(184,83,66,0.08); }
+  .dis-header-icon { flex-shrink: 0; color: var(--danger); }
+  .dis-header-text { flex: 1; min-width: 0; }
+  .dis-route { font-size: 0.9375rem; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dis-meta { font-size: 0.75rem; color: var(--text-3); margin-top: 2px; }
+  .dis-chevron { flex-shrink: 0; color: var(--text-3); transition: transform 200ms var(--ease); }
+  .disruption-card.open .dis-chevron { transform: rotate(180deg); }
+  .disruption-card-body { display: none; }
+  .disruption-card.open .disruption-card-body { display: block; }
+
+  /* ── Sections inside each recovery card ──────────────────── */
+  .disruption-section {
+    padding: 14px 16px; border-bottom: 1px solid var(--border);
+  }
+  .disruption-section:last-child { border-bottom: none; }
+  .disruption-section-label {
+    font-size: 0.625rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--text-3); margin-bottom: 10px;
+  }
+  /* Rights text */
+  .dis-rights-loading { display: flex; align-items: center; gap: 8px; font-size: 0.8125rem; color: var(--text-3); }
+  .dis-rights-loading .spin { animation: dis-spin 1s linear infinite; display: inline-block; }
+  @keyframes dis-spin { to { transform: rotate(360deg); } }
+  .dis-rights-body { font-size: 0.8125rem; color: var(--text-2); line-height: 1.65; }
+  .dis-rights-body ul { margin: 4px 0 0; padding-left: 17px; }
+  .dis-rights-body li { margin-bottom: 5px; }
+  .dis-rights-body strong { color: var(--text); font-weight: 600; }
+  .dis-rights-source { font-size: 0.6875rem; color: var(--text-3); margin-top: 8px; font-style: italic; }
+  /* Claim links */
+  .dis-links { display: flex; flex-wrap: wrap; gap: 8px; }
+  .dis-link {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 0.8125rem; font-weight: 500; color: var(--accent);
+    background: var(--accent-bg); border: 1px solid rgba(194,85,61,0.2);
+    border-radius: var(--radius-sm); padding: 5px 11px;
+    text-decoration: none; transition: opacity 140ms;
+  }
+  .dis-link:hover { opacity: 0.78; }
+  .dis-link svg { flex-shrink: 0; }
+  /* Claims tracker */
+  .dis-tracker { display: grid; gap: 12px; }
+  .dis-field-label { font-size: 0.75rem; font-weight: 500; color: var(--text-2); margin-bottom: 4px; }
+  .dis-checkboxes { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 2px; }
+  .dis-check-item { display: flex; align-items: center; gap: 6px; font-size: 0.8125rem; color: var(--text-2); cursor: pointer; }
+  .dis-check-item input[type="checkbox"] { width: 15px; height: 15px; accent-color: var(--accent); cursor: pointer; }
+  .dis-resolved .dis-check-item:last-child { color: var(--success); }
+  .dis-tracker-actions { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+  .dis-save-btn {
+    padding: 7px 16px; border-radius: var(--radius-sm); font-size: 0.8125rem; font-weight: 500;
+    background: var(--accent); color: #fff; border: none; cursor: pointer;
+    transition: opacity 140ms;
+  }
+  .dis-save-btn:hover { opacity: 0.88; }
+  .dis-saved-toast { font-size: 0.75rem; color: var(--success); opacity: 0; transition: opacity 300ms; }
+  .dis-saved-toast.show { opacity: 1; }
+  /* Rebook section */
+  .dis-rebook-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .dis-rebook-select {
+    flex: 1; min-width: 0; padding: 7px 10px;
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--surface); color: var(--text); font-size: 0.875rem; cursor: pointer;
+  }
+  .dis-rebook-btn {
+    padding: 7px 14px; border-radius: var(--radius-sm); font-size: 0.8125rem; font-weight: 500;
+    background: var(--success); color: #fff; border: none; cursor: pointer;
+    transition: opacity 140ms; white-space: nowrap;
+  }
+  .dis-rebook-btn:hover { opacity: 0.88; }
+  .dis-rebooked-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 0.8125rem; font-weight: 500; color: var(--success);
+    background: rgba(111,139,104,0.1); border: 1px solid rgba(111,139,104,0.25);
+    border-radius: var(--radius-sm); padding: 6px 12px;
+  }
+  .dis-unlink-btn {
+    font-size: 0.75rem; color: var(--text-3); background: none; border: none;
+    cursor: pointer; padding: 0 4px; text-decoration: underline;
+  }
+  .dis-unlink-btn:hover { color: var(--text-2); }
 </style>
 </head>
 <body data-theme="light">
@@ -3820,6 +3964,10 @@ body.share-mode .transit-entry-del { display: none !important; }
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
       Documents
     </button>
+    <button class="nav-item" data-view="disruption" id="nav-disruption-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      Disruptions
+    </button>
 
     <div class="nav-section" id="towns-section-label">Towns</div>
     <div id="sidebar-towns"></div>
@@ -3960,6 +4108,14 @@ body.share-mode .transit-entry-del { display: none !important; }
         <div id="docs-content"></div>
       </section>
 
+      <!-- DISRUPTION RECOVERY HUB -->
+      <section class="view" id="view-disruption">
+        <div class="section-header" style="margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <h1 class="section-title" style="font-family:var(--font-display)">Disruption Hub</h1>
+        </div>
+        <div id="disruption-content"></div>
+      </section>
+
     </div>
 
     <!-- Mobile bottom nav: Overview | Food | Itinerary (center) | Budget | ☰ -->
@@ -4002,6 +4158,10 @@ body.share-mode .transit-entry-del { display: none !important; }
         <button class="bottom-nav-item share-link-btn" id="sheet-share-btn" style="width:100%;flex-direction:row;gap:14px;padding:14px 24px;justify-content:flex-start;font-size:1rem">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
           Share Itinerary
+        </button>
+        <button class="bottom-nav-item" data-view="disruption" style="width:100%;flex-direction:row;gap:14px;padding:14px 24px;justify-content:flex-start;font-size:1rem" id="sheet-disruption-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          Disruptions
         </button>
         <button class="bottom-nav-item" id="sheet-help-btn" style="width:100%;flex-direction:row;gap:14px;padding:14px 24px;justify-content:flex-start;font-size:1rem">
           <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;border:1.75px solid currentColor;font-size:0.8125rem;font-weight:700;line-height:1;flex-shrink:0">?</span>
@@ -4524,6 +4684,10 @@ body.share-mode .transit-entry-del { display: none !important; }
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M20 6L9 17l-5-5"/></svg>
         Mark visited
       </button>
+      <button class="btn-cancel-transport" id="drawer-cancel-transport-btn" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        Mark as Cancelled
+      </button>
     </div>
   </div>
 </div>
@@ -4890,7 +5054,7 @@ function setView(viewName) {
   document.querySelectorAll(".nav-item, .bottom-nav-item").forEach(b => {
     b.classList.toggle("active", b.dataset.view === viewName);
   });
-  const titles = { dashboard: "Overview", itinerary: "Itinerary", guides: "Guides", budget: "Budget", expenses: "Expenses", documents: "Documents" };
+  const titles = { dashboard: "Overview", itinerary: "Itinerary", guides: "Guides", budget: "Budget", expenses: "Expenses", documents: "Documents", disruption: "Disruptions" };
   document.getElementById("topbar-title").textContent = titles[viewName] || "Dashboard";
   if (viewName === "itinerary") {
     // Only auto-scroll to today when the user hasn't explicitly clicked a specific town
@@ -4907,6 +5071,7 @@ function setView(viewName) {
   if (viewName === "budget") renderBudget();
   if (viewName === "expenses") renderExpenses();
   if (viewName === "documents") renderDocuments();
+  if (viewName === "disruption") renderDisruption();
 }
 document.querySelectorAll(".nav-item, .bottom-nav-item").forEach(btn => {
   if (btn.dataset.view) btn.addEventListener("click", () => setView(btn.dataset.view));
@@ -4929,6 +5094,11 @@ document.getElementById("sheet-expenses-btn")?.addEventListener("click", () => {
 document.getElementById("sheet-documents-btn")?.addEventListener("click", () => {
   moreSheet.style.display = "none";
   setView("documents");
+});
+
+document.getElementById("sheet-disruption-btn")?.addEventListener("click", () => {
+  moreSheet.style.display = "none";
+  setView("disruption");
 });
 
 /* ─────────────────────────────────────────────────────────────
@@ -5111,6 +5281,10 @@ function listenToTrip(tripId) {
     (snap) => {
       const spots = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       setState({ spots });
+      // Keep disruption nav badge fresh on every spots update
+      if (typeof _updateDisruptionBadge === "function") _updateDisruptionBadge();
+      // Re-render disruption hub if it's the active view
+      if (state.currentView === "disruption") renderDisruption();
     },
     (err) => {
       console.error("Spots listener error — check Firestore subcollection rules:", err.code);
@@ -6301,15 +6475,23 @@ function transportCardHTML(spot) {
   const draggable = spot._arrivalView ? ` data-draggable="false"` : "";
   const arrivalClass = isArrival ? " arrival-view" : "";
 
+  const cancelledClass = spot.isCancelled ? " cancelled" : "";
+  const cancelledBadge = spot.isCancelled
+    ? `<span class="spot-cancelled-badge">Cancelled</span>` : "";
+  const rebookedBadge = spot.rebookedFromId
+    ? `<span class="spot-rebooked-badge">Rebooked</span>` : "";
+
   return `
-    <div class="spot-card${arrivalClass}" data-spot-id="${spot.id}" data-type="transport"${draggable}>
+    <div class="spot-card${arrivalClass}${cancelledClass}" data-spot-id="${spot.id}" data-type="transport"${draggable}>
       <div class="spot-type-bar"></div>
       <div class="spot-card-body">
         <div class="spot-card-row1">
           ${typeIconSVG("transport")}
           <span class="spot-name">${escapeHtml(spot.name || subtype)}</span>
-          ${spot.booked && !isArrival ? `<span class="spot-booked-pill">Booked / paid</span>` : ""}
-          ${isArrival ? `<span class="spot-tag-pill" style="margin-left:auto;font-size:0.625rem;opacity:0.7">arrival</span>` : ""}
+          ${!isArrival && !spot.isCancelled && spot.booked ? `<span class="spot-booked-pill">Booked / paid</span>` : ""}
+          ${rebookedBadge}
+          ${cancelledBadge}
+          ${isArrival && !spot.isCancelled ? `<span class="spot-tag-pill" style="margin-left:auto;font-size:0.625rem;opacity:0.7">arrival</span>` : ""}
         </div>
         ${meta.length ? `<div class="spot-card-row2">${meta.join("")}</div>` : ""}
       </div>
@@ -7115,6 +7297,21 @@ function openDrawer(spot) {
     visitedBtn.style.background = "";
   }
 
+  // Cancel transport button — only for non-arrival transport spots
+  const cancelBtn = document.getElementById("drawer-cancel-transport-btn");
+  if (spot.type === "transport" && !spot._arrivalView) {
+    cancelBtn.style.display = "";
+    if (spot.isCancelled) {
+      cancelBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg> Restore transport`;
+      cancelBtn.classList.add("is-cancelled");
+    } else {
+      cancelBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Mark as Cancelled`;
+      cancelBtn.classList.remove("is-cancelled");
+    }
+  } else {
+    cancelBtn.style.display = "none";
+  }
+
   pushModalHistory();
   document.getElementById("spot-drawer-overlay").classList.add("visible");
   document.body.style.overflow = "hidden";
@@ -7129,11 +7326,29 @@ function closeDrawer() {
   // Restore edit + visited buttons for next spot/accom drawer open
   document.getElementById("drawer-edit-btn").style.display = "";
   document.getElementById("drawer-visited-btn").style.display = "";
+  document.getElementById("drawer-cancel-transport-btn").style.display = "none";
   popModalHistory();
 }
 
 document.getElementById("drawer-close-btn").addEventListener("click", closeDrawer);
 document.getElementById("drawer-backdrop").addEventListener("click", closeDrawer);
+
+document.getElementById("drawer-cancel-transport-btn").addEventListener("click", async () => {
+  if (!currentDrawerSpot) return;
+  const spot = currentDrawerSpot;
+  const nowCancelled = !spot.isCancelled;
+  try {
+    await updateDoc(spotDocRef(spot.id), {
+      isCancelled:  nowCancelled,
+      cancelledAt:  nowCancelled ? serverTimestamp() : null,
+    });
+    // Sync state immediately so the drawer re-opens with correct state
+    const updated = state.spots.find(s => s.id === spot.id);
+    if (updated) openDrawer(updated);
+    // Badge the disruptions nav item if anything is now cancelled
+    _updateDisruptionBadge();
+  } catch (e) { console.error("Cancel transport failed:", e); }
+});
 
 // ── Back-gesture interception ────────────────────────────────────────────────
 // On Android (Pixel edge-swipe) the browser fires a popstate event before
@@ -10148,6 +10363,447 @@ async function unlinkSpot(spotId) {
   }
   await batch.commit();
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   DISRUPTION RECOVERY HUB
+   ═══════════════════════════════════════════════════════════════ */
+
+// ── Airline → claims page URL map ─────────────────────────────
+const AIRLINE_CLAIM_LINKS = {
+  "air france":         "https://wwws.airfrance.com/en/passenger-services/rights-and-duties",
+  "british airways":    "https://www.britishairways.com/en-gb/information/about-ba/legal-and-privacy/flight-delay-compensation",
+  "lufthansa":          "https://www.lufthansa.com/gb/en/flight-disruptions",
+  "klm":                "https://www.klm.com/information/passenger-rights",
+  "easyjet":            "https://www.easyjet.com/en/help/compensation",
+  "ryanair":            "https://www.ryanair.com/gb/en/plan-trip/flying-with-ryanair/passenger-rights",
+  "emirates":           "https://www.emirates.com/english/help/faq/252763/what-are-my-rights-if-my-flight-is-cancelled",
+  "delta":              "https://www.delta.com/us/en/customer-service-plan/overview",
+  "united":             "https://www.united.com/en/us/fly/travel/policies/customer-commitment.html",
+  "american airlines":  "https://www.aa.com/i18n/customer-service/support/customer-service-plan.jsp",
+  "southwest":          "https://www.southwest.com/html/customer-service/passengers-rights/index.html",
+  "singapore airlines": "https://www.singaporeair.com/en_UK/us/travel-info/baggage/delayed-damaged-and-lost-baggage/",
+  "qantas":             "https://www.qantas.com/au/en/support/flight-disruptions.html",
+  "iberia":             "https://www.iberia.com/gb/useful-info/passengers-rights/",
+  "vueling":            "https://www.vueling.com/en/we-are-vueling/customer-service/passenger-rights",
+  "tap air portugal":   "https://www.flytap.com/en-us/passenger-rights",
+  "turkish airlines":   "https://www.turkishairlines.com/en-int/legal/passenger-rights/",
+  "finnair":            "https://www.finnair.com/en/passenger-rights",
+  "sas":                "https://www.flysas.com/en/us/legal/passenger-rights/",
+  "eurostar":           "https://www.eurostar.com/uk-en/help/delay-repay",
+  "thalys":             "https://www.eurostar.com/uk-en/help/delay-repay",
+  "sncf":               "https://www.oui.sncf/en/passenger-rights",
+  "trenitalia":         "https://www.trenitalia.com/en/information/passenger-rights.html",
+  "renfe":              "https://www.renfe.com/es/en/passengers/policies/passenger-rights",
+  "deutsche bahn":      "https://www.bahn.com/en/travel-information/passenger-rights",
+};
+
+// ── EU carrier list for EU261 detection ───────────────────────
+const EU_CARRIERS = new Set([
+  "air france","british airways","lufthansa","klm","easyjet","ryanair","iberia",
+  "vueling","tap air portugal","finnair","sas","austrian","swiss","brussels airlines",
+  "aegean","lot","wizzair","norwegian","eurowings","transavia","condor","jet2",
+]);
+
+// ── Static rights engine (fallback when no Gemini key) ────────
+function _getStaticRights(spot) {
+  const sub     = (spot.transportSubtype || "").toLowerCase();
+  const carrier = (spot.carrier || "").toLowerCase();
+  const isEUCarrier = [...EU_CARRIERS].some(c => carrier.includes(c));
+
+  // EU Regulation 261/2004 — flights
+  if (sub === "plane" && isEUCarrier) {
+    return {
+      html: `<ul>
+        <li><strong>EU Regulation 261/2004 applies.</strong> As the airline cancelled your flight you are entitled to choose between a full refund or re-routing at the earliest opportunity.</li>
+        <li><strong>Right to care:</strong> Meals &amp; refreshments proportionate to waiting time. Hotel accommodation &amp; transport if overnight stay required.</li>
+        <li><strong>Compensation:</strong> €250 (≤ 1,500 km) · €400 (1,500–3,500 km) · €600 (> 3,500 km). Only waived if the airline proves extraordinary circumstances beyond its control.</li>
+        <li><strong>How to claim:</strong> Submit in writing to the airline within 6 years (UK) or 3 years (EU). Keep boarding-pass and cancellation notice as evidence.</li>
+      </ul>`,
+      source: "EU Regulation 261/2004",
+    };
+  }
+
+  // US DOT rules — flights
+  if (sub === "plane") {
+    return {
+      html: `<ul>
+        <li><strong>US DOT rules apply</strong> if you're travelling on a US carrier or to/from the US. The airline must offer a prompt refund if you choose not to travel on the alternative offered.</li>
+        <li>No federal compensation mandate exists for cancellations caused by events outside the airline's control, but most US carriers offer vouchers or rebooking.</li>
+        <li><strong>How to claim:</strong> Contact the airline's customer relations department in writing. Reference <em>14 CFR Part 259</em> and <em>260</em> if the airline resists your refund.</li>
+      </ul>`,
+      source: "US DOT 14 CFR 259/260",
+    };
+  }
+
+  // Trains
+  if (sub === "train") {
+    if (carrier.includes("eurostar") || carrier.includes("thalys")) {
+      return {
+        html: `<ul>
+          <li><strong>Eurostar Delay Repay:</strong> 25% refund for 1–2 h delay, 50% for > 2 h. Full refund if you choose not to travel.</li>
+          <li>Submit via Eurostar's Delay Repay form within 28 days of travel.</li>
+        </ul>`,
+        source: "Eurostar Passenger Charter",
+      };
+    }
+    if (carrier.includes("sncf") || carrier.includes("tgv") || carrier.includes("intercités")) {
+      return {
+        html: `<ul>
+          <li><strong>SNCF G30 guarantee:</strong> 25% refund for 30–60 min delay, 50% for 60–120 min, 75% for > 2 h.</li>
+          <li>For cancellations, you're entitled to a full refund or the next available train at no extra cost.</li>
+          <li>File via <em>oui.sncf</em> Passenger Rights section within 60 days.</li>
+        </ul>`,
+        source: "SNCF G30 Guarantee / EU Rail Passenger Rights Reg. 1371/2007",
+      };
+    }
+    if (carrier.includes("deutsche bahn") || carrier.includes("db ")) {
+      return {
+        html: `<ul>
+          <li><strong>DB Fahrgastrechte:</strong> 25% refund for 60–119 min delay, 50% for ≥ 120 min. Full refund for cancellations.</li>
+          <li>Claim via the DB Fahrgastrechte form (online or at any DB Service Point) within 1 year.</li>
+        </ul>`,
+        source: "EU Regulation 1371/2007 / DB Passenger Rights",
+      };
+    }
+    // Generic EU rail
+    return {
+      html: `<ul>
+        <li><strong>EU Regulation 1371/2007</strong> covers most European trains. You're entitled to a full refund or re-routing if your departure is cancelled.</li>
+        <li>For delays > 60 min: 25% refund. For delays > 120 min: 50% refund.</li>
+        <li>Contact the operating rail company's customer service in writing within the statutory period (varies by operator).</li>
+      </ul>`,
+      source: "EU Rail Passenger Rights Regulation 1371/2007",
+    };
+  }
+
+  // Generic fallback
+  return {
+    html: `<ul>
+      <li>Check the provider's cancellation and refund policy — most include a full refund for cancellations initiated by the provider.</li>
+      <li>If you paid by credit card, check whether your card issuer offers travel protection (chargeback rights may apply).</li>
+      <li>Keep all correspondence, booking confirmations, and the cancellation notice as evidence.</li>
+    </ul>`,
+    source: "General consumer rights guidance",
+  };
+}
+
+// ── Gemini rights fetch (in-memory cache per spotId) ──────────
+const _rightsCache = {};
+
+async function _fetchGeminiRights(spot) {
+  if (!GEMINI_CONFIG.apiKey) return null;
+  if (_rightsCache[spot.id]) return _rightsCache[spot.id];
+
+  const sub     = spot.transportSubtype || "transport";
+  const carrier = spot.carrier || "unknown carrier";
+  const origin  = spot.customOrigin || spot.transportFrom || "";
+  const dest    = spot.customDestination || spot.transportTo || "";
+  const date    = spot.scheduledDate || "";
+
+  const prompt = `You are a concise travel rights expert. A traveller's ${sub} from "${origin}" to "${dest}" operated by "${carrier}" on ${date} was cancelled.
+
+Provide the most relevant consumer rights in 4 bullet points covering: (1) the specific regulation that applies (e.g. EU 261/2004 for EU flights, US DOT for US flights, EU 1371/2007 for European trains), (2) compensation or refund amount, (3) right to care or hotel if applicable, (4) how to submit the claim and the deadline.
+
+Format your response ONLY as an HTML <ul> list with <li> items. Use <strong> for regulation names and key figures. Be specific and practical. No preamble, no legal disclaimers.`;
+
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_CONFIG.model}:generateContent?key=${GEMINI_CONFIG.apiKey}`,
+      { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }
+    );
+    const json = await res.json();
+    const text = json.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    if (!text) return null;
+    const result = { html: text, source: "Gemini AI · " + GEMINI_CONFIG.model };
+    _rightsCache[spot.id] = result;
+    return result;
+  } catch { return null; }
+}
+
+// ── Helper: resolve claim links for a spot ────────────────────
+function _getClaimLinks(spot) {
+  const carrier = (spot.carrier || "").toLowerCase();
+  const links = [];
+  for (const [key, url] of Object.entries(AIRLINE_CLAIM_LINKS)) {
+    if (carrier.includes(key)) {
+      links.push({ label: `${spot.carrier} Claims`, url });
+      break;
+    }
+  }
+  // Always add a general search fallback
+  const query = encodeURIComponent(`${spot.carrier || spot.transportSubtype || "airline"} flight cancellation claim compensation`);
+  links.push({ label: "Search online", url: `https://www.google.com/search?q=${query}` });
+  // EU261 AirHelp generic
+  if (spot.transportSubtype === "plane") {
+    links.push({ label: "AirHelp (EU261)", url: "https://www.airhelp.com/en/flight-delays/" });
+  }
+  // EU consumer centre
+  links.push({ label: "EU Consumer Centre", url: "https://ec.europa.eu/info/live-work-travel-eu/consumer-rights-and-complaints/resolve-your-consumer-complaint_en" });
+  return links;
+}
+
+// ── Badge nav item when cancellations exist ───────────────────
+function _updateDisruptionBadge() {
+  const count = state.spots.filter(s => s.type === "transport" && s.isCancelled).length;
+  const btn = document.getElementById("nav-disruption-btn");
+  if (!btn) return;
+  btn.querySelector(".dis-nav-badge")?.remove();
+  if (count > 0) {
+    const badge = document.createElement("span");
+    badge.className = "dis-nav-badge";
+    badge.textContent = count;
+    badge.style.cssText = "margin-left:auto;font-size:0.6875rem;font-weight:700;background:var(--danger);color:#fff;border-radius:100px;padding:1px 6px;";
+    btn.appendChild(badge);
+  }
+}
+
+// ── Save claim tracking data to Firestore ─────────────────────
+async function _saveClaimData(spotId, data) {
+  await updateDoc(spotDocRef(spotId), {
+    claimRef:    data.claimRef    || null,
+    claimNotes:  data.claimNotes  || null,
+    claimStatus: data.claimStatus || { refundRequested: false, compensationFiled: false, resolved: false },
+  });
+}
+
+// ── Build HTML for one recovery card ─────────────────────────
+function _buildDisruptionCardHTML(spot) {
+  const subtype   = spot.transportSubtype ? spot.transportSubtype.charAt(0).toUpperCase() + spot.transportSubtype.slice(1) : "Transport";
+  const origin    = spot.customOrigin    || spot.transportFrom || "—";
+  const dest      = spot.customDestination || spot.transportTo || "—";
+  const dateStr   = spot.scheduledDate
+    ? new Date(spot.scheduledDate + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" })
+    : "";
+  const carrier   = spot.carrier ? ` · ${escapeHtml(spot.carrier)}` : "";
+  const cs        = spot.claimStatus || {};
+
+  // Find the rebooking transport (another transport pointing to this one)
+  const rebookedBy = state.spots.find(s => s.rebookedFromId === spot.id);
+
+  // Rebook section HTML
+  const otherTransports = state.spots.filter(
+    s => s.type === "transport" && !s.isCancelled && s.id !== spot.id && !s.rebookedFromId
+  );
+  const rebookSection = rebookedBy
+    ? `<div class="dis-rebooked-tag">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        Rebooked: ${escapeHtml(rebookedBy.name || "transport")}
+        <button class="dis-unlink-btn" data-unlink="${escapeHtml(rebookedBy.id)}">Unlink</button>
+      </div>`
+    : otherTransports.length
+      ? `<div class="dis-rebook-row">
+          <select class="dis-rebook-select" data-rebook-for="${escapeHtml(spot.id)}">
+            <option value="">— select replacement transport —</option>
+            ${otherTransports.map(t => `<option value="${escapeHtml(t.id)}">${escapeHtml(t.name || t.transportSubtype || "Transport")}${t.scheduledDate ? " · " + t.scheduledDate : ""}</option>`).join("")}
+          </select>
+          <button class="dis-rebook-btn" data-rebook-confirm="${escapeHtml(spot.id)}">Link as rebooking</button>
+        </div>`
+      : `<p style="font-size:0.8125rem;color:var(--text-3);margin:0">No other transports found. Add a replacement in the Itinerary tab first.</p>`;
+
+  // Claim links
+  const claimLinks = _getClaimLinks(spot);
+  const linksHTML = claimLinks.map(l =>
+    `<a class="dis-link" href="${l.url}" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      ${escapeHtml(l.label)}
+    </a>`
+  ).join("");
+
+  return `
+  <div class="disruption-card" data-dis-id="${escapeHtml(spot.id)}">
+    <div class="disruption-card-header">
+      <div class="dis-header-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <div class="dis-header-text">
+        <div class="dis-route">${escapeHtml(origin)} → ${escapeHtml(dest)}</div>
+        <div class="dis-meta">${escapeHtml(subtype)}${carrier}${dateStr ? " · " + escapeHtml(dateStr) : ""}</div>
+      </div>
+      <svg class="dis-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="disruption-card-body">
+
+      <!-- Rights & Entitlements -->
+      <div class="disruption-section">
+        <div class="disruption-section-label">Your Rights &amp; Entitlements</div>
+        <div class="dis-rights-body" data-rights-for="${escapeHtml(spot.id)}">
+          <div class="dis-rights-loading"><span class="spin">⟳</span> Loading rights…</div>
+        </div>
+      </div>
+
+      <!-- Claim Links -->
+      <div class="disruption-section">
+        <div class="disruption-section-label">Where to Claim</div>
+        <div class="dis-links">${linksHTML}</div>
+      </div>
+
+      <!-- Claims Tracker -->
+      <div class="disruption-section">
+        <div class="disruption-section-label">Claims Tracker</div>
+        <div class="dis-tracker">
+          <div>
+            <div class="dis-field-label">Claim reference number</div>
+            <input class="form-input" style="width:100%;box-sizing:border-box" placeholder="e.g. AF-2024-XXXXX"
+              data-claim-ref="${escapeHtml(spot.id)}" value="${escapeHtml(spot.claimRef || "")}">
+          </div>
+          <div>
+            <div class="dis-field-label">Status</div>
+            <div class="dis-checkboxes">
+              <label class="dis-check-item">
+                <input type="checkbox" data-claim-check="refundRequested" data-for="${escapeHtml(spot.id)}" ${cs.refundRequested ? "checked" : ""}> Refund requested
+              </label>
+              <label class="dis-check-item">
+                <input type="checkbox" data-claim-check="compensationFiled" data-for="${escapeHtml(spot.id)}" ${cs.compensationFiled ? "checked" : ""}> Compensation filed
+              </label>
+              <label class="dis-check-item">
+                <input type="checkbox" data-claim-check="resolved" data-for="${escapeHtml(spot.id)}" ${cs.resolved ? "checked" : ""}> Resolved ✓
+              </label>
+            </div>
+          </div>
+          <div>
+            <div class="dis-field-label">Notes</div>
+            <textarea class="form-input" rows="3" style="width:100%;box-sizing:border-box;resize:vertical"
+              placeholder="e.g. Spoke to gate agent John, voucher offered"
+              data-claim-notes="${escapeHtml(spot.id)}">${escapeHtml(spot.claimNotes || "")}</textarea>
+          </div>
+          <div class="dis-tracker-actions">
+            <button class="dis-save-btn" data-claim-save="${escapeHtml(spot.id)}">Save</button>
+            <span class="dis-saved-toast" data-save-toast="${escapeHtml(spot.id)}">Saved ✓</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rebooking -->
+      <div class="disruption-section">
+        <div class="disruption-section-label">Rebooking</div>
+        <div data-rebook-section="${escapeHtml(spot.id)}">${rebookSection}</div>
+      </div>
+
+    </div>
+  </div>`;
+}
+
+// ── Main render function ───────────────────────────────────────
+function renderDisruption() {
+  const container = document.getElementById("disruption-content");
+  if (!container) return;
+
+  // Update nav badge (also called on data changes)
+  _updateDisruptionBadge();
+
+  const cancelled = state.spots
+    .filter(s => s.type === "transport" && s.isCancelled)
+    .sort((a, b) => (a.scheduledDate || "").localeCompare(b.scheduledDate || ""));
+
+  if (cancelled.length === 0) {
+    container.innerHTML = `
+      <div class="disruption-empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="52" height="52">
+          <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        <div class="disruption-empty-title">No cancelled transports</div>
+        <div class="disruption-empty-sub">When a flight or train is cancelled, open its card in the Itinerary and tap <strong>Mark as Cancelled</strong>. Recovery options will appear here.</div>
+      </div>`;
+    return;
+  }
+
+  const summary = `
+    <div class="disruption-summary-bar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+        <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+      <span><strong>${cancelled.length}</strong> cancelled transport${cancelled.length > 1 ? "s" : ""} — expand each card to manage your claim.</span>
+    </div>`;
+
+  container.innerHTML = summary + cancelled.map(s => _buildDisruptionCardHTML(s)).join("");
+
+  // ── Wire headers (expand/collapse) ───────────────────────────
+  container.querySelectorAll(".disruption-card-header").forEach(header => {
+    header.addEventListener("click", async () => {
+      const card  = header.closest(".disruption-card");
+      const isOpen = card.classList.toggle("open");
+      if (!isOpen) return;
+
+      // Lazy-load rights on first open
+      const spotId     = card.dataset.disId;
+      const rightsEl   = card.querySelector(`[data-rights-for="${spotId}"]`);
+      const spot       = state.spots.find(s => s.id === spotId);
+      if (!rightsEl || !spot) return;
+
+      // Already loaded?
+      if (rightsEl.dataset.loaded) return;
+      rightsEl.dataset.loaded = "1";
+
+      // Try Gemini first, fall back to static
+      let rights = null;
+      if (GEMINI_CONFIG.apiKey) {
+        rights = await _fetchGeminiRights(spot);
+      }
+      if (!rights) rights = _getStaticRights(spot);
+
+      rightsEl.innerHTML = `
+        <div class="dis-rights-body">${rights.html}</div>
+        <div class="dis-rights-source">Source: ${escapeHtml(rights.source)}</div>`;
+    });
+  });
+
+  // ── Wire claim save buttons ───────────────────────────────────
+  container.querySelectorAll("[data-claim-save]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const spotId = btn.dataset.claimSave;
+      const card   = container.querySelector(`[data-dis-id="${spotId}"]`);
+      if (!card) return;
+      const refInput   = card.querySelector(`[data-claim-ref="${spotId}"]`);
+      const notesInput = card.querySelector(`[data-claim-notes="${spotId}"]`);
+      const claimStatus = {};
+      card.querySelectorAll(`[data-claim-check][data-for="${spotId}"]`).forEach(cb => {
+        claimStatus[cb.dataset.claimCheck] = cb.checked;
+      });
+      try {
+        await _saveClaimData(spotId, {
+          claimRef:    refInput?.value.trim()   || null,
+          claimNotes:  notesInput?.value.trim() || null,
+          claimStatus,
+        });
+        const toast = card.querySelector(`[data-save-toast="${spotId}"]`);
+        if (toast) {
+          toast.classList.add("show");
+          setTimeout(() => toast.classList.remove("show"), 2000);
+        }
+      } catch (e) { console.error("Save claim failed:", e); }
+    });
+  });
+
+  // ── Wire rebook link button ───────────────────────────────────
+  container.querySelectorAll("[data-rebook-confirm]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const cancelledId = btn.dataset.rebookConfirm;
+      const section     = container.querySelector(`[data-rebook-section="${cancelledId}"]`);
+      const sel         = section?.querySelector(`[data-rebook-for="${cancelledId}"]`);
+      const newSpotId   = sel?.value;
+      if (!newSpotId) return;
+      try {
+        await updateDoc(spotDocRef(newSpotId), { rebookedFromId: cancelledId });
+      } catch (e) { console.error("Rebook link failed:", e); }
+    });
+  });
+
+  // ── Wire unlink rebooking button ─────────────────────────────
+  container.querySelectorAll("[data-unlink]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      try {
+        await updateDoc(spotDocRef(btn.dataset.unlink), { rebookedFromId: null });
+      } catch (e) { console.error("Unlink failed:", e); }
+    });
+  });
+}
+
+// Also re-render disruption hub (and badge) whenever spot data changes
+// (The Firestore onSnapshot already calls the active view's render via setState listeners)
+// Expose _updateDisruptionBadge so the cancel-button handler can call it immediately
 
 /* ─────────────────────────────────────────────────────────────
    DASHBOARD WIDGETS (3g)
