@@ -10527,52 +10527,49 @@ async function _fetchGeminiRights(spot) {
     ? new Date(spot.scheduledDate + "T00:00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
     : "unknown date";
 
-  // ── Detailed grounded prompt ──────────────────────────────────
-  // Instructs Gemini to use Google Search before answering, covering:
-  //  ① Exact regulation & compensation tier for this route/carrier
-  //  ② Immediate right-to-care entitlements
-  //  ③ Direct claims form URL + community-sourced channel ranking
-  //  ④ Document checklist specific to this operator
-  //  ⑤ Filing deadline, escalation path, processing time, third-party advice
-  const prompt = `A traveller's ${sub} from "${origin}" to "${dest}", operated by ${carrier}, scheduled for ${date}, has been cancelled.
+  // ── Grounded prompt: jurisdiction-first approach ──────────────
+  // Forces Gemini to commit to a single applicable framework before
+  // expanding, preventing it from listing all possible regulations.
+  const prompt = `A traveller's ${sub} from "${origin}" to "${dest}" with ${carrier} on ${date} was cancelled.
 
-Before answering, use Google Search to find: the specific compensation claim or passenger-rights page for ${carrier}, recent traveller reviews and forum posts (Reddit, TripAdvisor, AirHelp, Resolver, consumer forums) about claiming against ${carrier}, and the relevant enforcement body for this route.
+STEP 1 — Determine jurisdiction. Based solely on the departure airport country, arrival airport country, and ${carrier}'s nationality, identify the ONE regulatory framework that governs this cancellation. Do not mention any other frameworks. Common examples: EU Reg 261/2004 applies when departing from an EU airport OR arriving in the EU on an EU-registered carrier; UK261 applies to UK departures or UK carriers post-Brexit; EU Rail Reg 1371/2007 applies to European trains; individual operator guarantees (SNCF G30, DB Fahrgastrechte) apply to specific rail operators. Only use US DOT rules if the carrier is US-registered or the route is domestic within the USA.
 
-Then produce a disruption recovery guide structured in exactly the following 5 HTML sections. Output ONLY raw HTML — no markdown, no preamble, no disclaimers, no text outside the sections.
+STEP 2 — Using Google Search, find: (a) the direct compensation claim page for ${carrier}, not their homepage, (b) recent posts from travellers on forums such as Reddit, AirHelp, Resolver, or consumer advice sites about their experience claiming against ${carrier}.
+
+STEP 3 — Output ONLY the following 5 HTML sections. No text outside them, no markdown, no preamble.
 
 <section>
-<h4>① Applicable Regulations &amp; Compensation</h4>
-State the exact law that applies to this route and carrier. For EU-departing flights or EU-carrier flights: EU Regulation 261/2004 — give the precise compensation tier (€250 / €400 / €600) based on the distance between ${origin} and ${dest}. For UK flights post-Brexit: UK261. For US-operated routes: US DOT 14 CFR Part 259/260. For European trains: EU Rail Regulation 1371/2007 or the operator-specific guarantee (e.g. SNCF G30, DB Fahrgastrechte). Mention what counts as extraordinary circumstances for ${carrier} and whether recent court decisions affect this.
+<h4>① Your Rights Under [name the single applicable regulation]</h4>
+State what the regulation entitles this traveller to for a cancellation on this specific route. Give the exact compensation amount or refund right. Explain the extraordinary-circumstances defence and whether it commonly applies to ${carrier} based on recent cases.
 </section>
 
 <section>
-<h4>② Right to Care — What to Ask For Right Now</h4>
-List exactly what ${carrier} must provide immediately: meals and refreshments (state the waiting time threshold), hotel accommodation and transport if an overnight stay is required, and two free phone calls or emails. State whether these apply to this specific type of cancellation and route, and how to request them at the airport.
+<h4>② Right to Care — Ask for This Now</h4>
+List what ${carrier} must provide at the airport while the traveller waits: meals, hotel, transport, and communications allowance. State the exact waiting-time thresholds that trigger each entitlement under the applicable regulation.
 </section>
 
 <section>
 <h4>③ Where to Submit Your Claim</h4>
-Using your search results, provide the DIRECT URL to ${carrier}'s online passenger-rights or compensation claim form (not the homepage). Then list 2–3 additional options ranked by community-reported success rate, for example: national enforcement body (CAA, DGAC, Luftfahrtbundesamt, DOT, etc.), third-party services (AirHelp, Resolver, CEDR), or credit card chargeback. Format all links as: <a href="URL" target="_blank" rel="noopener">Link text →</a>
+Provide the direct URL to ${carrier}'s online compensation or passenger-rights claim form. Then list 2–3 alternative channels ranked by community-reported effectiveness (national enforcement body, third-party service, credit card chargeback). Format URLs as: <a href="URL" target="_blank" rel="noopener">Label →</a>
 </section>
 
 <section>
-<h4>④ Documents to Collect &amp; Keep</h4>
-Provide a specific checklist of evidence to save now and before leaving the airport:
+<h4>④ Documents to Collect Before You Leave the Airport</h4>
 <ul>
-  <li>Original booking confirmation and e-ticket (PDF or screenshot)</li>
-  <li>Cancellation notification from ${carrier} — email, app notification, or SMS</li>
-  <li>Any rebooking or voucher offer from the airline (accept or reject in writing)</li>
-  <li>Boarding passes or gate passes for the cancelled flight/train</li>
-  <li>Receipts for every expense incurred due to the cancellation (meals, hotel, taxis, new tickets)</li>
-  <li>Names and badge numbers of any airline staff you spoke with</li>
-  <li>Screenshots of the flight status board showing the cancellation</li>
-  <li>Any specific documents that travellers report ${carrier} requests when processing claims</li>
+  <li>Booking confirmation and e-ticket (PDF or screenshot)</li>
+  <li>Cancellation notification from ${carrier} (email, SMS, or app alert)</li>
+  <li>Written record of any rebooking or voucher offer — accept or decline in writing</li>
+  <li>Boarding passes or gate passes for the cancelled service</li>
+  <li>Receipts for all out-of-pocket costs: meals, hotel, taxis, new tickets</li>
+  <li>Name and employee number of any ${carrier} staff you spoke with</li>
+  <li>Photo of the departure board showing the cancellation status</li>
+  <li>Any additional evidence that travellers report ${carrier} specifically requires</li>
 </ul>
 </section>
 
 <section>
-<h4>⑤ Practical Timeline &amp; Escalation</h4>
-Based on search results: (a) the legal deadline to file the claim against ${carrier} — state the exact number of years or months, (b) how long ${carrier} typically takes to respond and what to do if they miss the statutory response window, (c) whether using AirHelp, Resolver, or a no-win-no-fee solicitor is worth it for ${carrier} specifically based on community experience, (d) the national enforcement body to escalate to if ${carrier} ignores or rejects the claim.
+<h4>⑤ Filing Deadline, Timeline &amp; Escalation</h4>
+State the legal deadline for filing a claim against ${carrier} under the applicable regulation. Give the typical response time for ${carrier} based on community reports. Explain what to do if ${carrier} does not respond within the statutory window. Name the national enforcement body to escalate to and how to contact them.
 </section>`;
 
   try {
