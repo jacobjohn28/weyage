@@ -3758,10 +3758,18 @@ body.share-mode .transit-entry-del { display: none !important; }
   .dis-rights-loading .spin { animation: dis-spin 1s linear infinite; display: inline-block; }
   @keyframes dis-spin { to { transform: rotate(360deg); } }
   .dis-rights-body { font-size: 0.8125rem; color: var(--text-2); line-height: 1.65; }
+  .dis-rights-body section { margin-bottom: 16px; }
+  .dis-rights-body section:last-child { margin-bottom: 0; }
+  .dis-rights-body h4 {
+    font-size: 0.6875rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--text-3); margin: 0 0 6px;
+  }
   .dis-rights-body ul { margin: 4px 0 0; padding-left: 17px; }
   .dis-rights-body li { margin-bottom: 5px; }
   .dis-rights-body strong { color: var(--text); font-weight: 600; }
-  .dis-rights-source { font-size: 0.6875rem; color: var(--text-3); margin-top: 8px; font-style: italic; }
+  .dis-rights-body a { color: var(--accent); text-decoration: none; font-weight: 500; }
+  .dis-rights-body a:hover { text-decoration: underline; }
+  .dis-rights-source { font-size: 0.6875rem; color: var(--text-3); margin-top: 10px; font-style: italic; }
   /* Claim links */
   .dis-links { display: flex; flex-wrap: wrap; gap: 8px; }
   .dis-link {
@@ -10513,26 +10521,87 @@ async function _fetchGeminiRights(spot) {
 
   const sub     = spot.transportSubtype || "transport";
   const carrier = spot.carrier || "unknown carrier";
-  const origin  = spot.customOrigin || spot.transportFrom || "";
-  const dest    = spot.customDestination || spot.transportTo || "";
-  const date    = spot.scheduledDate || "";
+  const origin  = spot.customOrigin  || spot.transportFrom || "unknown origin";
+  const dest    = spot.customDestination || spot.transportTo || "unknown destination";
+  const date    = spot.scheduledDate
+    ? new Date(spot.scheduledDate + "T00:00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
+    : "unknown date";
 
-  const prompt = `You are a concise travel rights expert. A traveller's ${sub} from "${origin}" to "${dest}" operated by "${carrier}" on ${date} was cancelled.
+  // ── Detailed grounded prompt ──────────────────────────────────
+  // Instructs Gemini to use Google Search before answering, covering:
+  //  ① Exact regulation & compensation tier for this route/carrier
+  //  ② Immediate right-to-care entitlements
+  //  ③ Direct claims form URL + community-sourced channel ranking
+  //  ④ Document checklist specific to this operator
+  //  ⑤ Filing deadline, escalation path, processing time, third-party advice
+  const prompt = `A traveller's ${sub} from "${origin}" to "${dest}", operated by ${carrier}, scheduled for ${date}, has been cancelled.
 
-Provide the most relevant consumer rights in 4 bullet points covering: (1) the specific regulation that applies (e.g. EU 261/2004 for EU flights, US DOT for US flights, EU 1371/2007 for European trains), (2) compensation or refund amount, (3) right to care or hotel if applicable, (4) how to submit the claim and the deadline.
+Before answering, use Google Search to find: the specific compensation claim or passenger-rights page for ${carrier}, recent traveller reviews and forum posts (Reddit, TripAdvisor, AirHelp, Resolver, consumer forums) about claiming against ${carrier}, and the relevant enforcement body for this route.
 
-Format your response ONLY as an HTML <ul> list with <li> items. Use <strong> for regulation names and key figures. Be specific and practical. No preamble, no legal disclaimers.`;
+Then produce a disruption recovery guide structured in exactly the following 5 HTML sections. Output ONLY raw HTML — no markdown, no preamble, no disclaimers, no text outside the sections.
+
+<section>
+<h4>① Applicable Regulations &amp; Compensation</h4>
+State the exact law that applies to this route and carrier. For EU-departing flights or EU-carrier flights: EU Regulation 261/2004 — give the precise compensation tier (€250 / €400 / €600) based on the distance between ${origin} and ${dest}. For UK flights post-Brexit: UK261. For US-operated routes: US DOT 14 CFR Part 259/260. For European trains: EU Rail Regulation 1371/2007 or the operator-specific guarantee (e.g. SNCF G30, DB Fahrgastrechte). Mention what counts as extraordinary circumstances for ${carrier} and whether recent court decisions affect this.
+</section>
+
+<section>
+<h4>② Right to Care — What to Ask For Right Now</h4>
+List exactly what ${carrier} must provide immediately: meals and refreshments (state the waiting time threshold), hotel accommodation and transport if an overnight stay is required, and two free phone calls or emails. State whether these apply to this specific type of cancellation and route, and how to request them at the airport.
+</section>
+
+<section>
+<h4>③ Where to Submit Your Claim</h4>
+Using your search results, provide the DIRECT URL to ${carrier}'s online passenger-rights or compensation claim form (not the homepage). Then list 2–3 additional options ranked by community-reported success rate, for example: national enforcement body (CAA, DGAC, Luftfahrtbundesamt, DOT, etc.), third-party services (AirHelp, Resolver, CEDR), or credit card chargeback. Format all links as: <a href="URL" target="_blank" rel="noopener">Link text →</a>
+</section>
+
+<section>
+<h4>④ Documents to Collect &amp; Keep</h4>
+Provide a specific checklist of evidence to save now and before leaving the airport:
+<ul>
+  <li>Original booking confirmation and e-ticket (PDF or screenshot)</li>
+  <li>Cancellation notification from ${carrier} — email, app notification, or SMS</li>
+  <li>Any rebooking or voucher offer from the airline (accept or reject in writing)</li>
+  <li>Boarding passes or gate passes for the cancelled flight/train</li>
+  <li>Receipts for every expense incurred due to the cancellation (meals, hotel, taxis, new tickets)</li>
+  <li>Names and badge numbers of any airline staff you spoke with</li>
+  <li>Screenshots of the flight status board showing the cancellation</li>
+  <li>Any specific documents that travellers report ${carrier} requests when processing claims</li>
+</ul>
+</section>
+
+<section>
+<h4>⑤ Practical Timeline &amp; Escalation</h4>
+Based on search results: (a) the legal deadline to file the claim against ${carrier} — state the exact number of years or months, (b) how long ${carrier} typically takes to respond and what to do if they miss the statutory response window, (c) whether using AirHelp, Resolver, or a no-win-no-fee solicitor is worth it for ${carrier} specifically based on community experience, (d) the national enforcement body to escalate to if ${carrier} ignores or rejects the claim.
+</section>`;
 
   try {
+    const body = {
+      contents: [{ parts: [{ text: prompt }] }],
+      // Google Search grounding — Gemini will search the web before answering
+      tools: [{ google_search: {} }],
+      generationConfig: { temperature: 0.1 },  // low temp for factual accuracy
+    };
+
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_CONFIG.model}:generateContent?key=${GEMINI_CONFIG.apiKey}`,
-      { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }
+      { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }
     );
     const json = await res.json();
-    const text = json.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+    // With grounding, text may arrive across multiple parts — join them all
+    const parts = json.candidates?.[0]?.content?.parts || [];
+    const text  = parts.map(p => p.text || "").join("").trim();
     if (!text) return null;
-    const result = { html: text, source: "Gemini AI · " + GEMINI_CONFIG.model };
+
+    // Surface search queries Gemini used, for attribution
+    const meta         = json.candidates?.[0]?.groundingMetadata;
+    const queries      = (meta?.webSearchQueries || []).join(" · ");
+    const sourceLabel  = queries
+      ? `Gemini AI + Google Search · searched: ${queries}`
+      : `Gemini AI · ${GEMINI_CONFIG.model}`;
+
+    const result = { html: text, source: sourceLabel };
     _rightsCache[spot.id] = result;
     return result;
   } catch { return null; }
