@@ -8945,41 +8945,85 @@ function renderBudgetCharts(byCurrency, fmt, allEntries) {
 
   Object.entries(byCurrency).forEach(([cur, ces]) => {
     const sym = currencySymbol(cur);
-    const baseOpts = {
+
+    // Options factory — shared x-axis max enforced per chart pair so City and
+    // Category always use the same scale range within a column.
+    const makeOpts = (xMax) => ({
       indexAxis: "y",
       responsive: true,
+      animation: false,
       plugins: {
         legend: { display: false },
         tooltip: { callbacks: { label: ctx => ` ${sym}${fmt(ctx.raw)}` } },
       },
       scales: {
-        x: { grid: { color: "rgba(128,128,128,0.1)" }, ticks: { callback: v => `${sym}${fmt(v)}`, color: "#888", font: { size: 11 } } },
+        x: {
+          ...(xMax > 0 ? { max: xMax } : {}),
+          grid: { color: "rgba(128,128,128,0.1)" },
+          ticks: { callback: v => `${sym}${fmt(v)}`, color: "#888", font: { size: 11 } },
+        },
         y: { grid: { display: false }, ticks: { color: "#888", font: { size: 11 } } },
       },
-    };
+    });
 
-    // ── Group charts ───────────────────────────────────────────
+    // ── Pre-compute group data ─────────────────────────────────
 
-    // By city (group)
+    const byCityGroup = {};
+    ces.forEach(e => {
+      const name = state.towns.find(t => t.id === e.townId)?.name || "Other";
+      byCityGroup[name] = (byCityGroup[name] || 0) + e.amount;
+    });
+    const cityLabelsGroup = Object.keys(byCityGroup).sort((a, b) => byCityGroup[b] - byCityGroup[a]);
+    const cityDataGroup   = cityLabelsGroup.map(k => byCityGroup[k]);
+    const cityColorsGroup = cityLabelsGroup.map((_, i) => CITY_PALETTE[i % CITY_PALETTE.length]);
+
+    const byCatGroup = {};
+    ces.forEach(e => { byCatGroup[e.category] = (byCatGroup[e.category] || 0) + e.amount; });
+    const catLabelsGroup = Object.keys(byCatGroup).sort((a, b) => byCatGroup[b] - byCatGroup[a]);
+    const catDataGroup   = catLabelsGroup.map(k => byCatGroup[k]);
+    const catColorsGroup = catLabelsGroup.map(c => CATEGORY_COLORS[c] || "#888");
+
+    const groupXMax = Math.max(0, ...cityDataGroup, ...catDataGroup);
+
+    // ── Pre-compute mine data ──────────────────────────────────
+
+    const myCes = myMemberId ? filterMyEntries(ces, myMemberId, _myExpFilter) : [];
+    let cityLabelsMine = [], cityDataMine = [], cityColorsMine = [];
+    let catLabelsMine  = [], catDataMine  = [], catColorsMine  = [];
+    let mineXMax = 0;
+
+    if (myMemberId) {
+      const byCityMine = {};
+      myCes.forEach(e => {
+        const name = state.towns.find(t => t.id === e.townId)?.name || "Other";
+        byCityMine[name] = (byCityMine[name] || 0) + getMyPortionAmount(e, myMemberId);
+      });
+      cityLabelsMine = Object.keys(byCityMine).sort((a, b) => byCityMine[b] - byCityMine[a]);
+      cityDataMine   = cityLabelsMine.map(k => byCityMine[k]);
+      cityColorsMine = cityLabelsMine.map((_, i) => CITY_PALETTE[i % CITY_PALETTE.length]);
+
+      const byCatMine = {};
+      myCes.forEach(e => { byCatMine[e.category] = (byCatMine[e.category] || 0) + getMyPortionAmount(e, myMemberId); });
+      catLabelsMine = Object.keys(byCatMine).sort((a, b) => byCatMine[b] - byCatMine[a]);
+      catDataMine   = catLabelsMine.map(k => byCatMine[k]);
+      catColorsMine = catLabelsMine.map(c => CATEGORY_COLORS[c] || "#888");
+
+      mineXMax = Math.max(0, ...cityDataMine, ...catDataMine);
+    }
+
+    // ── Create group charts ────────────────────────────────────
+
     const cityCtx = document.getElementById(`budget-chart-${cur}-city`);
     if (cityCtx) {
-      const byCity = {};
-      ces.forEach(e => {
-        const name = state.towns.find(t => t.id === e.townId)?.name || "Other";
-        byCity[name] = (byCity[name] || 0) + e.amount;
-      });
-      const cityLabels = Object.keys(byCity).sort((a, b) => byCity[b] - byCity[a]);
-      const cityData   = cityLabels.map(k => byCity[k]);
-      const cityColors = cityLabels.map((_, i) => CITY_PALETTE[i % CITY_PALETTE.length]);
       budgetChartInstances[`${cur}-city`] = new Chart(cityCtx, {
         type: "bar",
-        data: { labels: cityLabels, datasets: [{ data: cityData, backgroundColor: cityColors, borderRadius: 4, borderSkipped: false }] },
+        data: { labels: cityLabelsGroup, datasets: [{ data: cityDataGroup, backgroundColor: cityColorsGroup, borderRadius: 4, borderSkipped: false }] },
         options: {
-          ...baseOpts,
+          ...makeOpts(groupXMax),
           onHover: (event, elements) => { cityCtx.style.cursor = elements.length ? "pointer" : "default"; },
           onClick: (event, elements) => {
             if (!elements.length) return;
-            const cityName = cityLabels[elements[0].index];
+            const cityName = cityLabelsGroup[elements[0].index];
             const cityEntries = (allEntries || ces).filter(e => {
               const town = state.towns.find(t => t.id === e.townId);
               return (town?.name || "Other") === cityName && e.currency === cur;
@@ -8990,23 +9034,17 @@ function renderBudgetCharts(byCurrency, fmt, allEntries) {
       });
     }
 
-    // By category (group)
     const catCtx = document.getElementById(`budget-chart-${cur}-cat`);
     if (catCtx) {
-      const byCat = {};
-      ces.forEach(e => { byCat[e.category] = (byCat[e.category] || 0) + e.amount; });
-      const catLabels = Object.keys(byCat).sort((a, b) => byCat[b] - byCat[a]);
-      const catData   = catLabels.map(k => byCat[k]);
-      const catColors = catLabels.map(c => CATEGORY_COLORS[c] || "#888");
       budgetChartInstances[`${cur}-cat`] = new Chart(catCtx, {
         type: "bar",
-        data: { labels: catLabels, datasets: [{ data: catData, backgroundColor: catColors, borderRadius: 4, borderSkipped: false }] },
+        data: { labels: catLabelsGroup, datasets: [{ data: catDataGroup, backgroundColor: catColorsGroup, borderRadius: 4, borderSkipped: false }] },
         options: {
-          ...baseOpts,
+          ...makeOpts(groupXMax),
           onHover: (event, elements) => { catCtx.style.cursor = elements.length ? "pointer" : "default"; },
           onClick: (event, elements) => {
             if (!elements.length) return;
-            const category = catLabels[elements[0].index];
+            const category = catLabelsGroup[elements[0].index];
             const catEntries = (allEntries || ces).filter(e => e.category === category && e.currency === cur);
             openBudgetDrawer(category, cur, catEntries, "category");
           },
@@ -9014,30 +9052,32 @@ function renderBudgetCharts(byCurrency, fmt, allEntries) {
       });
     }
 
-    // ── My-portion charts ──────────────────────────────────────
-    if (!myMemberId) return;
-    const myCes = filterMyEntries(ces, myMemberId, _myExpFilter);
+    // Sync group y-axis widths so grid lines stay perfectly aligned
+    const gc = budgetChartInstances[`${cur}-city`];
+    const gcat = budgetChartInstances[`${cur}-cat`];
+    if (gc && gcat) {
+      const w = Math.max(gc.scales.y.width, gcat.scales.y.width);
+      gc.options.scales.y.afterFit   = s => { s.width = w; };
+      gcat.options.scales.y.afterFit = s => { s.width = w; };
+      gc.update('none');
+      gcat.update('none');
+    }
 
-    // By city (mine)
+    // ── Create mine charts ─────────────────────────────────────
+
+    if (!myMemberId) return;
+
     const cityCMine = document.getElementById(`budget-chart-${cur}-city-mine`);
     if (cityCMine) {
-      const byCity = {};
-      myCes.forEach(e => {
-        const name = state.towns.find(t => t.id === e.townId)?.name || "Other";
-        byCity[name] = (byCity[name] || 0) + getMyPortionAmount(e, myMemberId);
-      });
-      const cityLabels = Object.keys(byCity).sort((a, b) => byCity[b] - byCity[a]);
-      const cityData   = cityLabels.map(k => byCity[k]);
-      const cityColors = cityLabels.map((_, i) => CITY_PALETTE[i % CITY_PALETTE.length]);
       budgetChartInstances[`${cur}-city-mine`] = new Chart(cityCMine, {
         type: "bar",
-        data: { labels: cityLabels, datasets: [{ data: cityData, backgroundColor: cityColors, borderRadius: 4, borderSkipped: false }] },
+        data: { labels: cityLabelsMine, datasets: [{ data: cityDataMine, backgroundColor: cityColorsMine, borderRadius: 4, borderSkipped: false }] },
         options: {
-          ...baseOpts,
+          ...makeOpts(mineXMax),
           onHover: (event, elements) => { cityCMine.style.cursor = elements.length ? "pointer" : "default"; },
           onClick: (event, elements) => {
             if (!elements.length) return;
-            const cityName = cityLabels[elements[0].index];
+            const cityName = cityLabelsMine[elements[0].index];
             const cityEntries = myCes.filter(e => (state.towns.find(t => t.id === e.townId)?.name || "Other") === cityName);
             openBudgetDrawer(cityName, cur, cityEntries, "city");
           },
@@ -9045,28 +9085,33 @@ function renderBudgetCharts(byCurrency, fmt, allEntries) {
       });
     }
 
-    // By category (mine)
     const catCMine = document.getElementById(`budget-chart-${cur}-cat-mine`);
     if (catCMine) {
-      const byCat = {};
-      myCes.forEach(e => { byCat[e.category] = (byCat[e.category] || 0) + getMyPortionAmount(e, myMemberId); });
-      const catLabels = Object.keys(byCat).sort((a, b) => byCat[b] - byCat[a]);
-      const catData   = catLabels.map(k => byCat[k]);
-      const catColors = catLabels.map(c => CATEGORY_COLORS[c] || "#888");
       budgetChartInstances[`${cur}-cat-mine`] = new Chart(catCMine, {
         type: "bar",
-        data: { labels: catLabels, datasets: [{ data: catData, backgroundColor: catColors, borderRadius: 4, borderSkipped: false }] },
+        data: { labels: catLabelsMine, datasets: [{ data: catDataMine, backgroundColor: catColorsMine, borderRadius: 4, borderSkipped: false }] },
         options: {
-          ...baseOpts,
+          ...makeOpts(mineXMax),
           onHover: (event, elements) => { catCMine.style.cursor = elements.length ? "pointer" : "default"; },
           onClick: (event, elements) => {
             if (!elements.length) return;
-            const category = catLabels[elements[0].index];
+            const category = catLabelsMine[elements[0].index];
             const catEntries = myCes.filter(e => e.category === category);
             openBudgetDrawer(category, cur, catEntries, "category");
           },
         },
       });
+    }
+
+    // Sync mine y-axis widths
+    const mc = budgetChartInstances[`${cur}-city-mine`];
+    const mcat = budgetChartInstances[`${cur}-cat-mine`];
+    if (mc && mcat) {
+      const w = Math.max(mc.scales.y.width, mcat.scales.y.width);
+      mc.options.scales.y.afterFit   = s => { s.width = w; };
+      mcat.options.scales.y.afterFit = s => { s.width = w; };
+      mc.update('none');
+      mcat.update('none');
     }
   });
 }
