@@ -2708,7 +2708,15 @@
   }
   @media (max-width: 600px) { .budget-currency-panel { grid-template-columns: 1fr; } }
   .budget-currency-col { padding: 12px 14px; border-radius: var(--radius-sm); min-width: 0; }
-  @media (min-width: 601px) { .budget-chart-block canvas { max-height: 110px; } }
+  /* Charts size themselves dynamically via JS; just ensure they never overflow their block */
+  .budget-chart-block canvas { display: block; width: 100% !important; }
+  /* Center the tab bar on desktop so it sits visually between both columns */
+  @media (min-width: 601px) { .budget-tab-bar { justify-content: center; } }
+  /* Drag-and-drop tab reordering */
+  .budget-tab[draggable="true"] { cursor: grab; }
+  .budget-tab[draggable="true"]:active { cursor: grabbing; }
+  .budget-tab.tab-dragging { opacity: 0.35; }
+  .budget-tab.tab-drag-over { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); }
 
   /* ── Settle-up panel — bottom, collapsible ───────────────── */
   .budget-settleup-section {
@@ -8559,7 +8567,7 @@ function buildTabBarHTML(entries, budgetTargets, fmt, currencyList) {
   currencyList.forEach(cur => {
     const sym   = currencySymbol(cur);
     const total = entries.filter(e => e.currency === cur).reduce((s, e) => s + e.amount, 0);
-    tabs.push(`<button class="budget-tab${_budgetTab === cur ? " active" : ""}" data-budgettab="${escapeHtml(cur)}">${escapeHtml(cur)} · ${sym}${compact(Math.round(total))}</button>`);
+    tabs.push(`<button class="budget-tab${_budgetTab === cur ? " active" : ""}" data-budgettab="${escapeHtml(cur)}" draggable="true" data-dragcur="${escapeHtml(cur)}">${escapeHtml(cur)} · ${sym}${compact(Math.round(total))}</button>`);
   });
   return `<div class="budget-tab-bar">${tabs.join("")}</div>`;
 }
@@ -9098,10 +9106,17 @@ function renderBudget() {
     byCurrency[e.currency].push(e);
   });
   const home = tripHomeCurrency();
-  const currencyList = Object.keys(byCurrency).sort((a, b) => {
+  let currencyList = Object.keys(byCurrency).sort((a, b) => {
     if (a === home) return -1; if (b === home) return 1;
     return a.localeCompare(b);
   });
+  // Apply manual drag order (only reorders currencies that still exist)
+  if (_currencyOrder) {
+    const known = new Set(currencyList);
+    const ordered = _currencyOrder.filter(c => known.has(c));
+    const rest    = currencyList.filter(c => !_currencyOrder.includes(c));
+    currencyList  = [...ordered, ...rest];
+  }
 
   // Legacy budget merge
   const budgetTargets = { ...(state.trip?.budgetTargets || {}) };
@@ -9169,6 +9184,41 @@ function renderBudget() {
   content.querySelectorAll(".budget-tab[data-budgettab]").forEach(tab => {
     tab.addEventListener("click", () => {
       _budgetTab = tab.dataset.budgettab;
+      renderBudget();
+    });
+  });
+
+  // ── Wire: currency tab drag-to-reorder ──────────────────────
+  let _dragSrc = null;
+  content.querySelectorAll(".budget-tab[data-dragcur]").forEach(tab => {
+    tab.addEventListener("dragstart", e => {
+      _dragSrc = tab.dataset.dragcur;
+      e.dataTransfer.effectAllowed = "move";
+      requestAnimationFrame(() => tab.classList.add("tab-dragging"));
+    });
+    tab.addEventListener("dragend", () => {
+      tab.classList.remove("tab-dragging");
+      content.querySelectorAll(".budget-tab").forEach(t => t.classList.remove("tab-drag-over"));
+    });
+    tab.addEventListener("dragover", e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      content.querySelectorAll(".budget-tab").forEach(t => t.classList.remove("tab-drag-over"));
+      if (tab.dataset.dragcur !== _dragSrc) tab.classList.add("tab-drag-over");
+    });
+    tab.addEventListener("dragleave", () => tab.classList.remove("tab-drag-over"));
+    tab.addEventListener("drop", e => {
+      e.preventDefault();
+      tab.classList.remove("tab-drag-over");
+      const src = _dragSrc, tgt = tab.dataset.dragcur;
+      if (!src || !tgt || src === tgt) return;
+      const base = _currencyOrder || currencyList;
+      const next = [...base];
+      const si = next.indexOf(src), ti = next.indexOf(tgt);
+      if (si < 0 || ti < 0) return;
+      next.splice(si, 1);
+      next.splice(ti, 0, src);
+      _currencyOrder = next;
       renderBudget();
     });
   });
@@ -9255,6 +9305,7 @@ function renderBudgetCharts(byCurrency, fmt, allEntries) {
     const makeOpts = (xMax) => ({
       indexAxis: "y",
       responsive: true,
+      maintainAspectRatio: false,
       animation: false,
       plugins: {
         legend: { display: false },
@@ -9266,9 +9317,12 @@ function renderBudgetCharts(byCurrency, fmt, allEntries) {
           grid: { color: "rgba(128,128,128,0.1)" },
           ticks: { callback: v => `${sym}${fmt(v)}`, color: "#888", font: { size: 11 } },
         },
-        y: { grid: { display: false }, ticks: { color: "#888", font: { size: 11 } } },
+        y: { grid: { display: false }, ticks: { color: "#888", font: { size: 11 }, autoSkip: false } },
       },
     });
+
+    // Height helper: each bar gets 32px + 24px padding; min 80px
+    const chartH = (n) => `${Math.max(80, n * 32 + 24)}px`;
 
     // ── Pre-compute group data ─────────────────────────────────
     // Uses getParticipantAmount so top-level participant filter is reflected in bars
@@ -9321,17 +9375,39 @@ function renderBudgetCharts(byCurrency, fmt, allEntries) {
 
     // ── Create group charts ────────────────────────────────────
 
+    // Helper: resolve clicked row index from Chart.js event (bar click OR label/row click)
+    const rowIdx = (event, chart, labels) => {
+      if (!chart || !labels.length) return -1;
+      const els = chart.getElementsAtEventForMode(event.native, 'y', { intersect: false }, false);
+      if (els.length) return els[0].index;
+      // Fallback: map y-pixel to scale index directly (catches clicks outside bars)
+      try {
+        const v = chart.scales.y.getValueForPixel(event.native.offsetY);
+        const i = Math.round(v);
+        return (i >= 0 && i < labels.length) ? i : -1;
+      } catch { return -1; }
+    };
+    const rowHover = (event, elements, chart, labels) => {
+      try {
+        const v = chart.scales?.y?.getValueForPixel(event.native?.offsetY);
+        const onRow = Number.isFinite(v) && v >= -0.5 && v < labels.length - 0.5;
+        return elements.length > 0 || onRow;
+      } catch { return elements.length > 0; }
+    };
+
     const cityCtx = document.getElementById(`budget-chart-${cur}-city`);
     if (cityCtx) {
+      cityCtx.style.height = chartH(cityLabelsGroup.length);
       budgetChartInstances[`${cur}-city`] = new Chart(cityCtx, {
         type: "bar",
         data: { labels: cityLabelsGroup, datasets: [{ data: cityDataGroup, backgroundColor: cityColorsGroup, borderRadius: 4, borderSkipped: false }] },
         options: {
           ...makeOpts(groupXMax),
-          onHover: (event, elements) => { cityCtx.style.cursor = elements.length ? "pointer" : "default"; },
-          onClick: (event, elements) => {
-            if (!elements.length) return;
-            const cityName = cityLabelsGroup[elements[0].index];
+          onHover: (event, elements, chart) => { cityCtx.style.cursor = rowHover(event, elements, chart, cityLabelsGroup) ? "pointer" : "default"; },
+          onClick: (event, elements, chart) => {
+            const i = rowIdx(event, chart, cityLabelsGroup);
+            if (i < 0) return;
+            const cityName = cityLabelsGroup[i];
             const cityEntries = (allEntries || ces).filter(e => {
               const town = state.towns.find(t => t.id === e.townId);
               return (town?.name || "Other") === cityName && e.currency === cur;
@@ -9344,15 +9420,17 @@ function renderBudgetCharts(byCurrency, fmt, allEntries) {
 
     const catCtx = document.getElementById(`budget-chart-${cur}-cat`);
     if (catCtx) {
+      catCtx.style.height = chartH(catLabelsGroup.length);
       budgetChartInstances[`${cur}-cat`] = new Chart(catCtx, {
         type: "bar",
         data: { labels: catLabelsGroup, datasets: [{ data: catDataGroup, backgroundColor: catColorsGroup, borderRadius: 4, borderSkipped: false }] },
         options: {
           ...makeOpts(groupXMax),
-          onHover: (event, elements) => { catCtx.style.cursor = elements.length ? "pointer" : "default"; },
-          onClick: (event, elements) => {
-            if (!elements.length) return;
-            const category = catLabelsGroup[elements[0].index];
+          onHover: (event, elements, chart) => { catCtx.style.cursor = rowHover(event, elements, chart, catLabelsGroup) ? "pointer" : "default"; },
+          onClick: (event, elements, chart) => {
+            const i = rowIdx(event, chart, catLabelsGroup);
+            if (i < 0) return;
+            const category = catLabelsGroup[i];
             const catEntries = (allEntries || ces).filter(e => e.category === category && e.currency === cur);
             openBudgetDrawer(category, cur, catEntries, "category", "group");
           },
@@ -9377,15 +9455,17 @@ function renderBudgetCharts(byCurrency, fmt, allEntries) {
 
     const cityCMine = document.getElementById(`budget-chart-${cur}-city-mine`);
     if (cityCMine) {
+      cityCMine.style.height = chartH(cityLabelsMine.length);
       budgetChartInstances[`${cur}-city-mine`] = new Chart(cityCMine, {
         type: "bar",
         data: { labels: cityLabelsMine, datasets: [{ data: cityDataMine, backgroundColor: cityColorsMine, borderRadius: 4, borderSkipped: false }] },
         options: {
           ...makeOpts(mineXMax),
-          onHover: (event, elements) => { cityCMine.style.cursor = elements.length ? "pointer" : "default"; },
-          onClick: (event, elements) => {
-            if (!elements.length) return;
-            const cityName = cityLabelsMine[elements[0].index];
+          onHover: (event, elements, chart) => { cityCMine.style.cursor = rowHover(event, elements, chart, cityLabelsMine) ? "pointer" : "default"; },
+          onClick: (event, elements, chart) => {
+            const i = rowIdx(event, chart, cityLabelsMine);
+            if (i < 0) return;
+            const cityName = cityLabelsMine[i];
             const cityEntries = myCesAll.filter(e => (state.towns.find(t => t.id === e.townId)?.name || "Other") === cityName);
             openBudgetDrawer(cityName, cur, cityEntries, "city", "mine");
           },
@@ -9395,15 +9475,17 @@ function renderBudgetCharts(byCurrency, fmt, allEntries) {
 
     const catCMine = document.getElementById(`budget-chart-${cur}-cat-mine`);
     if (catCMine) {
+      catCMine.style.height = chartH(catLabelsMine.length);
       budgetChartInstances[`${cur}-cat-mine`] = new Chart(catCMine, {
         type: "bar",
         data: { labels: catLabelsMine, datasets: [{ data: catDataMine, backgroundColor: catColorsMine, borderRadius: 4, borderSkipped: false }] },
         options: {
           ...makeOpts(mineXMax),
-          onHover: (event, elements) => { catCMine.style.cursor = elements.length ? "pointer" : "default"; },
-          onClick: (event, elements) => {
-            if (!elements.length) return;
-            const category = catLabelsMine[elements[0].index];
+          onHover: (event, elements, chart) => { catCMine.style.cursor = rowHover(event, elements, chart, catLabelsMine) ? "pointer" : "default"; },
+          onClick: (event, elements, chart) => {
+            const i = rowIdx(event, chart, catLabelsMine);
+            if (i < 0) return;
+            const category = catLabelsMine[i];
             const catEntries = myCesAll.filter(e => e.category === category);
             openBudgetDrawer(category, cur, catEntries, "category", "mine");
           },
@@ -9440,6 +9522,7 @@ let _bdFiltersOpen   = false;       // filter panel expanded?
 let _myExpFilter       = "all";      // left column top-level: "all" | "paid" | "owe"
 let _groupMemberFilter = new Set();  // right column top-level: participant IDs (empty = all)
 let _budgetTab         = "all";      // active budget tab: "all" | currency code
+let _currencyOrder     = null;       // null = default sort | string[] = manual drag order
 
 function getMyPortionAmount(e, myMemberId) {
   if (!myMemberId) return 0;
