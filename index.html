@@ -2345,6 +2345,29 @@
     font-size: 0.75rem; color: var(--text-3);
     margin-top: 10px; display: flex; flex-wrap: wrap; gap: 4px 14px;
   }
+  /* Two-column layout inside the SGD card */
+  .budget-sgd-cols {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+    border-top: 1px solid var(--border); padding-top: 14px; margin-top: 10px;
+  }
+  @media (max-width: 600px) { .budget-sgd-cols { grid-template-columns: 1fr; gap: 16px; } }
+  .budget-sgd-col { padding: 0 14px; min-width: 0; }
+  .budget-sgd-col:first-child { padding-left: 0; border-right: 1px solid var(--border); }
+  .budget-sgd-col:last-child  { padding-right: 0; }
+  @media (max-width: 600px) {
+    .budget-sgd-col:first-child { border-right: none; border-bottom: 1px solid var(--border); padding-bottom: 14px; }
+  }
+  .budget-sgd-col-title {
+    font-size: 0.625rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--text-3);
+    text-align: center; margin-bottom: 8px;
+  }
+  .budget-sgd-col-filters {
+    display: flex; justify-content: center; gap: 5px; flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+  /* Smaller total figure when in a narrow column */
+  .budget-sgd-col .budget-sgd-total { font-size: 1.875rem; }
   .budget-currency-section {
     background: var(--surface); border: 1px solid var(--border);
     border-radius: var(--radius); margin-bottom: 12px; overflow: hidden;
@@ -8368,22 +8391,29 @@ function aggregateBudget() {
   return entries;
 }
 
-/* ── SGD conversion helpers ─────────────────────────────── */
+/* ── Home-currency conversion helpers ───────────────────── */
 
-// rates are stored as "X units of foreign per 1 SGD" (from open.er-api.com/v6/latest/SGD)
-function toSGD(amount, currency) {
-  if (!currency || currency === "SGD") return amount;
+// rates are stored as "X units of foreign per 1 home-currency unit"
+// (fetched from open.er-api.com/v6/latest/{homeCurrency})
+function tripHomeCurrency() {
+  return state.trip?.currency || "SGD";
+}
+
+function toHomeCurrency(amount, currency) {
+  const home = tripHomeCurrency();
+  if (!currency || currency === home) return amount;
   const rates = state.trip?.exchangeRates;
   if (!rates) return null;
-  const rate = rates[currency]; // how many units of `currency` per 1 SGD
+  const rate = rates[currency]; // how many units of `currency` per 1 home-currency unit
   if (!rate) return null;
   return amount / rate;
 }
 
 async function fetchAndSaveRates(btn) {
+  const home = tripHomeCurrency();
   if (btn) { btn.disabled = true; btn.textContent = "Fetching…"; }
   try {
-    const res = await fetch("https://open.er-api.com/v6/latest/SGD");
+    const res = await fetch(`https://open.er-api.com/v6/latest/${home}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     if (data.result !== "success") throw new Error("API error");
@@ -8399,47 +8429,81 @@ async function fetchAndSaveRates(btn) {
   }
 }
 
-function buildSgdSummaryHTML(entries, budgetTargets, fmt) {
-  const rates   = state.trip?.exchangeRates || null;
-  const sgdBudget = budgetTargets.SGD || 0;
+function buildSgdSummaryHTML(entries, budgetTargets, fmt, myMemberId, myExpFilter, groupMemberFilter) {
+  const home       = tripHomeCurrency();
+  const homeSym    = currencySymbol(home);
+  const rates      = state.trip?.exchangeRates || null;
+  const homeBudget  = budgetTargets[home] || 0;
+  const myHomeBudget = myMemberId ? (state.trip?.memberBudgetTargets?.[myMemberId]?.[home] || 0) : 0;
+  const grpFiltered = groupMemberFilter && groupMemberFilter.size > 0;
 
-  // Aggregate per-currency paid + planned totals
-  const byCur = {};
+  // ── Group home-currency totals (respects participant filter) ─
+  const byCurGroup = {};
   entries.forEach(e => {
-    if (!byCur[e.currency]) byCur[e.currency] = { planned: 0, paid: 0 };
-    byCur[e.currency].planned += e.amount;
-    if (!e.isEstimated) byCur[e.currency].paid += e.amount;
+    if (!byCurGroup[e.currency]) byCurGroup[e.currency] = { planned: 0, paid: 0 };
+    const amt = getParticipantAmount(e, groupMemberFilter || new Set());
+    byCurGroup[e.currency].planned += amt;
+    if (!e.isEstimated) byCurGroup[e.currency].paid += amt;
   });
 
-  let totalPaidSGD = 0, totalPlannedSGD = 0;
+  let totalPaidGroup = 0, totalPlannedGroup = 0;
   const breakdownParts = [];
   const missingCurs = [];
 
-  for (const [cur, { planned, paid }] of Object.entries(byCur)) {
+  for (const [cur, { planned, paid }] of Object.entries(byCurGroup)) {
     const sym = currencySymbol(cur);
-    if (cur === "SGD") {
-      totalPaidSGD    += paid;
-      totalPlannedSGD += planned;
-      breakdownParts.push(`S$${fmt(Math.round(planned))}`);
+    if (cur === home) {
+      totalPaidGroup    += paid;
+      totalPlannedGroup += planned;
+      breakdownParts.push(`${homeSym}${fmt(Math.round(planned))}`);
     } else if (rates && rates[cur]) {
-      const rate       = rates[cur];              // units of cur per 1 SGD
-      const multiplier = 1 / rate;               // 1 cur = X SGD
-      const paidSGD    = paid    / rate;
-      const planSGD    = planned / rate;
-      totalPaidSGD    += paidSGD;
-      totalPlannedSGD += planSGD;
-      breakdownParts.push(`${sym}${fmt(Math.round(planned))} × ${multiplier.toFixed(3)} = S$${fmt(Math.round(planSGD))}`);
+      const rate = rates[cur];
+      totalPaidGroup    += paid    / rate;
+      totalPlannedGroup += planned / rate;
+      breakdownParts.push(`${sym}${fmt(Math.round(planned))} × ${(1/rate).toFixed(3)} = ${homeSym}${fmt(Math.round(planned/rate))}`);
     } else {
       missingCurs.push(cur);
     }
   }
 
-  const hasFullRates = missingCurs.length === 0;
-  const denominator  = sgdBudget || totalPlannedSGD;
-  const pctPaid    = denominator > 0 ? Math.min(Math.round((totalPaidSGD    / denominator) * 100), 100) : 0;
-  const pctPlanned = denominator > 0 ? Math.min(Math.round((totalPlannedSGD / denominator) * 100), 100) : 0;
-  const overBudget = sgdBudget && totalPlannedSGD > sgdBudget;
-  const remaining  = sgdBudget ? sgdBudget - totalPlannedSGD : null;
+  // ── My-portion home-currency totals ────────────────────────
+  let totalPaidMine = 0, totalPlannedMine = 0;
+  if (myMemberId) {
+    const myEntries = filterMyEntries(entries, myMemberId, myExpFilter || "all");
+    const byCurMine = {};
+    myEntries.forEach(e => {
+      if (!byCurMine[e.currency]) byCurMine[e.currency] = { planned: 0, paid: 0 };
+      const amt = getMyPortionAmount(e, myMemberId);
+      byCurMine[e.currency].planned += amt;
+      if (!e.isEstimated) byCurMine[e.currency].paid += amt;
+    });
+    for (const [cur, { planned, paid }] of Object.entries(byCurMine)) {
+      if (cur === home) {
+        totalPaidMine    += paid;
+        totalPlannedMine += planned;
+      } else if (rates && rates[cur]) {
+        totalPaidMine    += paid    / rates[cur];
+        totalPlannedMine += planned / rates[cur];
+      }
+    }
+  }
+
+  const hasRates = !!(rates) || Object.keys(byCurGroup).every(c => c === home);
+
+  // Progress helpers
+  const mkPct = (val, denom) => denom > 0 ? Math.min(Math.round(val / denom * 100), 100) : 0;
+
+  const grpDenom   = homeBudget || totalPlannedGroup;
+  const grpPctPaid = mkPct(totalPaidGroup, grpDenom);
+  const grpPctPlan = mkPct(totalPlannedGroup, grpDenom);
+  const grpOver    = homeBudget > 0 && totalPlannedGroup > homeBudget;
+  const grpRemain  = homeBudget ? homeBudget - totalPlannedGroup : null;
+
+  const myDenom    = myHomeBudget || totalPlannedMine;
+  const myPctPaid  = mkPct(totalPaidMine, myDenom);
+  const myPctPlan  = mkPct(totalPlannedMine, myDenom);
+  const myOver     = myHomeBudget > 0 && totalPlannedMine > myHomeBudget;
+  const myRemain   = myHomeBudget ? myHomeBudget - totalPlannedMine : null;
 
   let tsLabel = "No rates set — tap refresh";
   if (state.trip?.exchangeRatesUpdatedAt) {
@@ -8448,10 +8512,85 @@ function buildSgdSummaryHTML(entries, budgetTargets, fmt) {
     tsLabel = `Rates: ${date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`;
   }
 
+  // Participant pills for group column
+  const relevantMembers = (state.trip?.members || []).filter(m =>
+    entries.some(e => e.paidBy === m.id || (e.splits || []).some(s => s.memberId === m.id))
+  );
+
+  // ── Per-column inner HTML ───────────────────────────────────
+  const noRatesMsg = `<p style="font-size:0.8125rem;color:var(--text-3);margin:8px 0">Refresh rates to calculate.</p>`;
+
+  const myColHTML = myMemberId ? `
+    <div class="budget-sgd-col">
+      <div class="budget-sgd-col-title">My Portion</div>
+      <div class="budget-sgd-col-filters">
+        <button class="budget-person-pill${(myExpFilter||"all")==="all" ?" active":""}" data-myfilter="all">All</button>
+        <button class="budget-person-pill${(myExpFilter||"all")==="paid"?" active":""}" data-myfilter="paid">I paid</button>
+        <button class="budget-person-pill${(myExpFilter||"all")==="owe" ?" active":""}" data-myfilter="owe">I owe</button>
+      </div>
+      ${hasRates ? `
+        <div class="budget-total-row" style="margin-bottom:6px">
+          <span class="budget-sgd-total">${homeSym}${fmt(Math.round(totalPaidMine))}</span>
+          <span class="budget-total-planned">paid · ${homeSym}${fmt(Math.round(totalPlannedMine))} planned${myHomeBudget ? ` · ${homeSym}${fmt(myHomeBudget)} budget` : ""}</span>
+        </div>
+        ${myDenom > 0 ? `
+          <div class="budget-progress-track" title="Planned vs budget">
+            <div class="budget-progress-fill" style="width:${myPctPlan}%;opacity:0.35;background:var(--accent)"></div>
+          </div>
+          <div class="budget-progress-track" style="margin-top:4px" title="Paid vs budget">
+            <div class="budget-progress-fill" style="width:${myPctPaid}%;background:${myOver?"var(--danger)":"var(--success)"}"></div>
+          </div>
+          <div class="budget-progress-label" style="color:${myOver?"var(--danger)":"var(--text-3)"}">
+            ${myHomeBudget
+              ? `${homeSym}${fmt(Math.round(totalPlannedMine))} of ${homeSym}${fmt(myHomeBudget)} (${myPctPlan}%) · ${myRemain>=0?homeSym+fmt(Math.round(myRemain))+" remaining":homeSym+fmt(Math.round(-myRemain))+" over budget"}`
+              : `${homeSym}${fmt(Math.round(totalPaidMine))} paid · ${homeSym}${fmt(Math.round(totalPlannedMine))} planned`}
+          </div>` : ""}
+        <div class="budget-target-row" style="margin-top:12px;margin-bottom:0">
+          <label class="form-label">My budget (${home})</label>
+          <input class="form-input" id="my-budget-target-${home}" type="number" min="0" step="500"
+            placeholder="e.g. 3000" value="${myHomeBudget||""}" style="width:100px">
+          <button class="btn-ghost" data-my-budget-save="${home}" style="padding:6px 10px;font-size:0.8125rem">Set</button>
+        </div>` : noRatesMsg}
+    </div>` : "";
+
+  const grpColHTML = `
+    <div class="budget-sgd-col">
+      <div class="budget-sgd-col-title">Group${grpFiltered?`<span style="font-size:0.6875rem;font-weight:400;color:var(--accent);margin-left:4px;text-transform:none;letter-spacing:0">· filtered</span>`:""}
+      </div>
+      ${relevantMembers.length > 1 ? `
+      <div class="budget-sgd-col-filters">
+        <button class="grp-member-pill${!grpFiltered?" active":""}" data-grpmember="">All</button>
+        ${relevantMembers.map(m => `<button class="grp-member-pill${groupMemberFilter?.has(m.id)?" active":""}" data-grpmember="${escapeHtml(m.id)}">${escapeHtml(m.name)}</button>`).join("")}
+      </div>` : `<div style="min-height:28px"></div>`}
+      ${hasRates ? `
+        <div class="budget-total-row" style="margin-bottom:6px">
+          <span class="budget-sgd-total">${homeSym}${fmt(Math.round(totalPaidGroup))}</span>
+          <span class="budget-total-planned">paid · ${homeSym}${fmt(Math.round(totalPlannedGroup))} planned${!grpFiltered&&homeBudget?` · ${homeSym}${fmt(homeBudget)} budget`:""}</span>
+        </div>
+        ${!grpFiltered && grpDenom > 0 ? `
+          <div class="budget-progress-track" title="Planned vs budget">
+            <div class="budget-progress-fill" style="width:${grpPctPlan}%;opacity:0.35;background:var(--accent)"></div>
+          </div>
+          <div class="budget-progress-track" style="margin-top:4px" title="Paid vs budget">
+            <div class="budget-progress-fill" style="width:${grpPctPaid}%;background:${grpOver?"var(--danger)":"var(--success)"}"></div>
+          </div>
+          <div class="budget-progress-label" style="color:${grpOver?"var(--danger)":"var(--text-3)"}">
+            ${homeBudget
+              ? `${homeSym}${fmt(Math.round(totalPlannedGroup))} of ${homeSym}${fmt(homeBudget)} (${grpPctPlan}%) · ${grpRemain>=0?homeSym+fmt(Math.round(grpRemain))+" remaining":homeSym+fmt(Math.round(-grpRemain))+" over budget"}`
+              : `${homeSym}${fmt(Math.round(totalPaidGroup))} paid · ${homeSym}${fmt(Math.round(totalPlannedGroup))} planned`}
+          </div>` : ""}
+        <div class="budget-target-row" style="margin-top:12px;margin-bottom:0">
+          <label class="form-label">Group budget (${home})</label>
+          <input class="form-input" id="budget-target-${home}" type="number" min="0" step="500"
+            placeholder="e.g. 12000" value="${homeBudget||""}" style="width:100px">
+          <button class="btn-ghost" data-budget-save="${home}" style="padding:6px 10px;font-size:0.8125rem">Set</button>
+        </div>` : noRatesMsg}
+    </div>`;
+
   return `
     <div class="budget-sgd-card">
       <div class="budget-sgd-header">
-        <span class="budget-sgd-label">Total · SGD</span>
+        <span class="budget-sgd-label">Total · ${home}</span>
         <div class="budget-sgd-rates-meta">
           <span class="budget-sgd-ts">${tsLabel}</span>
           <button class="budget-sgd-refresh" id="budget-refresh-rates-btn">
@@ -8461,37 +8600,29 @@ function buildSgdSummaryHTML(entries, budgetTargets, fmt) {
         </div>
       </div>
 
-      <div class="budget-total-row" style="margin-bottom:10px">
-        <span class="budget-sgd-total">S$${fmt(Math.round(totalPaidSGD))}</span>
-        <span class="budget-total-planned">
-          paid · S$${fmt(Math.round(totalPlannedSGD))} planned
-          ${sgdBudget ? ` · S$${fmt(sgdBudget)} budget` : ""}
-        </span>
-      </div>
-
-      ${rates || Object.keys(byCur).every(c => c === "SGD") ? `
-        <div class="budget-progress-track" title="Planned vs budget">
-          <div class="budget-progress-fill" style="width:${pctPlanned}%;opacity:0.35;background:var(--accent)"></div>
-        </div>
-        <div class="budget-progress-track" style="margin-top:4px" title="Paid vs budget">
-          <div class="budget-progress-fill" style="width:${pctPaid}%;background:${overBudget ? "var(--danger)" : "var(--success)"}"></div>
-        </div>
-        <div class="budget-progress-label" style="color:${overBudget ? "var(--danger)" : "var(--text-3)"}">
-          ${sgdBudget
-            ? `S$${fmt(Math.round(totalPlannedSGD))} of S$${fmt(sgdBudget)} (${pctPlanned}%) · ${remaining >= 0 ? "S$"+fmt(Math.round(remaining))+" remaining" : "S$"+fmt(Math.round(-remaining))+" over budget"}`
-            : `S$${fmt(Math.round(totalPaidSGD))} paid · S$${fmt(Math.round(totalPlannedSGD))} total planned`}
-        </div>
-      ` : `<p style="font-size:0.8125rem;color:var(--text-3);margin:8px 0">Refresh rates to calculate SGD totals.</p>`}
+      ${myMemberId
+        ? `<div class="budget-sgd-cols">${myColHTML}${grpColHTML}</div>`
+        : `<!-- single-column fallback -->
+           ${hasRates ? `
+           <div class="budget-total-row" style="margin-bottom:10px">
+             <span class="budget-sgd-total">${homeSym}${fmt(Math.round(totalPaidGroup))}</span>
+             <span class="budget-total-planned">paid · ${homeSym}${fmt(Math.round(totalPlannedGroup))} planned${homeBudget?` · ${homeSym}${fmt(homeBudget)} budget`:""}</span>
+           </div>
+           ${grpDenom > 0 ? `
+             <div class="budget-progress-track"><div class="budget-progress-fill" style="width:${grpPctPlan}%;opacity:0.35;background:var(--accent)"></div></div>
+             <div class="budget-progress-track" style="margin-top:4px"><div class="budget-progress-fill" style="width:${grpPctPaid}%;background:${grpOver?"var(--danger)":"var(--success)"}"></div></div>
+             <div class="budget-progress-label" style="color:${grpOver?"var(--danger)":"var(--text-3)"}">
+               ${homeBudget?`${homeSym}${fmt(Math.round(totalPlannedGroup))} of ${homeSym}${fmt(homeBudget)} (${grpPctPlan}%) · ${grpRemain>=0?homeSym+fmt(Math.round(grpRemain))+" remaining":homeSym+fmt(Math.round(-grpRemain))+" over budget"}`:`${homeSym}${fmt(Math.round(totalPaidGroup))} paid · ${homeSym}${fmt(Math.round(totalPlannedGroup))} total planned`}
+             </div>` : ""}
+           <div class="budget-target-row" style="margin-top:16px;margin-bottom:0">
+             <label class="form-label">Total budget (${home})</label>
+             <input class="form-input" id="budget-target-${home}" type="number" min="0" step="500"
+               placeholder="e.g. 12000" value="${homeBudget||""}" style="width:130px">
+             <button class="btn-ghost" data-budget-save="${home}" style="padding:6px 12px;font-size:0.8125rem">Set</button>
+           </div>` : `<p style="font-size:0.8125rem;color:var(--text-3);margin:8px 0">Refresh rates to calculate ${home} totals.</p>`}`}
 
       ${breakdownParts.length > 1 ? `<div class="budget-sgd-breakdown">${breakdownParts.join("<span style='color:var(--border-strong)'>·</span>")}</div>` : ""}
       ${missingCurs.length ? `<div style="font-size:0.75rem;color:var(--text-3);margin-top:6px">Missing rates for: ${missingCurs.join(", ")}</div>` : ""}
-
-      <div class="budget-target-row" style="margin-top:16px;margin-bottom:0">
-        <label class="form-label">Total budget (SGD)</label>
-        <input class="form-input" id="budget-target-SGD" type="number" min="0" step="500"
-          placeholder="e.g. 12000" value="${sgdBudget || ""}" style="width:130px">
-        <button class="btn-ghost" data-budget-save="SGD" style="padding:6px 12px;font-size:0.8125rem">Set</button>
-      </div>
     </div>`;
 }
 
@@ -8791,27 +8922,8 @@ function renderBudget() {
   Object.values(budgetChartInstances).forEach(c => c.destroy());
   budgetChartInstances = {};
 
-  const sgdSummary = buildSgdSummaryHTML(entries, budgetTargets, fmt);
   const myMemberId = currentUserMemberId();
-
-  const myFilterRowHTML = myMemberId ? `
-    <div class="budget-person-filter" style="margin-bottom:6px">
-      <span style="font-size:0.75rem;color:var(--text-3);align-self:center;margin-right:4px;white-space:nowrap">My portion:</span>
-      <button class="budget-person-pill${_myExpFilter === "all"  ? " active" : ""}" data-myfilter="all">All</button>
-      <button class="budget-person-pill${_myExpFilter === "paid" ? " active" : ""}" data-myfilter="paid">I paid</button>
-      <button class="budget-person-pill${_myExpFilter === "owe"  ? " active" : ""}" data-myfilter="owe">I owe</button>
-    </div>` : "";
-
-  // Right column participant filter (multi-select — empty = all group)
-  const relevantGrpMembers = (state.trip?.members || []).filter(m =>
-    entries.some(e => e.paidBy === m.id || (e.splits || []).some(s => s.memberId === m.id))
-  );
-  const groupFilterRowHTML = myMemberId && relevantGrpMembers.length > 1 ? `
-    <div class="budget-person-filter" style="margin-bottom:12px">
-      <span style="font-size:0.75rem;color:var(--text-3);align-self:center;margin-right:4px;white-space:nowrap">Group:</span>
-      <button class="grp-member-pill${_groupMemberFilter.size === 0 ? " active" : ""}" data-grpmember="">All</button>
-      ${relevantGrpMembers.map(m => `<button class="grp-member-pill${_groupMemberFilter.has(m.id) ? " active" : ""}" data-grpmember="${escapeHtml(m.id)}">${escapeHtml(m.name)}</button>`).join("")}
-    </div>` : "";
+  const sgdSummary = buildSgdSummaryHTML(entries, budgetTargets, fmt, myMemberId, _myExpFilter, _groupMemberFilter);
 
   const sectionsHTML = currencyList.map(cur => {
     const ces = byCurrency[cur];
@@ -8950,7 +9062,7 @@ function renderBudget() {
         <span class="budget-unbooked-amount">~${currencySymbol(e.currency)}${fmt(e.amount)}</span>
       </div>`).join("")}` : "";
 
-  content.innerHTML = renderGroupBalances() + sgdSummary + myFilterRowHTML + groupFilterRowHTML + sectionsHTML + unbookedHTML;
+  content.innerHTML = renderGroupBalances() + sgdSummary + sectionsHTML + unbookedHTML;
 
   // My-portion filter pills
   content.querySelectorAll(".budget-person-pill[data-myfilter]").forEach(pill => {
