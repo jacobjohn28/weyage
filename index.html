@@ -2705,19 +2705,53 @@
   .exp-edit-btn:hover { background: var(--surface-3, var(--surface)); border-color: var(--accent); color: var(--accent); }
 
   /* Budget drawer person filter row */
-  .bd-person-filter-row {
-    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
-    padding: 8px 0 0;
+  /* Budget drawer: toolbar + expandable filter panel */
+  .bd-drawer-toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px; margin-top: 10px;
   }
-  .bd-person-filter-label { font-size: 0.75rem; color: var(--text-3); flex-shrink: 0; }
-  .bd-person-pill {
+  .bd-drawer-toolbar-sort { display: flex; align-items: center; gap: 6px; }
+  .bd-filter-toggle {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 0.75rem; padding: 4px 11px; border-radius: 100px;
+    border: 1px solid var(--border); background: var(--surface-2);
+    cursor: pointer; color: var(--text-2);
+    transition: border-color 120ms, background 120ms; white-space: nowrap;
+  }
+  .bd-filter-toggle.active { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+  .bd-filter-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 15px; height: 15px; border-radius: 50%;
+    background: var(--accent); color: #fff;
+    font-size: 0.5625rem; font-weight: 700; line-height: 1; padding: 0 3px;
+  }
+  .bd-drawer-filter-panel {
+    margin-top: 10px; padding: 12px 12px 8px;
+    background: var(--surface-2); border-radius: var(--radius);
+    border: 1px solid var(--border);
+  }
+  .bd-filter-section { margin-bottom: 10px; }
+  .bd-filter-section:last-of-type { margin-bottom: 0; }
+  .bd-filter-section-label {
+    font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.05em;
+    text-transform: uppercase; color: var(--text-3); margin-bottom: 6px;
+  }
+  .bd-filter-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+  .bd-clear-btn {
+    font-size: 0.75rem; padding: 4px 10px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border); background: transparent;
+    cursor: pointer; color: var(--text-3); display: block; margin-left: auto; margin-top: 6px;
+    transition: color 120ms, border-color 120ms;
+  }
+  .bd-clear-btn:hover { color: var(--text-1); border-color: var(--text-2); }
+
+  /* Right column top-level participant filter */
+  .grp-member-pill {
     font-size: 0.75rem; padding: 3px 10px; border-radius: 100px;
     border: 1.5px solid var(--border); cursor: pointer; background: var(--surface-2);
     transition: border-color 120ms, background 120ms; color: var(--text-2);
   }
-  .bd-person-pill.active {
-    border-color: var(--accent); background: var(--accent-bg); color: var(--accent);
-  }
+  .grp-member-pill.active { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); }
 
   /* Documents view */
   .docs-town-group { margin-bottom: 32px; }
@@ -2948,20 +2982,13 @@
   flex-shrink: 0;
 }
 .bd-filter-pill {
-  padding: 4px 11px;
-  border-radius: 16px;
-  border: 1px solid var(--border);
-  background: var(--surface-2);
-  color: var(--text-2);
-  font-size: 0.8rem;
-  cursor: pointer;
-  transition: background 120ms, color 120ms, border-color 120ms;
+  font-size: 0.75rem; padding: 4px 12px; border-radius: 100px;
+  border: 1.5px solid var(--border); cursor: pointer;
+  background: var(--surface); color: var(--text-2);
+  transition: border-color 120ms, background 120ms;
 }
 .bd-filter-pill.active {
-  background: var(--accent-bg);
-  color: var(--accent);
-  border-color: var(--accent-soft);
-  font-weight: 500;
+  border-color: var(--accent); background: var(--accent-bg); color: var(--accent); font-weight: 500;
 }
 
 /* ── Transit expense sheet ───────────────────────────────── */
@@ -3071,21 +3098,7 @@ body.share-mode .transit-day-chip { display: none !important; }
 }
 .transit-date-group.collapsed .transit-date-chevron { transform: rotate(-90deg); }
 .transit-date-group.collapsed .transit-date-rows { display: none; }
-.bd-filter-clear {
-  margin-left: auto;
-  padding: 3px 10px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--text-3);
-  font-size: 0.75rem;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: color 120ms, border-color 120ms;
-  display: none;
-}
-.bd-filter-clear.visible { display: inline-block; }
-.bd-filter-clear:hover { color: var(--text-1); border-color: var(--text-2); }
+/* .bd-filter-clear removed — replaced by .bd-clear-btn in drawer filter panel */
 .transit-city-chevron {
   flex-shrink: 0;
   transition: transform 200ms var(--ease);
@@ -4980,7 +4993,7 @@ function listenToTrip(tripId) {
       // Keep open budget drawer in sync (e.g. after save/edit)
       if (document.getElementById("spot-drawer-overlay")?.classList.contains("visible") && currentDrawerBudgetMode) {
         _bdEntries = aggregateBudget().filter(e => e.currency === _bdCurrency);
-        _renderBudgetDrawerList();
+        _renderBudgetDrawer();
       }
     },
     (err) => {
@@ -8270,7 +8283,7 @@ async function deleteExpense(expenseId) {
   setState({ expenses: (state.expenses || []).filter(e => e.id !== expenseId) });
   _bdEntries = _bdEntries.filter(e => !(e.source === "expense" && e.id === expenseId));
   if (document.getElementById("spot-drawer-overlay")?.classList.contains("visible") && currentDrawerBudgetMode) {
-    _renderBudgetDrawerList();
+    _renderBudgetDrawer();
   }
   try {
     await deleteDoc(doc(db, "trips", activeTripId, "expenses", expenseId));
@@ -8782,18 +8795,29 @@ function renderBudget() {
   const myMemberId = currentUserMemberId();
 
   const myFilterRowHTML = myMemberId ? `
-    <div class="budget-person-filter" style="margin-bottom:4px">
+    <div class="budget-person-filter" style="margin-bottom:6px">
       <span style="font-size:0.75rem;color:var(--text-3);align-self:center;margin-right:4px;white-space:nowrap">My portion:</span>
       <button class="budget-person-pill${_myExpFilter === "all"  ? " active" : ""}" data-myfilter="all">All</button>
       <button class="budget-person-pill${_myExpFilter === "paid" ? " active" : ""}" data-myfilter="paid">I paid</button>
       <button class="budget-person-pill${_myExpFilter === "owe"  ? " active" : ""}" data-myfilter="owe">I owe</button>
     </div>` : "";
 
+  // Right column participant filter (multi-select — empty = all group)
+  const relevantGrpMembers = (state.trip?.members || []).filter(m =>
+    entries.some(e => e.paidBy === m.id || (e.splits || []).some(s => s.memberId === m.id))
+  );
+  const groupFilterRowHTML = myMemberId && relevantGrpMembers.length > 1 ? `
+    <div class="budget-person-filter" style="margin-bottom:12px">
+      <span style="font-size:0.75rem;color:var(--text-3);align-self:center;margin-right:4px;white-space:nowrap">Group:</span>
+      <button class="grp-member-pill${_groupMemberFilter.size === 0 ? " active" : ""}" data-grpmember="">All</button>
+      ${relevantGrpMembers.map(m => `<button class="grp-member-pill${_groupMemberFilter.has(m.id) ? " active" : ""}" data-grpmember="${escapeHtml(m.id)}">${escapeHtml(m.name)}</button>`).join("")}
+    </div>` : "";
+
   const sectionsHTML = currencyList.map(cur => {
     const ces = byCurrency[cur];
     const sym = currencySymbol(cur);
 
-    // Group totals
+    // Group totals (full, used for header + budget comparison)
     const totalActual  = ces.filter(e => !e.isEstimated).reduce((s, e) => s + e.amount, 0);
     const totalPlanned = ces.reduce((s, e) => s + e.amount, 0);
     const grpBudget    = budgetTargets[cur] || 0;
@@ -8802,6 +8826,12 @@ function renderBudget() {
     const grpPctPlanned = grpDenom > 0 ? Math.min(Math.round((totalPlanned / grpDenom) * 100), 100) : 0;
     const grpOver       = grpBudget && totalPlanned > grpBudget;
     const grpRemaining  = grpBudget ? grpBudget - totalPlanned : null;
+
+    // Participant-filtered display amounts for the group column body
+    const grpFiltered  = _groupMemberFilter.size > 0;
+    const getGrpAmt    = e => getParticipantAmount(e, _groupMemberFilter);
+    const dispActual   = grpFiltered ? ces.filter(e => !e.isEstimated).reduce((s, e) => s + getGrpAmt(e), 0) : totalActual;
+    const dispPlanned  = grpFiltered ? ces.reduce((s, e) => s + getGrpAmt(e), 0) : totalPlanned;
 
     // My portion column (left)
     let myColHTML = "";
@@ -8857,7 +8887,7 @@ function renderBudget() {
     // Group column (right)
     const groupColHTML = `
       <div>
-        ${myMemberId ? `<div class="budget-col-label">Group</div>` : ""}
+        ${myMemberId ? `<div class="budget-col-label">Group${grpFiltered ? `<span style="font-size:0.6875rem;font-weight:400;color:var(--accent);margin-left:4px;text-transform:none;letter-spacing:0">· filtered</span>` : ""}</div>` : ""}
         <div class="budget-target-row" style="margin-bottom:10px">
           <label class="form-label">Group budget (${escapeHtml(cur)})</label>
           <input class="form-input" id="budget-target-${escapeHtml(cur)}" type="number" min="0" step="100"
@@ -8865,9 +8895,10 @@ function renderBudget() {
           <button class="btn-ghost" data-budget-save="${escapeHtml(cur)}" style="padding:6px 12px;font-size:0.8125rem">Set</button>
         </div>
         <div class="budget-total-row">
-          <span class="budget-total-actual">${sym}${fmt(totalActual)}</span>
-          <span class="budget-total-planned">paid · ${sym}${fmt(totalPlanned)} planned${grpBudget ? ` · ${sym}${fmt(grpBudget)} budget` : ""}</span>
+          <span class="budget-total-actual">${sym}${fmt(dispActual)}</span>
+          <span class="budget-total-planned">paid · ${sym}${fmt(dispPlanned)} planned${!grpFiltered && grpBudget ? ` · ${sym}${fmt(grpBudget)} budget` : ""}</span>
         </div>
+        ${!grpFiltered && grpDenom > 0 ? `
         <div class="budget-progress-track" title="Planned vs budget">
           <div class="budget-progress-fill" style="width:${grpPctPlanned}%;opacity:0.35;background:var(--accent)"></div>
         </div>
@@ -8878,7 +8909,7 @@ function renderBudget() {
           ${grpBudget
             ? `${sym}${fmt(totalPlanned)} of ${sym}${fmt(grpBudget)} (${grpPctPlanned}%) · ${grpRemaining >= 0 ? sym+fmt(grpRemaining)+" remaining" : sym+fmt(-grpRemaining)+" over budget"}`
             : `${sym}${fmt(totalActual)} paid · ${sym}${fmt(totalPlanned)} total planned`}
-        </div>
+        </div>` : ""}
         <div class="budget-charts-row">
           <div class="budget-chart-block">
             <div class="budget-chart-label">By city</div>
@@ -8919,12 +8950,26 @@ function renderBudget() {
         <span class="budget-unbooked-amount">~${currencySymbol(e.currency)}${fmt(e.amount)}</span>
       </div>`).join("")}` : "";
 
-  content.innerHTML = renderGroupBalances() + sgdSummary + myFilterRowHTML + sectionsHTML + unbookedHTML;
+  content.innerHTML = renderGroupBalances() + sgdSummary + myFilterRowHTML + groupFilterRowHTML + sectionsHTML + unbookedHTML;
 
   // My-portion filter pills
   content.querySelectorAll(".budget-person-pill[data-myfilter]").forEach(pill => {
     pill.addEventListener("click", () => {
       _myExpFilter = pill.dataset.myfilter;
+      renderBudget();
+    });
+  });
+
+  // Group participant filter pills
+  content.querySelectorAll(".grp-member-pill[data-grpmember]").forEach(pill => {
+    pill.addEventListener("click", () => {
+      const id = pill.dataset.grpmember;
+      if (id === "") {
+        _groupMemberFilter.clear(); // "All" button → clear filter
+      } else {
+        if (_groupMemberFilter.has(id)) _groupMemberFilter.delete(id);
+        else _groupMemberFilter.add(id);
+      }
       renderBudget();
     });
   });
@@ -9003,18 +9048,19 @@ function renderBudgetCharts(byCurrency, fmt, allEntries) {
     });
 
     // ── Pre-compute group data ─────────────────────────────────
+    // Uses getParticipantAmount so top-level participant filter is reflected in bars
 
     const byCityGroup = {};
     ces.forEach(e => {
       const name = state.towns.find(t => t.id === e.townId)?.name || "Other";
-      byCityGroup[name] = (byCityGroup[name] || 0) + e.amount;
+      byCityGroup[name] = (byCityGroup[name] || 0) + getParticipantAmount(e, _groupMemberFilter);
     });
     const cityLabelsGroup = Object.keys(byCityGroup).sort((a, b) => byCityGroup[b] - byCityGroup[a]);
     const cityDataGroup   = cityLabelsGroup.map(k => byCityGroup[k]);
     const cityColorsGroup = cityLabelsGroup.map((_, i) => CITY_PALETTE[i % CITY_PALETTE.length]);
 
     const byCatGroup = {};
-    ces.forEach(e => { byCatGroup[e.category] = (byCatGroup[e.category] || 0) + e.amount; });
+    ces.forEach(e => { byCatGroup[e.category] = (byCatGroup[e.category] || 0) + getParticipantAmount(e, _groupMemberFilter); });
     const catLabelsGroup = Object.keys(byCatGroup).sort((a, b) => byCatGroup[b] - byCatGroup[a]);
     const catDataGroup   = catLabelsGroup.map(k => byCatGroup[k]);
     const catColorsGroup = catLabelsGroup.map(c => CATEGORY_COLORS[c] || "#888");
@@ -9023,7 +9069,10 @@ function renderBudgetCharts(byCurrency, fmt, allEntries) {
 
     // ── Pre-compute mine data ──────────────────────────────────
 
-    const myCes = myMemberId ? filterMyEntries(ces, myMemberId, _myExpFilter) : [];
+    const myCes    = myMemberId ? filterMyEntries(ces, myMemberId, _myExpFilter) : [];
+    // myCesAll: all entries involving me, ignoring top-level filter — passed to drawer
+    // so the drawer's own Mine filter can work across the full set
+    const myCesAll = myMemberId ? filterMyEntries(ces, myMemberId, "all") : [];
     let cityLabelsMine = [], cityDataMine = [], cityColorsMine = [];
     let catLabelsMine  = [], catDataMine  = [], catColorsMine  = [];
     let mineXMax = 0;
@@ -9064,7 +9113,7 @@ function renderBudgetCharts(byCurrency, fmt, allEntries) {
               const town = state.towns.find(t => t.id === e.townId);
               return (town?.name || "Other") === cityName && e.currency === cur;
             });
-            openBudgetDrawer(cityName, cur, cityEntries, "city");
+            openBudgetDrawer(cityName, cur, cityEntries, "city", "group");
           },
         },
       });
@@ -9082,7 +9131,7 @@ function renderBudgetCharts(byCurrency, fmt, allEntries) {
             if (!elements.length) return;
             const category = catLabelsGroup[elements[0].index];
             const catEntries = (allEntries || ces).filter(e => e.category === category && e.currency === cur);
-            openBudgetDrawer(category, cur, catEntries, "category");
+            openBudgetDrawer(category, cur, catEntries, "category", "group");
           },
         },
       });
@@ -9114,8 +9163,8 @@ function renderBudgetCharts(byCurrency, fmt, allEntries) {
           onClick: (event, elements) => {
             if (!elements.length) return;
             const cityName = cityLabelsMine[elements[0].index];
-            const cityEntries = myCes.filter(e => (state.towns.find(t => t.id === e.townId)?.name || "Other") === cityName);
-            openBudgetDrawer(cityName, cur, cityEntries, "city");
+            const cityEntries = myCesAll.filter(e => (state.towns.find(t => t.id === e.townId)?.name || "Other") === cityName);
+            openBudgetDrawer(cityName, cur, cityEntries, "city", "mine");
           },
         },
       });
@@ -9132,8 +9181,8 @@ function renderBudgetCharts(byCurrency, fmt, allEntries) {
           onClick: (event, elements) => {
             if (!elements.length) return;
             const category = catLabelsMine[elements[0].index];
-            const catEntries = myCes.filter(e => e.category === category);
-            openBudgetDrawer(category, cur, catEntries, "category");
+            const catEntries = myCesAll.filter(e => e.category === category);
+            openBudgetDrawer(category, cur, catEntries, "category", "mine");
           },
         },
       });
@@ -9153,21 +9202,35 @@ function renderBudgetCharts(byCurrency, fmt, allEntries) {
 }
 
 /* ── Budget expense drawer ───────────────────────────────── */
-// Budget drawer sort state
-let _bdEntries = [];
-let _bdCurrency = "";
-let _bdSort = "date";         // "date" | "value"
-let _bdDir  = "desc";         // "desc" | "asc"
-let _bdMode = "";             // "city" | "category" (which chart was clicked)
-let _bdActiveFilters = new Set(); // active filter pill values; empty = show all
-let _bdPersonFilter  = null;  // memberId or null = all
+// Budget drawer state
+let _bdEntries       = [];
+let _bdCurrency      = "";
+let _bdSort          = "date";      // "date" | "value"
+let _bdDir           = "desc";      // "desc" | "asc"
+let _bdMode          = "";          // "city" | "category"
+let _bdActiveFilters = new Set();   // cross-dimension filter (category/city)
+let _bdColumn        = "group";     // "mine" | "group" — which column opened the drawer
+let _bdMineFilter    = "all";       // "all" | "paid" | "owe"  (left column drawer)
+let _bdGroupFilter   = new Set();   // participant IDs  (right column drawer, empty = all)
+let _bdFiltersOpen   = false;       // filter panel expanded?
 
-let _myExpFilter = "all";     // "all" | "paid" | "owe"
+let _myExpFilter       = "all";      // left column top-level: "all" | "paid" | "owe"
+let _groupMemberFilter = new Set();  // right column top-level: participant IDs (empty = all)
 
 function getMyPortionAmount(e, myMemberId) {
   if (!myMemberId) return 0;
   if (e.splits?.length) return (e.splits || []).find(s => s.memberId === myMemberId)?.owed || 0;
   return e.paidBy === myMemberId ? e.amount : 0;
+}
+
+// Returns the combined spend for a set of members on a single entry.
+// memberIds empty → full e.amount (whole group).
+function getParticipantAmount(e, memberIds) {
+  if (!memberIds || memberIds.size === 0) return e.amount;
+  if (e.splits?.length) {
+    return e.splits.filter(s => memberIds.has(s.memberId)).reduce((sum, s) => sum + s.owed, 0);
+  }
+  return memberIds.has(e.paidBy) ? e.amount : 0;
 }
 
 function filterMyEntries(entries, myMemberId, filter) {
@@ -9196,28 +9259,17 @@ function _sortBudgetEntries(entries) {
   });
 }
 
-function _renderBudgetDrawerList() {
+function _renderBudgetDrawer() {
+  const body = document.getElementById("drawer-body");
+  if (!body) return;
+
+  const myMemberId = currentUserMemberId();
   const sym = currencySymbol(_bdCurrency);
   const fmt = n => n.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const list = document.getElementById("budget-drawer-list");
-  if (!list) return;
+  const members = state.trip?.members || [];
 
-  // Update sort button active states
-  document.querySelectorAll(".budget-sort-btn[data-sort]").forEach(btn => {
-    const isActive = btn.dataset.sort === _bdSort;
-    btn.classList.toggle("active", isActive);
-    btn.querySelector(".sort-arrow").textContent = isActive ? (_bdDir === "desc" ? " ↓" : " ↑") : "";
-  });
-
-  // Update pill active states + clear button visibility
-  document.querySelectorAll(".bd-filter-pill").forEach(pill => {
-    pill.classList.toggle("active", _bdActiveFilters.has(pill.dataset.value));
-  });
-  const clearBtn = document.getElementById("bd-filter-clear-btn");
-  if (clearBtn) clearBtn.classList.toggle("visible", _bdActiveFilters.size > 0);
-
-  // Apply category/city filter
-  const afterCatFilter = _bdActiveFilters.size === 0
+  // 1. Cross-dimension filter (category when in city view, or city when in category view)
+  const afterCrossFilter = _bdActiveFilters.size === 0
     ? _bdEntries
     : _bdEntries.filter(e => {
         if (_bdMode === "city") return _bdActiveFilters.has(e.category);
@@ -9225,75 +9277,199 @@ function _renderBudgetDrawerList() {
         return _bdActiveFilters.has(cityName);
       });
 
-  // Apply person filter
-  const filtered = _bdPersonFilter
-    ? afterCatFilter.filter(e =>
-        e.paidBy === _bdPersonFilter ||
-        (e.splits || []).some(s => s.memberId === _bdPersonFilter)
-      )
-    : afterCatFilter;
+  // 2. Column-specific filter
+  let filtered;
+  if (_bdColumn === "mine" && myMemberId) {
+    filtered = filterMyEntries(afterCrossFilter, myMemberId, _bdMineFilter);
+  } else if (_bdColumn === "group" && _bdGroupFilter.size > 0) {
+    filtered = afterCrossFilter.filter(e =>
+      (e.paidBy && _bdGroupFilter.has(e.paidBy)) ||
+      (e.splits || []).some(s => _bdGroupFilter.has(s.memberId) && s.owed > 0.005)
+    );
+  } else {
+    filtered = afterCrossFilter;
+  }
 
-  // Update totals to reflect the current filtered set
-  const fTotal    = filtered.reduce((s, e) => s + e.amount, 0);
-  const fPaid     = filtered.filter(e => !e.isEstimated).reduce((s, e) => s + e.amount, 0);
+  // 3. Compute display amount per entry
+  const getDisplayAmt = e => {
+    if (_bdColumn === "mine" && myMemberId) return getMyPortionAmount(e, myMemberId);
+    if (_bdColumn === "group" && _bdGroupFilter.size > 0) return getParticipantAmount(e, _bdGroupFilter);
+    return e.amount;
+  };
+
+  const fTotal    = filtered.reduce((s, e) => s + getDisplayAmt(e), 0);
+  const fPaid     = filtered.filter(e => !e.isEstimated).reduce((s, e) => s + getDisplayAmt(e), 0);
   const fEstCount = filtered.filter(e => e.isEstimated).length;
-  const totalEl = document.getElementById("bd-total-amount");
-  const subEl   = document.getElementById("bd-total-sub");
-  if (totalEl) totalEl.textContent = `${sym}${fmt(fTotal)}`;
-  if (subEl) subEl.innerHTML =
-    `${sym}${fmt(fPaid)} paid` +
-    (fEstCount ? ` · ${sym}${fmt(fTotal - fPaid)} estimated` : "") +
-    ` · ${filtered.length} expense${filtered.length !== 1 ? "s" : ""}`;
+
+  // 4. Filter count / badge
+  const bdFilterCount = _bdActiveFilters.size +
+    (_bdColumn === "mine" ? (_bdMineFilter !== "all" ? 1 : 0) : _bdGroupFilter.size);
+  const hasActiveFilter = bdFilterCount > 0;
+
+  // 5. Cross-dimension pills
+  const crossPillValues = _bdMode === "city"
+    ? [...new Set(_bdEntries.map(e => e.category))].sort()
+    : [...new Set(_bdEntries.map(e => state.towns.find(t => t.id === e.townId)?.name || "Other"))].sort();
+  const crossLabel = _bdMode === "city" ? "Category" : "City";
+
+  // 6. Participant pills (right column)
+  const relevantMembers = members.filter(m =>
+    _bdEntries.some(e => e.paidBy === m.id || (e.splits || []).some(s => s.memberId === m.id))
+  );
 
   const sorted = _sortBudgetEntries(filtered);
 
-  list.innerHTML = sorted.map(e => {
-    const town = state.towns.find(t => t.id === e.townId);
-    const dateStr = e.scheduledDate
-      ? new Date(e.scheduledDate + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })
-      : "";
-    const timeStr = e.scheduledTime ? ` · ${e.scheduledTime}` : "";
-    const subLabel = _bdMode === "city"
-      ? `<span style="font-size:0.75rem;color:var(--text-3)">${escapeHtml(e.category)}</span>`
-      : (town ? `<span style="font-size:0.75rem;color:var(--text-3)">${escapeHtml(town.name)}</span>` : "");
-    const expenseActions = e.source === "expense" ? `
-      <div class="bd-expense-actions">
-        <button class="bd-expense-btn" data-expense-edit="${escapeHtml(e.id)}" title="Edit expense">✏</button>
-        <button class="bd-expense-btn del" data-expense-del="${escapeHtml(e.id)}" title="Delete expense">✕</button>
-      </div>` : "";
-    return `
-      <div style="padding:10px 0;border-bottom:1px solid var(--border)">
-        <div style="display:flex;align-items:flex-start;gap:8px">
-          <div style="flex:1;min-width:0">
-            <div style="font-size:0.9375rem;color:var(--text);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(e.name)}</div>
-            <div style="display:flex;gap:8px;margin-top:3px;flex-wrap:wrap">
-              ${subLabel}
-              ${dateStr ? `<span style="font-size:0.75rem;color:var(--text-3)">${dateStr}${timeStr}</span>` : ""}
-              ${e.isEstimated ? `<span style="font-size:0.6875rem;color:var(--text-3);background:var(--surface-2);border:1px solid var(--border);border-radius:4px;padding:1px 5px">est.</span>` : ""}
-              ${e.source === "expense" ? `<span style="font-size:0.6875rem;color:var(--accent);background:rgba(var(--accent-rgb,78,135,116),0.08);border:1px solid rgba(var(--accent-rgb,78,135,116),0.2);border-radius:4px;padding:1px 5px">manual</span>` : ""}
-            </div>
-          </div>
-          <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
-            <div style="font-size:0.9375rem;font-weight:600;color:${e.isEstimated ? "var(--text-2)" : "var(--text)"};font-variant-numeric:tabular-nums">${sym}${fmt(e.amount)}</div>
-            ${expenseActions}
-          </div>
-        </div>
-      </div>`;
-  }).join("");
+  body.innerHTML = `
+    <div id="bd-header" style="padding-bottom:14px;margin-bottom:4px;border-bottom:1px solid var(--border)">
+      <div id="bd-total-amount" style="font-family:var(--font-display);font-size:1.75rem;font-weight:500;letter-spacing:-0.03em;line-height:1;font-variant-numeric:tabular-nums">${sym}${fmt(fTotal)}</div>
+      <div id="bd-total-sub" style="font-size:0.8125rem;color:var(--text-3);margin-top:4px">${sym}${fmt(fPaid)} paid${fEstCount ? ` · ${sym}${fmt(fTotal - fPaid)} estimated` : ""} · ${filtered.length} expense${filtered.length !== 1 ? "s" : ""}</div>
 
-  // Wire edit/delete buttons for manual expense entries
-  list.querySelectorAll("[data-expense-edit]").forEach(btn => {
-    btn.addEventListener("click", (ev) => { ev.stopPropagation(); openExpenseModal(btn.dataset.expenseEdit); });
+      <div class="bd-drawer-toolbar">
+        <div class="bd-drawer-toolbar-sort">
+          <span class="budget-sort-label">Sort</span>
+          <button class="budget-sort-btn${_bdSort === "date"  ? " active" : ""}" data-sort="date">Date / time<span class="sort-arrow">${_bdSort === "date"  ? (_bdDir === "desc" ? " ↓" : " ↑") : ""}</span></button>
+          <button class="budget-sort-btn${_bdSort === "value" ? " active" : ""}" data-sort="value">Value<span class="sort-arrow">${_bdSort === "value" ? (_bdDir === "desc" ? " ↓" : " ↑") : ""}</span></button>
+        </div>
+        <button class="bd-filter-toggle${_bdFiltersOpen || bdFilterCount > 0 ? " active" : ""}" id="bd-filter-toggle-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="13" height="13"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          Filters${bdFilterCount > 0 ? ` <span class="bd-filter-badge">${bdFilterCount}</span>` : ""}
+        </button>
+      </div>
+
+      ${_bdFiltersOpen ? `
+      <div class="bd-drawer-filter-panel">
+        ${_bdColumn === "mine" ? `
+        <div class="bd-filter-section">
+          <div class="bd-filter-section-label">Mine</div>
+          <div class="bd-filter-pills">
+            <button class="bd-filter-pill${_bdMineFilter === "all"  ? " active" : ""}" data-bdmine="all">All</button>
+            <button class="bd-filter-pill${_bdMineFilter === "paid" ? " active" : ""}" data-bdmine="paid">I paid</button>
+            <button class="bd-filter-pill${_bdMineFilter === "owe"  ? " active" : ""}" data-bdmine="owe">I owe</button>
+          </div>
+        </div>` : ""}
+        ${_bdColumn === "group" && relevantMembers.length > 1 ? `
+        <div class="bd-filter-section">
+          <div class="bd-filter-section-label">Participants</div>
+          <div class="bd-filter-pills">
+            ${relevantMembers.map(m => `<button class="bd-filter-pill${_bdGroupFilter.has(m.id) ? " active" : ""}" data-bdmember="${escapeHtml(m.id)}">${escapeHtml(m.name)}</button>`).join("")}
+          </div>
+        </div>` : ""}
+        ${crossPillValues.length > 1 ? `
+        <div class="bd-filter-section">
+          <div class="bd-filter-section-label">${crossLabel}</div>
+          <div class="bd-filter-pills">
+            ${crossPillValues.map(v => `<button class="bd-filter-pill${_bdActiveFilters.has(v) ? " active" : ""}" data-value="${escapeHtml(v)}">${escapeHtml(v)}</button>`).join("")}
+          </div>
+        </div>` : ""}
+        ${hasActiveFilter ? `<button class="bd-clear-btn" id="bd-drawer-clear-btn">Clear all</button>` : ""}
+      </div>` : ""}
+    </div>
+
+    <div id="budget-drawer-list">
+      ${sorted.map(e => {
+        const town = state.towns.find(t => t.id === e.townId);
+        const dateStr = e.scheduledDate
+          ? new Date(e.scheduledDate + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })
+          : "";
+        const timeStr = e.scheduledTime ? ` · ${e.scheduledTime}` : "";
+        const subLabel = _bdMode === "city"
+          ? `<span style="font-size:0.75rem;color:var(--text-3)">${escapeHtml(e.category)}</span>`
+          : (town ? `<span style="font-size:0.75rem;color:var(--text-3)">${escapeHtml(town.name)}</span>` : "");
+        const displayAmt = getDisplayAmt(e);
+        const expenseActions = e.source === "expense" ? `
+          <div class="bd-expense-actions">
+            <button class="bd-expense-btn" data-expense-edit="${escapeHtml(e.id)}" title="Edit expense">✏</button>
+            <button class="bd-expense-btn del" data-expense-del="${escapeHtml(e.id)}" title="Delete expense">✕</button>
+          </div>` : "";
+        return `
+          <div style="padding:10px 0;border-bottom:1px solid var(--border)">
+            <div style="display:flex;align-items:flex-start;gap:8px">
+              <div style="flex:1;min-width:0">
+                <div style="font-size:0.9375rem;color:var(--text);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(e.name)}</div>
+                <div style="display:flex;gap:8px;margin-top:3px;flex-wrap:wrap">
+                  ${subLabel}
+                  ${dateStr ? `<span style="font-size:0.75rem;color:var(--text-3)">${dateStr}${timeStr}</span>` : ""}
+                  ${e.isEstimated ? `<span style="font-size:0.6875rem;color:var(--text-3);background:var(--surface-2);border:1px solid var(--border);border-radius:4px;padding:1px 5px">est.</span>` : ""}
+                  ${e.source === "expense" ? `<span style="font-size:0.6875rem;color:var(--accent);background:rgba(var(--accent-rgb,78,135,116),0.08);border:1px solid rgba(var(--accent-rgb,78,135,116),0.2);border-radius:4px;padding:1px 5px">manual</span>` : ""}
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+                <div style="font-size:0.9375rem;font-weight:600;color:${e.isEstimated ? "var(--text-2)" : "var(--text)"};font-variant-numeric:tabular-nums">${sym}${fmt(displayAmt)}</div>
+                ${expenseActions}
+              </div>
+            </div>
+          </div>`;
+      }).join("")}
+    </div>`;
+
+  // ── Wire event listeners ───────────────────────────────────
+
+  body.querySelector("#bd-filter-toggle-btn")?.addEventListener("click", () => {
+    _bdFiltersOpen = !_bdFiltersOpen;
+    _renderBudgetDrawer();
   });
-  list.querySelectorAll("[data-expense-del]").forEach(btn => {
-    btn.addEventListener("click", (ev) => {
+
+  body.querySelectorAll(".budget-sort-btn[data-sort]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      if (btn.dataset.sort === _bdSort) {
+        _bdDir = _bdDir === "desc" ? "asc" : "desc";
+      } else {
+        _bdSort = btn.dataset.sort;
+        _bdDir  = "desc";
+      }
+      _renderBudgetDrawer();
+    });
+  });
+
+  // Mine filter pills (left column drawer)
+  body.querySelectorAll(".bd-filter-pill[data-bdmine]").forEach(pill => {
+    pill.addEventListener("click", () => {
+      _bdMineFilter = pill.dataset.bdmine;
+      _renderBudgetDrawer();
+    });
+  });
+
+  // Participant filter pills (right column drawer)
+  body.querySelectorAll(".bd-filter-pill[data-bdmember]").forEach(pill => {
+    pill.addEventListener("click", () => {
+      const id = pill.dataset.bdmember;
+      if (_bdGroupFilter.has(id)) _bdGroupFilter.delete(id);
+      else _bdGroupFilter.add(id);
+      _renderBudgetDrawer();
+    });
+  });
+
+  // Cross-dimension filter pills
+  body.querySelectorAll(".bd-filter-pill[data-value]").forEach(pill => {
+    pill.addEventListener("click", () => {
+      const val = pill.dataset.value;
+      if (_bdActiveFilters.has(val)) _bdActiveFilters.delete(val);
+      else _bdActiveFilters.add(val);
+      _renderBudgetDrawer();
+    });
+  });
+
+  // Clear all
+  body.querySelector("#bd-drawer-clear-btn")?.addEventListener("click", () => {
+    _bdActiveFilters.clear();
+    _bdMineFilter = "all";
+    _bdGroupFilter.clear();
+    _renderBudgetDrawer();
+  });
+
+  // Edit/delete manual expenses
+  body.querySelectorAll("[data-expense-edit]").forEach(btn => {
+    btn.addEventListener("click", ev => { ev.stopPropagation(); openExpenseModal(btn.dataset.expenseEdit); });
+  });
+  body.querySelectorAll("[data-expense-del]").forEach(btn => {
+    btn.addEventListener("click", ev => {
       ev.stopPropagation();
       if (confirm("Delete this expense?")) deleteExpense(btn.dataset.expenseDel);
     });
   });
 }
 
-function openBudgetDrawer(groupLabel, currency, entries, mode = "") {
+function openBudgetDrawer(groupLabel, currency, entries, mode = "", column = "group") {
   currentDrawerSpot = null;
   currentDrawerAccomTownId = null;
   currentDrawerBudgetMode = true;
@@ -9304,10 +9480,10 @@ function openBudgetDrawer(groupLabel, currency, entries, mode = "") {
   _bdDir           = "desc";
   _bdMode          = mode;
   _bdActiveFilters = new Set();
-  _bdPersonFilter  = null;
-
-  const sym  = currencySymbol(currency);
-  const fmt2 = n => n.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  _bdColumn        = column;
+  _bdMineFilter    = column === "mine" ? _myExpFilter : "all"; // seed from top-level filter
+  _bdGroupFilter.clear();
+  _bdFiltersOpen   = false;
 
   const badge = document.getElementById("drawer-type-badge");
   badge.textContent = currency;
@@ -9316,82 +9492,7 @@ function openBudgetDrawer(groupLabel, currency, entries, mode = "") {
   document.getElementById("drawer-edit-btn").style.display = "none";
   document.getElementById("drawer-visited-btn").style.display = "none";
 
-  const body = document.getElementById("drawer-body");
-  body.innerHTML = `
-    <div style="padding-bottom:14px;margin-bottom:4px;border-bottom:1px solid var(--border)">
-      <div id="bd-total-amount" style="font-family:var(--font-display);font-size:1.75rem;font-weight:500;letter-spacing:-0.03em;line-height:1;font-variant-numeric:tabular-nums"></div>
-      <div id="bd-total-sub" style="font-size:0.8125rem;color:var(--text-3);margin-top:4px"></div>
-      <div class="budget-sort-row">
-        <span class="budget-sort-label">Sort</span>
-        <button class="budget-sort-btn active" data-sort="date">Date / time<span class="sort-arrow"> ↓</span></button>
-        <button class="budget-sort-btn" data-sort="value">Value<span class="sort-arrow"></span></button>
-      </div>
-      ${(() => {
-        // Build filter pills: opposite dimension from the chart that was clicked
-        const pillValues = mode === "city"
-          ? [...new Set(entries.map(e => e.category))].sort()
-          : [...new Set(entries.map(e => state.towns.find(t => t.id === e.townId)?.name || "Other"))].sort();
-        if (pillValues.length <= 1) return "";
-        const label = mode === "city" ? "Category" : "City";
-        return `<div class="bd-filter-row">
-          <span class="bd-filter-label">${label}</span>
-          ${pillValues.map(v => `<button class="bd-filter-pill" data-value="${escapeHtml(v)}">${escapeHtml(v)}</button>`).join("")}
-          <button class="bd-filter-clear" id="bd-filter-clear-btn">Clear</button>
-        </div>`;
-      })()}
-      ${(() => {
-        // Person filter pills — only when entries have split data
-        const members = state.trip?.members || [];
-        const relevant = members.filter(m =>
-          entries.some(e => e.paidBy === m.id || (e.splits || []).some(s => s.memberId === m.id))
-        );
-        if (relevant.length < 2) return "";
-        return `<div class="bd-person-filter-row">
-          <span class="bd-filter-label" style="font-size:0.75rem;color:var(--text-3);white-space:nowrap">Person</span>
-          ${relevant.map(m => `<button class="bd-person-pill" data-member-id="${escapeHtml(m.id)}" style="--member-color:${escapeHtml(m.color || "#888")}">${escapeHtml(m.name)}</button>`).join("")}
-        </div>`;
-      })()}
-    </div>
-    <div id="budget-drawer-list"></div>`;
-
-  // Wire sort buttons — toggle direction if same sort, switch sort otherwise
-  body.querySelectorAll(".budget-sort-btn[data-sort]").forEach(btn => {
-    btn.addEventListener("click", () => {
-      if (btn.dataset.sort === _bdSort) {
-        _bdDir = _bdDir === "desc" ? "asc" : "desc";
-      } else {
-        _bdSort = btn.dataset.sort;
-        _bdDir  = btn.dataset.sort === "value" ? "desc" : "desc";
-      }
-      _renderBudgetDrawerList();
-    });
-  });
-
-  // Wire filter pills + clear button
-  body.querySelectorAll(".bd-filter-pill").forEach(pill => {
-    pill.addEventListener("click", () => {
-      const val = pill.dataset.value;
-      if (_bdActiveFilters.has(val)) _bdActiveFilters.delete(val);
-      else _bdActiveFilters.add(val);
-      _renderBudgetDrawerList();
-    });
-  });
-  body.querySelector("#bd-filter-clear-btn")?.addEventListener("click", () => {
-    _bdActiveFilters.clear();
-    _renderBudgetDrawerList();
-  });
-
-  // Wire person filter pills
-  body.querySelectorAll(".bd-person-pill").forEach(pill => {
-    pill.addEventListener("click", () => {
-      const id = pill.dataset.memberId;
-      _bdPersonFilter = _bdPersonFilter === id ? null : id;
-      body.querySelectorAll(".bd-person-pill").forEach(p => p.classList.toggle("active", p.dataset.memberId === _bdPersonFilter));
-      _renderBudgetDrawerList();
-    });
-  });
-
-  _renderBudgetDrawerList();
+  _renderBudgetDrawer();
 
   pushModalHistory();
   document.getElementById("spot-drawer-overlay").classList.add("visible");
