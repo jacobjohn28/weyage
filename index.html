@@ -10521,84 +10521,26 @@ async function _fetchGeminiRights(spot) {
 
   const sub     = spot.transportSubtype || "transport";
   const carrier = spot.carrier || "unknown carrier";
-  const origin  = spot.customOrigin  || spot.transportFrom || "unknown origin";
-  const dest    = spot.customDestination || spot.transportTo || "unknown destination";
-  const date    = spot.scheduledDate
-    ? new Date(spot.scheduledDate + "T00:00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
-    : "unknown date";
+  const origin  = spot.customOrigin || spot.transportFrom || "";
+  const dest    = spot.customDestination || spot.transportTo || "";
+  const date    = spot.scheduledDate || "";
 
-  // ── Grounded prompt: jurisdiction-first approach ──────────────
-  // Forces Gemini to commit to a single applicable framework before
-  // expanding, preventing it from listing all possible regulations.
-  const prompt = `A traveller's ${sub} from "${origin}" to "${dest}" with ${carrier} on ${date} was cancelled.
+  const prompt = `You are a concise travel rights expert. A traveller's ${sub} from "${origin}" to "${dest}" operated by "${carrier}" on ${date} was cancelled.
 
-STEP 1 — Determine jurisdiction. Based solely on the departure airport country, arrival airport country, and ${carrier}'s nationality, identify the ONE regulatory framework that governs this cancellation. Do not mention any other frameworks. Common examples: EU Reg 261/2004 applies when departing from an EU airport OR arriving in the EU on an EU-registered carrier; UK261 applies to UK departures or UK carriers post-Brexit; EU Rail Reg 1371/2007 applies to European trains; individual operator guarantees (SNCF G30, DB Fahrgastrechte) apply to specific rail operators. Only use US DOT rules if the carrier is US-registered or the route is domestic within the USA.
+Provide the most relevant consumer rights in 4 bullet points covering: (1) the specific regulation that applies (e.g. EU 261/2004 for EU flights, US DOT for US flights, EU 1371/2007 for European trains), (2) compensation or refund amount, (3) right to care or hotel if applicable, (4) how to submit the claim and the deadline.
 
-STEP 2 — Using Google Search, find: (a) the direct compensation claim page for ${carrier}, not their homepage, (b) recent posts from travellers on forums such as Reddit, AirHelp, Resolver, or consumer advice sites about their experience claiming against ${carrier}.
-
-STEP 3 — Output ONLY the following 5 HTML sections. No text outside them, no markdown, no preamble.
-
-<section>
-<h4>① Your Rights Under [name the single applicable regulation]</h4>
-State what the regulation entitles this traveller to for a cancellation on this specific route. Give the exact compensation amount or refund right. Explain the extraordinary-circumstances defence and whether it commonly applies to ${carrier} based on recent cases.
-</section>
-
-<section>
-<h4>② Right to Care — Ask for This Now</h4>
-List what ${carrier} must provide at the airport while the traveller waits: meals, hotel, transport, and communications allowance. State the exact waiting-time thresholds that trigger each entitlement under the applicable regulation.
-</section>
-
-<section>
-<h4>③ Where to Submit Your Claim</h4>
-Provide the direct URL to ${carrier}'s online compensation or passenger-rights claim form. Then list 2–3 alternative channels ranked by community-reported effectiveness (national enforcement body, third-party service, credit card chargeback). Format URLs as: <a href="URL" target="_blank" rel="noopener">Label →</a>
-</section>
-
-<section>
-<h4>④ Documents to Collect Before You Leave the Airport</h4>
-<ul>
-  <li>Booking confirmation and e-ticket (PDF or screenshot)</li>
-  <li>Cancellation notification from ${carrier} (email, SMS, or app alert)</li>
-  <li>Written record of any rebooking or voucher offer — accept or decline in writing</li>
-  <li>Boarding passes or gate passes for the cancelled service</li>
-  <li>Receipts for all out-of-pocket costs: meals, hotel, taxis, new tickets</li>
-  <li>Name and employee number of any ${carrier} staff you spoke with</li>
-  <li>Photo of the departure board showing the cancellation status</li>
-  <li>Any additional evidence that travellers report ${carrier} specifically requires</li>
-</ul>
-</section>
-
-<section>
-<h4>⑤ Filing Deadline, Timeline &amp; Escalation</h4>
-State the legal deadline for filing a claim against ${carrier} under the applicable regulation. Give the typical response time for ${carrier} based on community reports. Explain what to do if ${carrier} does not respond within the statutory window. Name the national enforcement body to escalate to and how to contact them.
-</section>`;
+Format your response ONLY as an HTML <ul> list with <li> items. Use <strong> for regulation names and key figures. Be specific and practical. No preamble, no legal disclaimers.`;
 
   try {
-    const body = {
-      contents: [{ parts: [{ text: prompt }] }],
-      // Google Search grounding — Gemini will search the web before answering
-      tools: [{ google_search: {} }],
-      generationConfig: { temperature: 0.1 },  // low temp for factual accuracy
-    };
-
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_CONFIG.model}:generateContent?key=${GEMINI_CONFIG.apiKey}`,
-      { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }
+      { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }
     );
     const json = await res.json();
-
-    // With grounding, text may arrive across multiple parts — join them all
-    const parts = json.candidates?.[0]?.content?.parts || [];
-    const text  = parts.map(p => p.text || "").join("").trim();
+    const text = json.candidates?.[0]?.content?.parts?.[0]?.text || "";
     if (!text) return null;
-
-    // Surface search queries Gemini used, for attribution
-    const meta         = json.candidates?.[0]?.groundingMetadata;
-    const queries      = (meta?.webSearchQueries || []).join(" · ");
-    const sourceLabel  = queries
-      ? `Gemini AI + Google Search · searched: ${queries}`
-      : `Gemini AI · ${GEMINI_CONFIG.model}`;
-
-    const result = { html: text, source: sourceLabel };
+    const result = { html: text, source: "Gemini AI · " + GEMINI_CONFIG.model };
     _rightsCache[spot.id] = result;
     return result;
   } catch { return null; }
