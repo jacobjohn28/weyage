@@ -2708,8 +2708,10 @@
   }
   @media (max-width: 600px) { .budget-currency-panel { grid-template-columns: 1fr; } }
   .budget-currency-col { padding: 12px 14px; border-radius: var(--radius-sm); min-width: 0; }
-  /* Charts size themselves dynamically via JS; just ensure they never overflow their block */
-  .budget-chart-block canvas { display: block; width: 100% !important; }
+  /* Chart.js responsive + maintainAspectRatio:false requires a positioned parent with explicit height.
+     Height is set per-chart via JS on .budget-chart-block; canvas fills it. */
+  .budget-chart-block { position: relative; overflow: hidden; }
+  .budget-chart-block canvas { position: absolute; top: 0; left: 0; width: 100% !important; height: 100% !important; }
   /* Center the tab bar on desktop so it sits visually between both columns */
   @media (min-width: 601px) { .budget-tab-bar { justify-content: center; } }
   /* Drag-and-drop tab reordering */
@@ -9275,9 +9277,15 @@ function renderBudget() {
 
   // ── Charts (only for per-currency tab) ──────────────────────
   if (_budgetTab !== "all") {
-    loadChartJs().then(() => requestAnimationFrame(() =>
-      renderBudgetCharts({ [_budgetTab]: byCurrency[_budgetTab] }, fmt, entries)
-    ));
+    // Stamp a generation token on content so the rAF callback can detect stale renders.
+    // If renderBudget() fires again before the rAF runs, the token changes and the old
+    // callback exits early — preventing double Chart.js instantiation on the same canvas.
+    const renderGen = Symbol();
+    content._renderGen = renderGen;
+    loadChartJs().then(() => requestAnimationFrame(() => {
+      if (content._renderGen !== renderGen) return; // stale; a newer render already ran
+      renderBudgetCharts({ [_budgetTab]: byCurrency[_budgetTab] }, fmt, entries);
+    }));
   }
 }
 
@@ -9397,7 +9405,7 @@ function renderBudgetCharts(byCurrency, fmt, allEntries) {
 
     const cityCtx = document.getElementById(`budget-chart-${cur}-city`);
     if (cityCtx) {
-      cityCtx.style.height = chartH(cityLabelsGroup.length);
+      cityCtx.parentElement.style.height = chartH(cityLabelsGroup.length);
       budgetChartInstances[`${cur}-city`] = new Chart(cityCtx, {
         type: "bar",
         data: { labels: cityLabelsGroup, datasets: [{ data: cityDataGroup, backgroundColor: cityColorsGroup, borderRadius: 4, borderSkipped: false }] },
@@ -9420,7 +9428,7 @@ function renderBudgetCharts(byCurrency, fmt, allEntries) {
 
     const catCtx = document.getElementById(`budget-chart-${cur}-cat`);
     if (catCtx) {
-      catCtx.style.height = chartH(catLabelsGroup.length);
+      catCtx.parentElement.style.height = chartH(catLabelsGroup.length);
       budgetChartInstances[`${cur}-cat`] = new Chart(catCtx, {
         type: "bar",
         data: { labels: catLabelsGroup, datasets: [{ data: catDataGroup, backgroundColor: catColorsGroup, borderRadius: 4, borderSkipped: false }] },
@@ -9455,7 +9463,7 @@ function renderBudgetCharts(byCurrency, fmt, allEntries) {
 
     const cityCMine = document.getElementById(`budget-chart-${cur}-city-mine`);
     if (cityCMine) {
-      cityCMine.style.height = chartH(cityLabelsMine.length);
+      cityCMine.parentElement.style.height = chartH(cityLabelsMine.length);
       budgetChartInstances[`${cur}-city-mine`] = new Chart(cityCMine, {
         type: "bar",
         data: { labels: cityLabelsMine, datasets: [{ data: cityDataMine, backgroundColor: cityColorsMine, borderRadius: 4, borderSkipped: false }] },
@@ -9475,7 +9483,7 @@ function renderBudgetCharts(byCurrency, fmt, allEntries) {
 
     const catCMine = document.getElementById(`budget-chart-${cur}-cat-mine`);
     if (catCMine) {
-      catCMine.style.height = chartH(catLabelsMine.length);
+      catCMine.parentElement.style.height = chartH(catLabelsMine.length);
       budgetChartInstances[`${cur}-cat-mine`] = new Chart(catCMine, {
         type: "bar",
         data: { labels: catLabelsMine, datasets: [{ data: catDataMine, backgroundColor: catColorsMine, borderRadius: 4, borderSkipped: false }] },
