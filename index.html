@@ -2603,41 +2603,60 @@
 
   /* ── Expenses tab ───────────────────────────────────────── */
   .exp-controls { margin-bottom: 16px; }
-  .exp-sort-row {
-    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
-    margin-bottom: 10px;
-  }
+
+  /* Toolbar: sort left, filter toggle right */
+  .exp-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .exp-toolbar-sort { display: flex; align-items: center; gap: 6px; }
   .exp-sort-label { font-size: 0.75rem; color: var(--text-3); white-space: nowrap; margin-right: 2px; }
   .exp-sort-btn {
-    font-size: 0.75rem; padding: 4px 10px; border-radius: var(--radius-sm);
+    font-size: 0.75rem; padding: 5px 10px; border-radius: var(--radius-sm);
     border: 1.5px solid var(--border); background: var(--surface-2);
     cursor: pointer; color: var(--text-2);
     transition: border-color 120ms, background 120ms;
   }
   .exp-sort-btn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
-  .exp-filter-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+
+  /* Filter toggle button */
+  .exp-filter-toggle {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 0.75rem; padding: 5px 12px; border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border); background: var(--surface-2);
+    cursor: pointer; color: var(--text-2);
+    transition: border-color 120ms, background 120ms; white-space: nowrap;
+  }
+  .exp-filter-toggle.active { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+  .exp-filter-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 16px; height: 16px; border-radius: 50%;
+    background: var(--accent); color: #fff;
+    font-size: 0.625rem; font-weight: 700; line-height: 1; padding: 0 3px;
+  }
+
+  /* Expandable filter panel */
+  .exp-filter-panel {
+    margin-top: 10px; padding: 14px 14px 10px;
+    background: var(--surface-2); border-radius: var(--radius);
+    border: 1px solid var(--border);
+  }
+  .exp-filter-section { margin-bottom: 12px; }
+  .exp-filter-section-label {
+    font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.05em;
+    text-transform: uppercase; color: var(--text-3); margin-bottom: 7px;
+  }
+  .exp-filter-pills { display: flex; gap: 6px; flex-wrap: wrap; }
   .exp-filter-pill {
-    font-size: 0.75rem; padding: 3px 10px; border-radius: 100px;
+    font-size: 0.75rem; padding: 4px 12px; border-radius: 100px;
     border: 1.5px solid var(--border); cursor: pointer;
-    background: var(--surface-2); color: var(--text-2);
+    background: var(--surface); color: var(--text-2);
     transition: border-color 120ms, background 120ms;
   }
   .exp-filter-pill.active { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); }
-  .exp-person-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
-  .exp-person-pill {
-    font-size: 0.75rem; padding: 3px 10px; border-radius: 100px;
-    border: 1.5px solid var(--border); cursor: pointer;
-    background: var(--surface-2); color: var(--text-2);
-    transition: border-color 120ms, background 120ms;
-  }
-  .exp-person-pill.active { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); }
   .exp-clear-btn {
     font-size: 0.75rem; padding: 4px 10px; border-radius: var(--radius-sm);
     border: 1.5px solid var(--border); background: transparent;
-    cursor: pointer; color: var(--text-3);
-    margin-left: auto;
+    cursor: pointer; color: var(--text-3); display: block; margin-left: auto; margin-top: 2px;
   }
-  .exp-clear-btn:hover { background: var(--surface-2); }
+  .exp-clear-btn:hover { background: var(--surface-3, var(--surface)); }
   .exp-summary {
     font-size: 0.8125rem; color: var(--text-3); margin-bottom: 12px;
     padding-bottom: 10px; border-bottom: 1px solid var(--border);
@@ -8487,6 +8506,7 @@ let _expTabDir     = "desc";
 let _expTabCatFilter  = new Set();
 let _expTabCityFilter = new Set();
 let _expTabPersonFilter = null; // null | "paid" | "owe"
+let _expFiltersOpen    = false; // is filter panel expanded?
 
 const SOURCE_COLORS = {
   spot:          "#6BAA8D",
@@ -8548,6 +8568,7 @@ function renderExpenses() {
   });
 
   const hasActiveFilter = _expTabCatFilter.size + _expTabCityFilter.size > 0 || _expTabPersonFilter;
+  const filterCount = _expTabCatFilter.size + _expTabCityFilter.size + (_expTabPersonFilter ? 1 : 0);
 
   // Totals
   const totalByCur = {};
@@ -8555,30 +8576,45 @@ function renderExpenses() {
   const totalStr = Object.entries(totalByCur)
     .map(([c, a]) => `${currencySymbol(c)}${fmt2(a)}`).join(" · ");
 
-  // Person filter label
-  const personFilterLabel = { paid: "I paid", owe: "I owe" };
-
   const controlsHTML = `
     <div class="exp-controls">
-      <div class="exp-sort-row">
-        <span class="exp-sort-label">Sort</span>
-        <button class="exp-sort-btn${_expTabSort === "date"  ? " active" : ""}" data-expsort="date">Date${_expTabSort === "date"  ? (_expTabDir === "desc" ? " ↓" : " ↑") : ""}</button>
-        <button class="exp-sort-btn${_expTabSort === "value" ? " active" : ""}" data-expsort="value">Amount${_expTabSort === "value" ? (_expTabDir === "desc" ? " ↓" : " ↑") : ""}</button>
-        ${myMemberId ? `
-        <div style="display:flex;gap:6px;margin-left:8px">
-          <button class="exp-person-pill${!_expTabPersonFilter ? " active" : ""}" data-expperson="">All</button>
-          <button class="exp-person-pill${_expTabPersonFilter === "paid" ? " active" : ""}" data-expperson="paid">I paid</button>
-          <button class="exp-person-pill${_expTabPersonFilter === "owe"  ? " active" : ""}" data-expperson="owe">I owe</button>
-        </div>` : ""}
-        ${hasActiveFilter ? `<button class="exp-clear-btn" id="exp-clear-filters-btn">Clear filters</button>` : ""}
+      <div class="exp-toolbar">
+        <div class="exp-toolbar-sort">
+          <span class="exp-sort-label">Sort</span>
+          <button class="exp-sort-btn${_expTabSort === "date"  ? " active" : ""}" data-expsort="date">Date${_expTabSort === "date"  ? (_expTabDir === "desc" ? " ↓" : " ↑") : ""}</button>
+          <button class="exp-sort-btn${_expTabSort === "value" ? " active" : ""}" data-expsort="value">Amount${_expTabSort === "value" ? (_expTabDir === "desc" ? " ↓" : " ↑") : ""}</button>
+        </div>
+        <button class="exp-filter-toggle${_expFiltersOpen || filterCount > 0 ? " active" : ""}" id="exp-filter-toggle-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="13" height="13"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          Filters${filterCount > 0 ? ` <span class="exp-filter-badge">${filterCount}</span>` : ""}
+        </button>
       </div>
-      ${categories.length > 0 ? `
-      <div class="exp-filter-row">
-        ${categories.map(c => `<button class="exp-filter-pill${_expTabCatFilter.has(c) ? " active" : ""}" data-expcat="${escapeHtml(c)}">${escapeHtml(c)}</button>`).join("")}
-      </div>` : ""}
-      ${cities.length > 1 ? `
-      <div class="exp-filter-row">
-        ${cities.map(c => `<button class="exp-filter-pill${_expTabCityFilter.has(c) ? " active" : ""}" data-expcity="${escapeHtml(c)}">${escapeHtml(c)}</button>`).join("")}
+      ${_expFiltersOpen ? `
+      <div class="exp-filter-panel">
+        ${myMemberId ? `
+        <div class="exp-filter-section">
+          <div class="exp-filter-section-label">Mine</div>
+          <div class="exp-filter-pills">
+            <button class="exp-filter-pill${!_expTabPersonFilter ? " active" : ""}" data-expperson="">All</button>
+            <button class="exp-filter-pill${_expTabPersonFilter === "paid" ? " active" : ""}" data-expperson="paid">I paid</button>
+            <button class="exp-filter-pill${_expTabPersonFilter === "owe"  ? " active" : ""}" data-expperson="owe">I owe</button>
+          </div>
+        </div>` : ""}
+        ${categories.length > 0 ? `
+        <div class="exp-filter-section">
+          <div class="exp-filter-section-label">Category</div>
+          <div class="exp-filter-pills">
+            ${categories.map(c => `<button class="exp-filter-pill${_expTabCatFilter.has(c) ? " active" : ""}" data-expcat="${escapeHtml(c)}">${escapeHtml(c)}</button>`).join("")}
+          </div>
+        </div>` : ""}
+        ${cities.length > 1 ? `
+        <div class="exp-filter-section">
+          <div class="exp-filter-section-label">City</div>
+          <div class="exp-filter-pills">
+            ${cities.map(c => `<button class="exp-filter-pill${_expTabCityFilter.has(c) ? " active" : ""}" data-expcity="${escapeHtml(c)}">${escapeHtml(c)}</button>`).join("")}
+          </div>
+        </div>` : ""}
+        ${hasActiveFilter ? `<button class="exp-clear-btn" id="exp-clear-filters-btn">Clear all</button>` : ""}
       </div>` : ""}
     </div>`;
 
@@ -8630,6 +8666,12 @@ function renderExpenses() {
 
   content.innerHTML = controlsHTML + summaryHTML + listHTML;
 
+  // Filter panel toggle
+  content.querySelector("#exp-filter-toggle-btn")?.addEventListener("click", () => {
+    _expFiltersOpen = !_expFiltersOpen;
+    renderExpenses();
+  });
+
   // Sort buttons
   content.querySelectorAll(".exp-sort-btn[data-expsort]").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -8643,8 +8685,8 @@ function renderExpenses() {
     });
   });
 
-  // Person pills
-  content.querySelectorAll(".exp-person-pill[data-expperson]").forEach(btn => {
+  // Mine pills (inside filter panel)
+  content.querySelectorAll(".exp-filter-pill[data-expperson]").forEach(btn => {
     btn.addEventListener("click", () => {
       _expTabPersonFilter = btn.dataset.expperson || null;
       renderExpenses();
@@ -8672,12 +8714,6 @@ function renderExpenses() {
   });
 
   // Clear all filters
-  content.getElementById?.("exp-clear-filters-btn")?.addEventListener("click", () => {
-    _expTabCatFilter.clear();
-    _expTabCityFilter.clear();
-    _expTabPersonFilter = null;
-    renderExpenses();
-  });
   content.querySelector("#exp-clear-filters-btn")?.addEventListener("click", () => {
     _expTabCatFilter.clear();
     _expTabCityFilter.clear();
