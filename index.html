@@ -9908,33 +9908,33 @@ function renderBudgetTimelineChart(entries, fmt) {
     const b = parseInt(h.slice(4, 6), 16);
     return `rgba(${r},${g},${b},${alpha})`;
   };
-  const accentFill = _hexToRgba(accentColor.startsWith("#") ? accentColor : "#4E8774", 0.10);
+  const mineFill = _hexToRgba(successColor.startsWith("#") ? successColor : "#6F8B68", 0.10);
   const compact = n => n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(Math.round(n));
 
   const datasets = [{
     label: "Group",
     data: groupData,
-    borderColor: accentColor,
-    backgroundColor: accentFill,
-    fill: true,
-    pointRadius: 5,
-    pointHoverRadius: 7,
+    borderColor: successColor,
+    backgroundColor: "transparent",
+    fill: false,
+    pointRadius: 4,
+    pointHoverRadius: 6,
     tension: 0.3,
     borderWidth: 2,
+    borderDash: [5, 3],
   }];
 
   if (mineData) {
     datasets.push({
       label: "My Portion",
       data: mineData,
-      borderColor: successColor,
-      backgroundColor: "transparent",
-      fill: false,
-      pointRadius: 4,
-      pointHoverRadius: 6,
+      borderColor: accentColor,
+      backgroundColor: mineFill,
+      fill: true,
+      pointRadius: 5,
+      pointHoverRadius: 7,
       tension: 0.3,
       borderWidth: 2,
-      borderDash: [5, 3],
     });
   }
 
