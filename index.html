@@ -2832,10 +2832,17 @@
     max-width: 110px; overflow: hidden; text-overflow: ellipsis;
   }
   .exp-col-source { display: flex; align-items: center; }
-  .exp-source-badge {
+  /* Category: solid coloured badge (mirrors the chart category colours) */
+  .exp-cat-badge {
     flex-shrink: 0; font-size: 0.625rem; font-weight: 700; letter-spacing: 0.06em;
-    text-transform: uppercase; color: #fff; padding: 2px 6px;
+    text-transform: uppercase; color: #fff; padding: 2px 7px;
     border-radius: 4px; white-space: nowrap;
+  }
+  /* Source: neutral text pill — no colour emphasis */
+  .exp-source-badge {
+    font-size: 0.6875rem; color: var(--text-3); white-space: nowrap;
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 4px; padding: 2px 7px;
   }
   .exp-col-right {
     display: flex; align-items: center; gap: 6px; justify-content: flex-end;
@@ -9292,7 +9299,7 @@ function renderExpenses() {
           ? `<div class="exp-row-payer">Paid by ${escapeHtml(payer.name)}${myOwed != null && myOwed > 0 ? ` · My share: ${currencySymbol(e.currency)}${fmt2(myOwed)}` : ""}</div>`
           : "";
         const cityName = town ? escapeHtml(town.name) : "";
-        const srcColor = SOURCE_COLORS[e.source] || "#888";
+        const catColor = CATEGORY_COLORS[e.category] || "#888";
         const srcLabel = SOURCE_LABELS[e.source] || e.source;
 
         return `
@@ -9303,15 +9310,15 @@ function renderExpenses() {
               ${payerLine}
               <div class="exp-row-meta-mobile">
                 ${dateStr ? `<span class="exp-meta-chip">${dateStr}</span>` : ""}
-                <span class="exp-meta-chip">${escapeHtml(e.category)}</span>
+                <span class="exp-cat-badge" style="background:${catColor}">${escapeHtml(e.category)}</span>
                 ${cityName ? `<span class="exp-meta-chip">${cityName}</span>` : ""}
-                <span class="exp-source-badge" style="background:${srcColor}">${srcLabel}</span>
+                <span class="exp-source-badge">${srcLabel}</span>
               </div>
             </div>
-            <div class="exp-col-chip">${escapeHtml(e.category)}</div>
+            <div class="exp-col-chip"><span class="exp-cat-badge" style="background:${catColor}">${escapeHtml(e.category)}</span></div>
             <div class="exp-col-chip">${cityName || "—"}</div>
             <div class="exp-col-source">
-              <span class="exp-source-badge" style="background:${srcColor}">${srcLabel}</span>
+              <span class="exp-source-badge">${srcLabel}</span>
             </div>
             <div class="exp-col-right">
               <div class="exp-row-amount">${currencySymbol(e.currency)}${fmt2(e.amount)}</div>
