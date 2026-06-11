@@ -2798,37 +2798,51 @@
     padding-bottom: 10px; border-bottom: 1px solid var(--border);
   }
   .exp-empty { color: var(--text-3); font-size: 0.9375rem; padding: 24px 0; }
+
+  /* Expense row — table-like grid: Date | Name | Category | City | Source | Amount */
   .exp-row {
-    display: flex; align-items: flex-start; gap: 12px;
-    padding: 12px 0; border-bottom: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 68px 1fr auto auto auto auto;
+    align-items: center;
+    column-gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
   }
   .exp-row:last-child { border-bottom: none; }
-  .exp-source-badge {
-    flex-shrink: 0; font-size: 0.625rem; font-weight: 700; letter-spacing: 0.06em;
-    text-transform: uppercase; color: #fff; padding: 2px 6px;
-    border-radius: 4px; margin-top: 2px; white-space: nowrap;
+  .exp-col-date {
+    font-size: 0.75rem; color: var(--text-3);
+    white-space: nowrap; line-height: 1.4;
   }
-  .exp-row-body { flex: 1; min-width: 0; }
+  .exp-col-name { min-width: 0; }
   .exp-row-name {
     font-size: 0.9375rem; font-weight: 500; color: var(--text);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    margin-bottom: 3px;
-  }
-  .exp-row-meta {
-    display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
-    font-size: 0.75rem; color: var(--text-3);
+    margin-bottom: 1px;
   }
   .exp-est-badge {
     font-size: 0.6875rem; color: var(--text-3); background: var(--surface-2);
     border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px;
+    vertical-align: middle; margin-left: 4px;
   }
-  .exp-row-payer { font-size: 0.75rem; color: var(--text-3); margin-top: 3px; }
-  .exp-row-right {
-    display: flex; align-items: center; gap: 8px; flex-shrink: 0; padding-top: 2px;
+  .exp-row-payer { font-size: 0.75rem; color: var(--text-3); margin-top: 1px; }
+  .exp-col-chip {
+    font-size: 0.6875rem; color: var(--text-3); white-space: nowrap;
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 4px; padding: 2px 7px;
+    max-width: 110px; overflow: hidden; text-overflow: ellipsis;
+  }
+  .exp-col-source { display: flex; align-items: center; }
+  .exp-source-badge {
+    flex-shrink: 0; font-size: 0.625rem; font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase; color: #fff; padding: 2px 6px;
+    border-radius: 4px; white-space: nowrap;
+  }
+  .exp-col-right {
+    display: flex; align-items: center; gap: 6px; justify-content: flex-end;
   }
   .exp-row-amount {
     font-size: 0.9375rem; font-weight: 600; font-variant-numeric: tabular-nums;
-    color: var(--text);
+    color: var(--text); white-space: nowrap;
   }
   .exp-edit-btn {
     display: inline-flex; align-items: center; justify-content: center;
@@ -2839,6 +2853,25 @@
     flex-shrink: 0;
   }
   .exp-edit-btn:hover { background: var(--surface-3, var(--surface)); border-color: var(--accent); color: var(--accent); }
+  /* Mobile: collapse to 2-col layout; show meta as secondary line */
+  .exp-row-meta-mobile { display: none; }
+  @media (max-width: 600px) {
+    .exp-row {
+      grid-template-columns: 1fr auto;
+      row-gap: 3px;
+    }
+    .exp-col-date  { display: none; }
+    .exp-col-chip  { display: none; }
+    .exp-col-source { display: none; }
+    .exp-col-name  { grid-column: 1; }
+    .exp-col-right { grid-column: 2; align-items: flex-start; }
+    .exp-row-meta-mobile {
+      display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; align-items: center;
+    }
+    .exp-meta-chip {
+      font-size: 0.6875rem; color: var(--text-3);
+    }
+  }
 
   /* Budget drawer person filter row */
   /* Budget drawer: toolbar + expandable filter panel */
@@ -9254,25 +9287,33 @@ function renderExpenses() {
         const dateStr = e.scheduledDate
           ? new Date(e.scheduledDate + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })
           : "";
-        const metaParts = [
-          town ? escapeHtml(town.name) : null,
-          dateStr || null,
-          escapeHtml(e.category),
-        ].filter(Boolean).map(s => `<span>${s}</span>`).join("");
         const estBadge = e.isEstimated ? `<span class="exp-est-badge">est.</span>` : "";
         const payerLine = payer
           ? `<div class="exp-row-payer">Paid by ${escapeHtml(payer.name)}${myOwed != null && myOwed > 0 ? ` · My share: ${currencySymbol(e.currency)}${fmt2(myOwed)}` : ""}</div>`
           : "";
+        const cityName = town ? escapeHtml(town.name) : "";
+        const srcColor = SOURCE_COLORS[e.source] || "#888";
+        const srcLabel = SOURCE_LABELS[e.source] || e.source;
 
         return `
           <div class="exp-row">
-            <span class="exp-source-badge" style="background:${SOURCE_COLORS[e.source] || "#888"}">${SOURCE_LABELS[e.source] || e.source}</span>
-            <div class="exp-row-body">
-              <div class="exp-row-name">${escapeHtml(e.name)}</div>
-              <div class="exp-row-meta">${metaParts}${estBadge}</div>
+            <div class="exp-col-date">${dateStr || "—"}</div>
+            <div class="exp-col-name">
+              <div class="exp-row-name">${escapeHtml(e.name)}${estBadge}</div>
               ${payerLine}
+              <div class="exp-row-meta-mobile">
+                ${dateStr ? `<span class="exp-meta-chip">${dateStr}</span>` : ""}
+                <span class="exp-meta-chip">${escapeHtml(e.category)}</span>
+                ${cityName ? `<span class="exp-meta-chip">${cityName}</span>` : ""}
+                <span class="exp-source-badge" style="background:${srcColor}">${srcLabel}</span>
+              </div>
             </div>
-            <div class="exp-row-right">
+            <div class="exp-col-chip">${escapeHtml(e.category)}</div>
+            <div class="exp-col-chip">${cityName || "—"}</div>
+            <div class="exp-col-source">
+              <span class="exp-source-badge" style="background:${srcColor}">${srcLabel}</span>
+            </div>
+            <div class="exp-col-right">
               <div class="exp-row-amount">${currencySymbol(e.currency)}${fmt2(e.amount)}</div>
               <button class="exp-edit-btn"
                 data-expsource="${escapeHtml(e.source)}"
@@ -10131,11 +10172,20 @@ function _renderBudgetDrawer() {
           ? `<span style="font-size:0.75rem;color:var(--text-3)">${escapeHtml(e.category)}</span>`
           : (town ? `<span style="font-size:0.75rem;color:var(--text-3)">${escapeHtml(town.name)}</span>` : "");
         const displayAmt = getDisplayAmt(e);
-        const expenseActions = e.source === "expense" ? `
+        const isManualEntry = e.source === "expense";
+        const expenseActions = isManualEntry ? `
           <div class="bd-expense-actions">
             <button class="bd-expense-btn" data-expense-edit="${escapeHtml(e.id)}" title="Edit expense">✏</button>
-            <button class="bd-expense-btn del" data-expense-del="${escapeHtml(e.id)}" title="Delete expense">✕</button>
-          </div>` : "";
+            <button class="bd-expense-btn del" data-expense-del="${escapeHtml(e.id)}" title="Delete">✕</button>
+          </div>`
+          : (_bdMode === "date" ? `
+          <div class="bd-expense-actions">
+            <button class="bd-expense-btn"
+              data-bd-open-source="${escapeHtml(e.source)}"
+              data-bd-open-id="${escapeHtml(e.id)}"
+              data-bd-open-townid="${escapeHtml(e.townId || "")}"
+              title="Open">✏</button>
+          </div>` : "");
         return `
           <div style="padding:10px 0;border-bottom:1px solid var(--border)">
             <div style="display:flex;align-items:flex-start;gap:8px">
@@ -10220,6 +10270,27 @@ function _renderBudgetDrawer() {
     btn.addEventListener("click", ev => {
       ev.stopPropagation();
       if (confirm("Delete this expense?")) deleteExpense(btn.dataset.expenseDel);
+    });
+  });
+
+  // Open spot / accommodation / transit entries from the date-mode drawer
+  body.querySelectorAll("[data-bd-open-source]").forEach(btn => {
+    btn.addEventListener("click", async ev => {
+      ev.stopPropagation();
+      const source = btn.dataset.bdOpenSource;
+      const id     = btn.dataset.bdOpenId;
+      const townId = btn.dataset.bdOpenTownid;
+      if (source === "spot") {
+        const spot = state.spots.find(s => s.id === id);
+        if (spot) openModal(spot);
+      } else if (source === "accommodation") {
+        const town = state.towns.find(t => t.id === townId);
+        if (town) openAccomModal(town);
+      } else if (source === "transit") {
+        const town = state.towns.find(t => t.id === townId);
+        const entry = (town?.transitExpenses || []).find(e => e.id === id);
+        if (entry) await showTransitSheet(townId, entry.date, entry);
+      }
     });
   });
 }
