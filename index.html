@@ -2568,10 +2568,27 @@
     user-select: none;
   }
   .payer-chip.selected { border-color: var(--accent); background: var(--accent-bg); }
+  .payer-chip.deselected { opacity: 0.45; }
   .payer-chip-avatar {
     width: 20px; height: 20px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     font-size: 0.625rem; font-weight: 600; color: #fff; flex-shrink: 0;
+  }
+  /* Member badge on itinerary cards */
+  .spot-members-pill {
+    display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0;
+  }
+  .spot-member-dot {
+    width: 15px; height: 15px; border-radius: 50%;
+    font-size: 0.5rem; font-weight: 700; color: #fff;
+    display: inline-flex; align-items: center; justify-content: center;
+    flex-shrink: 0; opacity: 0.85;
+  }
+  /* Time-mode toggle link in spot modal */
+  .time-mode-toggle-btn {
+    font-size: 0.6875rem; color: var(--accent); background: none;
+    border: none; cursor: pointer; padding: 0; font-family: inherit;
+    text-decoration: underline; text-underline-offset: 2px;
   }
 
   /* Custom split rows (expense modal) */
@@ -4562,8 +4579,12 @@ body.share-mode .transit-entry-del { display: none !important; }
           <input class="form-input" id="spot-time" type="time">
         </div>
         <div class="form-field">
-          <label class="form-label" for="spot-duration">Duration (min)</label>
-          <input class="form-input" id="spot-duration" type="number" min="0" step="15" placeholder="90">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+            <label class="form-label" id="spot-time-mode-label" for="spot-duration" style="margin-bottom:0">Duration (min)</label>
+            <button type="button" class="time-mode-toggle-btn" id="spot-time-mode-toggle">Switch to end time</button>
+          </div>
+          <input class="form-input" id="spot-duration" type="number" min="0" step="15" placeholder="e.g. 90">
+          <input class="form-input" id="spot-end-time" type="time" style="display:none;margin-top:0">
         </div>
       </div>
 
@@ -4699,6 +4720,14 @@ body.share-mode .transit-entry-del { display: none !important; }
         <div id="spot-custom-splits" style="display:none;margin-top:10px"></div>
       </div>
 
+      <!-- Who's going? (2+ members only) -->
+      <div id="spot-member-section" style="display:none">
+        <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px">
+          <div class="form-label" style="margin-bottom:8px">Who's going?</div>
+          <div id="spot-member-chips" class="payer-chips"></div>
+        </div>
+      </div>
+
       <!-- Visited toggle -->
       <div class="visited-toggle" id="visited-toggle" role="button" tabindex="0">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="18" height="18"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
@@ -4810,6 +4839,12 @@ body.share-mode .transit-entry-del { display: none !important; }
         <textarea class="form-textarea" id="accom-notes" placeholder="Wi-Fi, parking, early check-in arranged…"></textarea>
       </div>
 
+      <!-- Who's staying? (2+ members only) -->
+      <div id="accom-member-section" style="display:none">
+        <div class="form-label" style="margin-bottom:8px;margin-top:2px">Who's staying?</div>
+        <div id="accom-member-chips" class="payer-chips"></div>
+      </div>
+
     </div>
     <div class="modal-footer" style="flex-direction:column;align-items:stretch;gap:8px">
       <div id="accom-save-error" style="display:none;font-size:0.8125rem;color:var(--accent);padding:6px 10px;background:rgba(194,85,61,0.08);border-radius:6px"></div>
@@ -4912,6 +4947,12 @@ body.share-mode .transit-entry-del { display: none !important; }
       </div>
       <div id="transit-custom-splits" style="display:none;margin-top:10px"></div>
     </div>
+    <!-- Who's travelling? (2+ members only) -->
+    <div id="transit-member-section" style="display:none;margin-top:10px">
+      <div style="font-size:0.8125rem;font-weight:600;margin-bottom:8px">Who's travelling?</div>
+      <div id="transit-member-chips" class="payer-chips"></div>
+    </div>
+
     <div id="transit-actions">
       <button id="transit-cancel" class="btn-secondary">Cancel</button>
       <button id="transit-save" class="btn-primary" style="flex:1;justify-content:center">
@@ -6670,6 +6711,20 @@ function typeIconSVG(type) {
   return icons[type] || icons.sight;
 }
 
+/* Returns a compact member-avatar pill for cards, or "" if everyone's included */
+function _membersBadgeHTML(memberIds) {
+  const allMembers = state.trip?.members || [];
+  if (!memberIds || allMembers.length < 2) return "";
+  return `<span class="spot-members-pill">${
+    memberIds.slice(0, 5).map(id => {
+      const m = allMembers.find(x => x.id === id);
+      return m
+        ? `<span class="spot-member-dot" style="background:${escapeHtml(m.color || "#888")}" title="${escapeHtml(m.name)}">${escapeHtml(m.name.charAt(0).toUpperCase())}</span>`
+        : "";
+    }).join("")
+  }</span>`;
+}
+
 function transportCardHTML(spot) {
   const isArrival = spot._arrivalView || spot.transportDirection === "arriving";
   const depTime = fmtTime12(spot.departureTime);
@@ -6687,6 +6742,8 @@ function transportCardHTML(spot) {
     if (destLabel) meta.push(`<span class="spot-neighborhood">to ${escapeHtml(destLabel)}</span>`);
   }
   if (spot.carrier) meta.push(`<span class="spot-tag-pill">${escapeHtml(spot.carrier)}</span>`);
+  const _tMemberBadge = _membersBadgeHTML(spot.memberIds);
+  if (_tMemberBadge) meta.push(_tMemberBadge);
 
   // Arriving-direction spots are native to this town (editable/draggable), not projections
   const draggable = spot._arrivalView ? ` data-draggable="false"` : "";
@@ -6718,8 +6775,10 @@ function transportCardHTML(spot) {
 function spotCardHTML(spot) {
   if (spot.type === "transport") return transportCardHTML(spot);
   const type = spot.type || "sight";
-  const timeStr = fmtTime12(spot.scheduledTime);
-  const durStr = spot.durationMinutes ? `· ${spot.durationMinutes}min` : "";
+  const timeStr    = fmtTime12(spot.scheduledTime);
+  const endTimeStr = fmtTime12(spot.scheduledEndTime);
+  const timePart   = timeStr && endTimeStr ? `${timeStr} – ${endTimeStr}` : timeStr;
+  const durStr     = (!endTimeStr && spot.durationMinutes) ? `· ${spot.durationMinutes}min` : "";
   const hood = spot.neighborhood ? escapeHtml(spot.neighborhood) : "";
   const tags = (spot.tags || []).slice(0, 2)
     .map(t => `<span class="spot-tag-pill">${escapeHtml(t)}</span>`).join("");
@@ -6731,10 +6790,12 @@ function spotCardHTML(spot) {
     ? `<svg class="spot-chain-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`
     : "";
 
+  const memberBadge = _membersBadgeHTML(spot.memberIds);
   const row2Parts = [];
-  if (timeStr) row2Parts.push(`<span class="spot-time">${timeStr}</span>`);
-  if (timeStr && durStr) row2Parts.push(`<span class="spot-duration">${durStr}</span>`);
-  if (hood) row2Parts.push(`<span class="spot-neighborhood">${timeStr || durStr ? "·" : ""} ${hood}</span>`);
+  if (timePart) row2Parts.push(`<span class="spot-time">${timePart}</span>`);
+  if (timePart && durStr) row2Parts.push(`<span class="spot-duration">${durStr}</span>`);
+  if (hood) row2Parts.push(`<span class="spot-neighborhood">${timePart || durStr ? "·" : ""} ${hood}</span>`);
+  if (memberBadge) row2Parts.push(memberBadge);
 
   const guideLink = `<button class="spot-guide-link" data-spot-id="${spot.id}" title="View guide">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="14" height="14"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
@@ -6783,6 +6844,7 @@ function renderAccomCard(town) {
         ${a.address ? `<div class="accom-meta" style="font-size:0.75rem">${escapeHtml(a.address)}</div>` : ""}
         ${dateRange ? `<div class="accom-meta">${dateRange}</div>` : ""}
         ${a.bookingRef ? `<div class="accom-meta" style="font-size:0.75rem">Ref: ${escapeHtml(a.bookingRef)}</div>` : ""}
+        ${_membersBadgeHTML(a.memberIds) ? `<div class="accom-meta" style="display:flex;align-items:center;gap:4px;margin-top:2px">${_membersBadgeHTML(a.memberIds)}</div>` : ""}
       </div>
       ${a.booked ? `<span class="accom-booked">Booked / paid</span>` : ""}
     </div>`;
@@ -7364,14 +7426,15 @@ function openDrawer(spot) {
       const dateLine = spot.scheduledDate
         ? new Date(spot.scheduledDate + "T00:00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })
         : "";
-      const timeLine = fmtTime12(spot.scheduledTime);
-      const durLine = spot.durationMinutes ? ` · ${spot.durationMinutes} min` : "";
+      const timeLine    = fmtTime12(spot.scheduledTime);
+      const endTimeLine = spot.scheduledEndTime ? ` – ${fmtTime12(spot.scheduledEndTime)}` : "";
+      const durLine     = (spot.durationMinutes && !spot.scheduledEndTime) ? ` · ${spot.durationMinutes} min` : "";
       rows.push(`
         <div class="drawer-section">
           <div class="drawer-section-label">Schedule</div>
           <div class="drawer-meta-row">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            ${escapeHtml(dateLine)}${timeLine ? ` at ${timeLine}` : ""}${escapeHtml(durLine)}
+            ${escapeHtml(dateLine)}${timeLine ? ` at ${timeLine}${endTimeLine}` : ""}${escapeHtml(durLine)}
           </div>
         </div>`);
     }
@@ -7682,6 +7745,7 @@ let selectedTags = new Set();
 let visitedState = false;
 let priceEstimatedState = true;
 let bookedState = false;
+let _spotTimeMode = "duration"; // "duration" | "endtime"
 
 function openModal(spot = null, presets = {}) {
   modalEditId = spot ? spot.id : null;
@@ -7695,8 +7759,11 @@ function openModal(spot = null, presets = {}) {
   document.getElementById("spot-name").value = spot ? (spot.name || "") : "";
   document.getElementById("spot-neighborhood").value = spot ? (spot.neighborhood || "") : "";
   document.getElementById("spot-address").value = spot ? (spot.address || "") : "";
-  document.getElementById("spot-time").value = spot ? (spot.scheduledTime || "") : "";
-  document.getElementById("spot-duration").value = spot ? (spot.durationMinutes || "") : "";
+  document.getElementById("spot-time").value       = spot ? (spot.scheduledTime    || "") : "";
+  document.getElementById("spot-duration").value   = spot ? (spot.durationMinutes || "") : "";
+  document.getElementById("spot-end-time").value   = spot ? (spot.scheduledEndTime || "") : "";
+  _spotTimeMode = (spot?.scheduledEndTime && !spot?.durationMinutes) ? "endtime" : "duration";
+  _applySpotTimeMode();
   document.getElementById("spot-notes").value = spot ? (spot.notes || "") : "";
 
   // Town select — lock when pre-filled from a contextual "+" button
@@ -7772,6 +7839,16 @@ function openModal(spot = null, presets = {}) {
     spotSplitSection.style.display = "none";
   }
 
+  // Who's going? (member picker)
+  const spotMemberSection = document.getElementById("spot-member-section");
+  if (spotMembers.length >= 2) {
+    spotMemberSection.style.display = "block";
+    _spotMemberIds = spot?.memberIds ? new Set(spot.memberIds) : new Set(spotMembers.map(m => m.id));
+    renderMemberPicker("spot-member-chips", _spotMemberIds, spotMembers);
+  } else {
+    spotMemberSection.style.display = "none";
+  }
+
   const btn = document.getElementById("modal-save-btn");
   btn.disabled = false;
   btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save spot`;
@@ -7844,6 +7921,16 @@ function openAccomModal(town) {
     accomSplitSection.style.display = "none";
   }
 
+  // Who's staying? (member picker)
+  const accomMemberSection = document.getElementById("accom-member-section");
+  if (accomMembers.length >= 2) {
+    accomMemberSection.style.display = "block";
+    _accomMemberIds = a.memberIds ? new Set(a.memberIds) : new Set(accomMembers.map(m => m.id));
+    renderMemberPicker("accom-member-chips", _accomMemberIds, accomMembers);
+  } else {
+    accomMemberSection.style.display = "none";
+  }
+
   const saveBtn = document.getElementById("accom-modal-save-btn");
   saveBtn.disabled = false;
   saveBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save`;
@@ -7897,6 +7984,9 @@ async function saveAccommodation() {
     priceCurrency: document.getElementById("accom-price-currency").value     || "EUR",
     notes:         document.getElementById("accom-notes").value.trim()       || null,
     booked:        accomBooked,
+    memberIds: (accomMembers.length >= 2 && _accomMemberIds.size > 0 && _accomMemberIds.size < accomMembers.length)
+      ? [..._accomMemberIds]
+      : null,
     ...accomSplitData,
   };
 
@@ -8055,6 +8145,33 @@ document.getElementById("spot-modal-overlay").addEventListener("click", (e) => {
   if (e.target === document.getElementById("spot-modal-overlay")) closeModal();
 });
 
+// Time-mode toggle (Duration ↔ End time)
+document.getElementById("spot-time-mode-toggle")?.addEventListener("click", () => {
+  const startTime = document.getElementById("spot-time").value;
+  if (_spotTimeMode === "duration") {
+    // Try to derive end time from start + duration
+    const dur = parseInt(document.getElementById("spot-duration").value);
+    if (startTime && dur > 0) {
+      const [sh, sm] = startTime.split(":").map(Number);
+      const em = sh * 60 + sm + dur;
+      document.getElementById("spot-end-time").value =
+        `${String(Math.floor(em / 60) % 24).padStart(2,"0")}:${String(em % 60).padStart(2,"0")}`;
+    }
+    _spotTimeMode = "endtime";
+  } else {
+    // Try to derive duration from start + end time
+    const endTime = document.getElementById("spot-end-time").value;
+    if (startTime && endTime) {
+      const [sh, sm] = startTime.split(":").map(Number);
+      const [eh, em] = endTime.split(":").map(Number);
+      const d = eh * 60 + em - (sh * 60 + sm);
+      if (d > 0) document.getElementById("spot-duration").value = d;
+    }
+    _spotTimeMode = "duration";
+  }
+  _applySpotTimeMode();
+});
+
 // Update date constraints when town changes (unlocked selects only)
 document.getElementById("spot-town").addEventListener("change", (e) => {
   const townSel = document.getElementById("spot-town");
@@ -8105,15 +8222,35 @@ document.getElementById("modal-save-btn").addEventListener("click", async () => 
       bookingRef:        document.getElementById("spot-booking-ref").value.trim() || null,
     };
   } else {
+    // ── Compute time fields (Feature: end-time ↔ duration) ──
+    const _savedStart = document.getElementById("spot-time").value || null;
+    let _savedDur = null, _savedEndTime = null;
+    if (_spotTimeMode === "duration") {
+      _savedDur = parseInt(document.getElementById("spot-duration").value) || null;
+      if (_savedStart && _savedDur) {
+        const [sh, sm] = _savedStart.split(":").map(Number);
+        const em = sh * 60 + sm + _savedDur;
+        _savedEndTime = `${String(Math.floor(em / 60) % 24).padStart(2,"0")}:${String(em % 60).padStart(2,"0")}`;
+      }
+    } else {
+      _savedEndTime = document.getElementById("spot-end-time").value || null;
+      if (_savedStart && _savedEndTime) {
+        const [sh, sm] = _savedStart.split(":").map(Number);
+        const [eh, em] = _savedEndTime.split(":").map(Number);
+        const d = eh * 60 + em - (sh * 60 + sm);
+        _savedDur = d > 0 ? d : null;
+      }
+    }
     data = {
       name,
       type: selectedType,
       townId: document.getElementById("spot-town").value,
       neighborhood: document.getElementById("spot-neighborhood").value.trim() || null,
       address: document.getElementById("spot-address").value.trim() || null,
-      scheduledDate: document.getElementById("spot-date").value || null,
-      scheduledTime: document.getElementById("spot-time").value || null,
-      durationMinutes: parseInt(document.getElementById("spot-duration").value) || null,
+      scheduledDate:    document.getElementById("spot-date").value || null,
+      scheduledTime:    _savedStart,
+      durationMinutes:  _savedDur,
+      scheduledEndTime: _savedEndTime,
       tags: [...selectedTags],
       notes: document.getElementById("spot-notes").value.trim() || null,
       visited: visitedState,
@@ -8144,6 +8281,11 @@ document.getElementById("modal-save-btn").addEventListener("click", async () => 
     data.splitType = null;
     data.splits    = null;
   }
+
+  // Attach memberIds (who's going — null means everyone)
+  data.memberIds = (splitMembers.length >= 2 && _spotMemberIds.size > 0 && _spotMemberIds.size < splitMembers.length)
+    ? [..._spotMemberIds]
+    : null;
 
   const btn = document.getElementById("modal-save-btn");
   btn.disabled = true;
@@ -8254,6 +8396,18 @@ function showTransitSheet(townId, date, existingEntry = null) {
       transitSplitSection.style.display = "none";
     }
 
+    // Who's travelling? (member picker)
+    const transitMemberSection = document.getElementById("transit-member-section");
+    if (transitMembers.length >= 2) {
+      transitMemberSection.style.display = "block";
+      _transitMemberIds = existingEntry?.memberIds
+        ? new Set(existingEntry.memberIds)
+        : new Set(transitMembers.map(m => m.id));
+      renderMemberPicker("transit-member-chips", _transitMemberIds, transitMembers);
+    } else {
+      transitMemberSection.style.display = "none";
+    }
+
     // Set type selection
     let selectedType = existingEntry?.type || "metro";
     overlay.querySelectorAll(".transit-type-btn").forEach(btn => {
@@ -8307,6 +8461,10 @@ function showTransitSheet(townId, date, existingEntry = null) {
           entry.splits = tMembers.map(m => ({ memberId: m.id, owed: amount / tMembers.length }));
         }
       }
+      // Attach memberIds (who's travelling)
+      entry.memberIds = (tMembers.length >= 2 && _transitMemberIds.size > 0 && _transitMemberIds.size < tMembers.length)
+        ? [..._transitMemberIds]
+        : null;
       saveBtn.disabled = true;
       saveBtn.textContent = "Saving…";
       if (existingEntry) {
@@ -8474,14 +8632,17 @@ function renderCustomSplits(members) {
 let _spotPayerId     = null;
 let _spotSplitMode   = "equal"; // "equal" | "solo" | "custom"
 let _spotCustomSplits = {};
+let _spotMemberIds   = new Set(); // which members are attending this spot
 
 let _accomPayerId     = null;
 let _accomSplitMode   = "equal";
 let _accomCustomSplits = {};
+let _accomMemberIds   = new Set(); // which members are staying
 
 let _transitPayerId    = null;
 let _transitSplitMode  = "equal";
 let _transitCustomSplits = {};
+let _transitMemberIds  = new Set(); // which members are travelling
 
 function renderSpotPayerChips(members) {
   const container = document.getElementById("spot-payer-chips");
@@ -8497,6 +8658,43 @@ function renderSpotPayerChips(members) {
       renderSpotPayerChips(members);
     });
   });
+}
+
+/* ── Shared member-picker (multi-select chips) ───────────────
+   selectedIds  – live Set of selected member IDs (mutated in place)
+   allMembers   – array of { id, name, color }
+   All selected = normal; deselected = dimmed. At least 1 always stays selected.
+   ─────────────────────────────────────────────────────────── */
+function renderMemberPicker(containerId, selectedIds, allMembers) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = allMembers.map(m => `
+    <div class="payer-chip${selectedIds.has(m.id) ? " selected" : " deselected"}" data-member-id="${escapeHtml(m.id)}">
+      <div class="payer-chip-avatar" style="background:${escapeHtml(m.color || "#888")}">${escapeHtml(m.name.charAt(0).toUpperCase())}</div>
+      ${escapeHtml(m.name)}
+    </div>`).join("");
+  container.querySelectorAll(".payer-chip").forEach(chip => {
+    chip.addEventListener("click", () => {
+      const id = chip.dataset.memberId;
+      if (selectedIds.has(id)) {
+        if (selectedIds.size > 1) selectedIds.delete(id); // keep at least one
+      } else {
+        selectedIds.add(id);
+      }
+      renderMemberPicker(containerId, selectedIds, allMembers);
+    });
+  });
+}
+
+/* ── Time-mode toggle helper (spot modal) ────────────────── */
+function _applySpotTimeMode() {
+  const isDur = _spotTimeMode === "duration";
+  document.getElementById("spot-duration").style.display  = isDur ? "" : "none";
+  document.getElementById("spot-end-time").style.display  = isDur ? "none" : "";
+  const lbl = document.getElementById("spot-time-mode-label");
+  const btn = document.getElementById("spot-time-mode-toggle");
+  if (lbl) { lbl.textContent = isDur ? "Duration (min)" : "End time"; lbl.setAttribute("for", isDur ? "spot-duration" : "spot-end-time"); }
+  if (btn) btn.textContent = isDur ? "Switch to end time" : "Switch to duration";
 }
 
 function updateSpotSplitTotalCheck() {
