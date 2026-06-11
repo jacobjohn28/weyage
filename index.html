@@ -7553,6 +7553,7 @@ let pendingScrollTownId = null;
 let pendingScrollToToday = false;
 let pendingGuideSpotId = null;
 let modalEditId = null;
+let _modalReturnView = "itinerary"; // view to restore after saving a spot
 let selectedType = "sight";
 let selectedTags = new Set();
 let visitedState = false;
@@ -7561,6 +7562,7 @@ let bookedState = false;
 
 function openModal(spot = null, presets = {}) {
   modalEditId = spot ? spot.id : null;
+  _modalReturnView = state.currentView || "itinerary";
   selectedType = spot ? (spot.type || "sight") : (presets.type || "sight");
   selectedTags = new Set(spot ? (spot.tags || []) : []);
   visitedState = spot ? (spot.visited || false) : false;
@@ -8023,13 +8025,14 @@ document.getElementById("modal-save-btn").addEventListener("click", async () => 
   const btn = document.getElementById("modal-save-btn");
   btn.disabled = true;
   btn.textContent = "Saving…";
-  // Capture editId before closeModal() nulls out modalEditId
+  // Capture before closeModal() nulls them out
   const editId = modalEditId;
+  const returnView = _modalReturnView;
   // Close immediately — persistentLocalCache commits the write to IndexedDB right
   // away and onSnapshot fires locally, so there's no need to wait for the server
   // round-trip before dismissing the modal.
   closeModal();
-  setView("itinerary");
+  setView(returnView);
   saveSpot(data, editId).catch(err => console.error("Save failed:", err));
 });
 
