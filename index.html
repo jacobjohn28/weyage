@@ -2879,6 +2879,71 @@
       font-size: 0.6875rem; color: var(--text-3);
     }
   }
+  /* Bulk-selection mode */
+  .exp-row.selecting {
+    grid-template-columns: 28px 68px 1fr auto auto auto auto;
+    cursor: pointer;
+    user-select: none;
+  }
+  @media (max-width: 600px) {
+    .exp-row.selecting { grid-template-columns: 28px 1fr auto; }
+  }
+  .exp-col-cb {
+    display: flex; align-items: center; justify-content: center;
+  }
+  .exp-col-cb input[type="checkbox"] {
+    width: 16px; height: 16px; accent-color: var(--accent);
+    pointer-events: none; /* row click owns selection */
+  }
+  .exp-row.exp-selected { background: var(--accent-bg, rgba(78,135,116,0.08)); }
+  .exp-select-toggle {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 0.75rem; padding: 5px 10px; border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border); background: var(--surface-2);
+    cursor: pointer; color: var(--text-2);
+    transition: border-color 120ms, background 120ms;
+  }
+  .exp-select-toggle.active {
+    border-color: var(--accent); color: var(--accent);
+    background: var(--accent-bg, rgba(78,135,116,0.08));
+  }
+  #exp-selection-bar {
+    position: sticky; bottom: 0;
+    align-items: center; gap: 10px;
+    background: var(--surface); border-top: 2px solid var(--accent);
+    padding: 12px 0 8px; margin-top: 16px;
+  }
+  .exp-sel-count { font-size: 0.875rem; color: var(--text-2); }
+  .exp-sel-count strong { color: var(--accent); }
+  /* Bulk expense edit modal */
+  #bulk-expense-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45); z-index: 9000;
+    align-items: flex-end; justify-content: center;
+  }
+  #bulk-expense-overlay.visible { display: flex; }
+  @media (min-width: 601px) {
+    #bulk-expense-overlay { align-items: center; }
+    #bulk-expense-modal   { border-radius: var(--radius-xl); }
+  }
+  #bulk-expense-modal {
+    background: var(--surface); width: 100%; max-width: 520px;
+    max-height: 85vh; overflow-y: auto;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    padding: 0 18px 32px;
+  }
+  .bulk-status-row { display: flex; gap: 8px; }
+  .bulk-status-btn {
+    flex: 1; font-size: 0.75rem; padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border); background: var(--surface-2);
+    cursor: pointer; color: var(--text-2);
+    transition: border-color 120ms, background 120ms;
+  }
+  .bulk-status-btn.active {
+    border-color: var(--accent); color: var(--accent);
+    background: var(--accent-bg, rgba(78,135,116,0.08));
+  }
 
   /* Budget drawer person filter row */
   /* Budget drawer: toolbar + expandable filter panel */
@@ -4184,6 +4249,12 @@ body.share-mode .transit-entry-del { display: none !important; }
           </button>
         </div>
         <div id="expenses-content"></div>
+        <div id="exp-selection-bar" style="display:none">
+          <span class="exp-sel-count"><strong id="exp-sel-count-num">0</strong> selected</span>
+          <div style="flex:1"></div>
+          <button class="btn-ghost" id="exp-sel-clear-btn" style="font-size:0.8125rem;padding:6px 12px">Clear</button>
+          <button class="btn-primary" id="exp-sel-edit-btn" style="font-size:0.8125rem;padding:6px 14px" disabled>Edit selected</button>
+        </div>
       </section>
 
       <section class="view" id="view-documents">
@@ -4932,6 +5003,58 @@ body.share-mode .transit-entry-del { display: none !important; }
       <button class="btn-primary" id="exp-save-btn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Add expense
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     BULK EXPENSE EDIT MODAL
+     ============================================================ -->
+<div id="bulk-expense-overlay">
+  <div id="bulk-expense-modal">
+    <div style="display:flex;justify-content:center;padding:14px 0 0">
+      <div style="width:36px;height:4px;border-radius:2px;background:var(--border)"></div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border)">
+      <span id="bulk-modal-title" style="font-size:0.9375rem;font-weight:600">Edit selected</span>
+      <button class="icon-btn" id="bulk-modal-close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <p style="font-size:0.8125rem;color:var(--text-3);margin:12px 0 16px;line-height:1.5">
+      Only fields you change here will be updated. Leave a field on <strong>— keep —</strong> to preserve each expense's current value.
+    </p>
+    <div class="form-field">
+      <div class="form-label">Category</div>
+      <select id="bulk-exp-category" class="form-input"></select>
+    </div>
+    <div class="form-field">
+      <div class="form-label">City</div>
+      <select id="bulk-exp-town" class="form-input"></select>
+    </div>
+    <div class="form-field">
+      <div class="form-label">Date <span style="font-weight:400;color:var(--text-3);font-size:0.75rem">(leave empty to keep each expense's date)</span></div>
+      <input id="bulk-exp-date" class="form-input" type="date">
+    </div>
+    <div class="form-field">
+      <div class="form-label">Payment method</div>
+      <select id="bulk-exp-payment" class="form-input"></select>
+    </div>
+    <div class="form-field">
+      <div class="form-label">Paid / Estimated status</div>
+      <div class="bulk-status-row">
+        <button class="bulk-status-btn active" data-bulk-status="keep">Keep each</button>
+        <button class="bulk-status-btn" data-bulk-status="paid">All paid</button>
+        <button class="bulk-status-btn" data-bulk-status="estimated">All estimated</button>
+      </div>
+    </div>
+    <div id="bulk-exp-error" style="display:none;padding:8px 12px;background:rgba(184,83,66,0.08);border:1px solid rgba(184,83,66,0.2);color:var(--danger);border-radius:var(--radius-sm);font-size:0.8125rem;margin-top:10px"></div>
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+      <button class="btn-ghost" id="bulk-exp-cancel">Cancel</button>
+      <button class="btn-primary" id="bulk-exp-save">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Update
       </button>
     </div>
   </div>
@@ -9181,6 +9304,9 @@ let _expTabCatFilter  = new Set();
 let _expTabCityFilter = new Set();
 let _expTabPersonFilter = null; // null | "paid" | "owe"
 let _expFiltersOpen    = false; // is filter panel expanded?
+let _expSelectionMode  = false; // are rows in multi-select mode?
+let _expSelectedIds    = new Set(); // ids of selected expense entries
+let _bulkStatusValue   = "keep"; // "keep" | "paid" | "estimated"
 
 const SOURCE_COLORS = {
   spot:          "#6BAA8D",
@@ -9262,6 +9388,10 @@ function renderExpenses() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="13" height="13"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
           Filters${filterCount > 0 ? ` <span class="exp-filter-badge">${filterCount}</span>` : ""}
         </button>
+        <button class="exp-select-toggle${_expSelectionMode ? " active" : ""}" id="exp-select-toggle-btn" title="Select multiple expenses to edit together">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="13" height="13"><rect x="3" y="5" width="4" height="4" rx="1"/><line x1="10" y1="7" x2="21" y2="7"/><rect x="3" y="11" width="4" height="4" rx="1"/><line x1="10" y1="13" x2="21" y2="13"/><rect x="3" y="17" width="4" height="4" rx="1"/><line x1="10" y1="19" x2="21" y2="19"/></svg>
+          Select
+        </button>
       </div>
       ${_expFiltersOpen ? `
       <div class="exp-filter-panel">
@@ -9314,9 +9444,17 @@ function renderExpenses() {
         const cityName = town ? escapeHtml(town.name) : "";
         const catColor = CATEGORY_COLORS[e.category] || "#888";
         const srcLabel = SOURCE_LABELS[e.source] || e.source;
+        const isSelectable = e.source === "expense"; // only manual expenses support bulk-edit
+        const isSelected   = _expSelectionMode && isSelectable && _expSelectedIds.has(e.id);
+        const cbCell = _expSelectionMode
+          ? `<div class="exp-col-cb">${isSelectable
+              ? `<input type="checkbox" class="exp-row-cb"${isSelected ? " checked" : ""}>`
+              : ""}</div>`
+          : "";
 
         return `
-          <div class="exp-row">
+          <div class="exp-row${_expSelectionMode ? " selecting" : ""}${isSelected ? " exp-selected" : ""}"${isSelectable && _expSelectionMode ? ` data-selid="${escapeHtml(e.id)}"` : ""}>
+            ${cbCell}
             <div class="exp-col-date">${dateStr || "—"}</div>
             <div class="exp-col-name">
               <div class="exp-row-name">${escapeHtml(e.name)}${estBadge}</div>
@@ -9335,13 +9473,13 @@ function renderExpenses() {
             </div>
             <div class="exp-col-right">
               <div class="exp-row-amount">${currencySymbol(e.currency)}${fmt2(e.amount)}</div>
-              <button class="exp-edit-btn"
+              ${!_expSelectionMode ? `<button class="exp-edit-btn"
                 data-expsource="${escapeHtml(e.source)}"
                 data-expid="${escapeHtml(e.id)}"
                 data-exptownid="${escapeHtml(e.townId || "")}"
                 aria-label="Edit">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              </button>
+              </button>` : ""}
             </div>
           </div>`;
       }).join("");
@@ -9353,6 +9491,29 @@ function renderExpenses() {
     _expFiltersOpen = !_expFiltersOpen;
     renderExpenses();
   });
+
+  // Select-mode toggle
+  content.querySelector("#exp-select-toggle-btn")?.addEventListener("click", () => {
+    _expSelectionMode = !_expSelectionMode;
+    if (!_expSelectionMode) _expSelectedIds.clear();
+    renderExpenses();
+  });
+
+  // Row click in selection mode → toggle selection
+  content.querySelectorAll(".exp-row[data-selid]").forEach(row => {
+    row.addEventListener("click", () => {
+      const id = row.dataset.selid;
+      if (_expSelectedIds.has(id)) _expSelectedIds.delete(id);
+      else _expSelectedIds.add(id);
+      // Lightweight in-place update (avoid full re-render to keep scroll position)
+      row.classList.toggle("exp-selected", _expSelectedIds.has(id));
+      const cb = row.querySelector(".exp-row-cb");
+      if (cb) cb.checked = _expSelectedIds.has(id);
+      _updateExpSelectionBar();
+    });
+  });
+
+  _updateExpSelectionBar();
 
   // Sort buttons
   content.querySelectorAll(".exp-sort-btn[data-expsort]").forEach(btn => {
@@ -9422,6 +9583,106 @@ function renderExpenses() {
       }
     });
   });
+}
+
+/* ── Bulk expense selection helpers ────────────────────────── */
+
+function _updateExpSelectionBar() {
+  const bar = document.getElementById("exp-selection-bar");
+  if (!bar) return;
+  const n = _expSelectedIds.size;
+  bar.style.display = _expSelectionMode ? "flex" : "none";
+  const numEl = document.getElementById("exp-sel-count-num");
+  if (numEl) numEl.textContent = n;
+  const editBtn = document.getElementById("exp-sel-edit-btn");
+  if (editBtn) {
+    editBtn.textContent = n > 0 ? `Edit ${n} expense${n !== 1 ? "s" : ""}` : "Edit selected";
+    editBtn.disabled = n === 0;
+  }
+}
+
+function openBulkExpenseModal() {
+  const trip = state.trip;
+  const cats    = trip?.categories    || ["Food","Sights","Transport","Lodging","Shopping","Other"];
+  const methods = trip?.paymentMethods || ["Card","Cash"];
+  const towns   = state.towns || [];
+
+  document.getElementById("bulk-exp-category").innerHTML =
+    `<option value="">— keep —</option>` +
+    cats.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
+
+  document.getElementById("bulk-exp-town").innerHTML =
+    `<option value="__keep__">— keep —</option>` +
+    `<option value="">No specific city</option>` +
+    towns.map(t => `<option value="${escapeHtml(t.id)}">${escapeHtml(t.name)}</option>`).join("");
+
+  document.getElementById("bulk-exp-payment").innerHTML =
+    `<option value="">— keep —</option>` +
+    methods.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join("");
+
+  document.getElementById("bulk-exp-date").value = "";
+
+  _bulkStatusValue = "keep";
+  document.querySelectorAll(".bulk-status-btn").forEach(b =>
+    b.classList.toggle("active", b.dataset.bulkStatus === "keep")
+  );
+
+  const n = _expSelectedIds.size;
+  document.getElementById("bulk-modal-title").textContent =
+    `Edit ${n} expense${n !== 1 ? "s" : ""}`;
+
+  const errEl = document.getElementById("bulk-exp-error");
+  if (errEl) errEl.style.display = "none";
+
+  document.getElementById("bulk-expense-overlay").classList.add("visible");
+}
+
+function closeBulkExpenseModal() {
+  document.getElementById("bulk-expense-overlay")?.classList.remove("visible");
+}
+
+async function saveBulkExpenses() {
+  const ids = [..._expSelectedIds];
+  if (!ids.length || !activeTripId) return;
+
+  const category  = document.getElementById("bulk-exp-category").value;
+  const townRaw   = document.getElementById("bulk-exp-town").value;
+  const date      = document.getElementById("bulk-exp-date").value;
+  const payMethod = document.getElementById("bulk-exp-payment").value;
+
+  // Build updates — only include fields the user actually changed
+  const updates = {};
+  if (category)               updates.category      = category;
+  if (townRaw !== "__keep__")  updates.townId        = townRaw; // "" = no city
+  if (date)                   updates.date          = date;
+  if (payMethod)              updates.paymentMethod = payMethod;
+  if (_bulkStatusValue !== "keep") updates.isEstimated = _bulkStatusValue === "estimated";
+
+  const errEl   = document.getElementById("bulk-exp-error");
+  const saveBtn = document.getElementById("bulk-exp-save");
+
+  if (!Object.keys(updates).length) {
+    if (errEl) { errEl.textContent = "No changes selected — adjust at least one field."; errEl.style.display = "block"; }
+    return;
+  }
+
+  if (saveBtn) saveBtn.disabled = true;
+  try {
+    const batch = writeBatch(db);
+    ids.forEach(id => {
+      batch.update(doc(db, "trips", activeTripId, "expenses", id), updates);
+    });
+    await batch.commit();
+    closeBulkExpenseModal();
+    _expSelectedIds.clear();
+    _expSelectionMode = false;
+    renderExpenses();
+  } catch (err) {
+    console.error("Bulk save failed:", err);
+    if (errEl) { errEl.textContent = "Save failed — please try again."; errEl.style.display = "block"; }
+  } finally {
+    if (saveBtn) saveBtn.disabled = false;
+  }
 }
 
 function renderBudget() {
@@ -12954,6 +13215,32 @@ document.getElementById("exp-delete-btn")?.addEventListener("click", async () =>
 });
 document.getElementById("expense-modal-overlay")?.addEventListener("click", (e) => {
   if (e.target === document.getElementById("expense-modal-overlay")) closeExpenseModal();
+});
+
+// ── Bulk expense selection bar ───────────────────────────────
+document.getElementById("exp-sel-clear-btn")?.addEventListener("click", () => {
+  _expSelectedIds.clear();
+  _expSelectionMode = false;
+  renderExpenses();
+});
+document.getElementById("exp-sel-edit-btn")?.addEventListener("click", () => {
+  if (_expSelectedIds.size > 0) openBulkExpenseModal();
+});
+
+// ── Bulk expense edit modal ──────────────────────────────────
+document.getElementById("bulk-modal-close")?.addEventListener("click", closeBulkExpenseModal);
+document.getElementById("bulk-exp-cancel")?.addEventListener("click", closeBulkExpenseModal);
+document.getElementById("bulk-exp-save")?.addEventListener("click", saveBulkExpenses);
+document.getElementById("bulk-expense-overlay")?.addEventListener("click", (e) => {
+  if (e.target === document.getElementById("bulk-expense-overlay")) closeBulkExpenseModal();
+});
+document.querySelectorAll(".bulk-status-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    _bulkStatusValue = btn.dataset.bulkStatus;
+    document.querySelectorAll(".bulk-status-btn").forEach(b =>
+      b.classList.toggle("active", b === btn)
+    );
+  });
 });
 // Estimated toggle
 document.getElementById("exp-estimated-toggle")?.addEventListener("click", () => {
