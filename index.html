@@ -6704,8 +6704,18 @@ function renderItinerary() {
     }
     for (const key of Object.keys(byDate)) {
       byDate[key].sort((a, b) => {
-        if (a.scheduledTime && b.scheduledTime && a.scheduledTime !== b.scheduledTime)
-          return a.scheduledTime.localeCompare(b.scheduledTime);
+        const aTime = a.scheduledTime;
+        const bTime = b.scheduledTime;
+        // Both have times → sort chronologically
+        if (aTime && bTime) return aTime.localeCompare(bTime);
+        // One timed, one not → timed item first
+        if (aTime) return -1;
+        if (bTime) return 1;
+        // Neither timed: arrival projections pin to the top of the day.
+        // (Their `order` is inherited from the departure city and is meaningless here.)
+        if (a._arrivalView && !b._arrivalView) return -1;
+        if (!a._arrivalView && b._arrivalView) return 1;
+        // Both regular spots without times → respect drag order
         return (a.order ?? 9999) - (b.order ?? 9999);
       });
     }
