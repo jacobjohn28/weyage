@@ -2,6 +2,7 @@ import { state, activeTripId, setState } from "./state.js";
 import { db, doc, updateDoc, deleteDoc, addDoc, collection,
          serverTimestamp, writeBatch, arrayUnion, deleteField } from "./firebase.js";
 import { escapeHtml, localDateStr } from "./utils.js";
+import { openModal, openAccomModal } from "./itinerary.js";
 
 /* ─────────────────────────────────────────────────────────────
    CALLBACK REGISTRATION
