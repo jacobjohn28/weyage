@@ -4888,6 +4888,7 @@ registerBudgetCallbacks({
   pushModalHistory,
   popModalHistory,
   getDrawerBudgetMode: () => currentDrawerBudgetMode,
+  setDrawerBudgetMode: (v) => { currentDrawerBudgetMode = v; },
   clearDrawerContext: () => { currentDrawerSpot = null; currentDrawerAccomTownId = null; },
 });
 initLightbox();
