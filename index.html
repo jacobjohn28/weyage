@@ -1324,7 +1324,7 @@ import { registerPhotoCallbacks, getPendingBackfill, setPendingBackfill,
          closePhotoPicker, startBackfillForTrip, startPhotoBackfill, openPhotoPicker } from "./js/photos.js";
 import { registerDashboardCallbacks, renderDashboardTowns, renderDashboardMeta, renderDashboardToday, generateCityBriefing } from "./js/dashboard.js";
 import { registerGuidesCallbacks, generateSpotGuide, generateAllGuides, renderGuides, TYPE_COLORS } from "./js/guides.js";
-import { registerDocumentCallbacks, addAttachment, toggleAttachmentPin, deleteAttachment, renderDocuments, openLightbox, initLightbox } from "./js/documents.js";
+import { registerDocumentCallbacks, addAttachment, toggleAttachmentPin, deleteAttachment, renderDocuments, openLightbox, lbClose, initLightbox } from "./js/documents.js";
 import { registerDisruptionCallbacks, updateDisruptionBadge, renderDisruption } from "./js/disruption.js";
 import {
   registerBudgetCallbacks, refreshBudgetDrawer,
@@ -3135,6 +3135,55 @@ function renderSharePage(viewerUser, tripAllowedUsers, showWelcomeBanner = false
     <div id="sp-list-view" class="sp-city-cards" style="display:none">${listHTML}</div>
     <div id="sp-cal-view" class="sp-calendar">${_renderSpCalendar()}</div>`;
 }
+
+/* ─────────────────────────────────────────────────────────────
+   MODAL HISTORY (back-gesture interception)
+   ───────────────────────────────────────────────────────────── */
+let _handlingPopstate = false;
+
+function pushModalHistory() {
+  history.pushState({ weyageModal: true }, "");
+}
+
+function popModalHistory() {
+  if (!_handlingPopstate && history.state?.weyageModal) {
+    history.back();
+  }
+}
+
+window.addEventListener("popstate", () => {
+  _handlingPopstate = true;
+  try {
+    if (document.getElementById("trips-screen")?.classList.contains("visible")) {
+      if (activeTripId) {
+        localStorage.removeItem("last-screen");
+        showApp();
+      }
+      return;
+    }
+    if (document.getElementById("site-settings-overlay")?.classList.contains("visible")) {
+      closeSiteSettings(); return;
+    }
+    if (document.getElementById("photo-picker-overlay")?.classList.contains("visible")) {
+      closePhotoPicker(true); return;
+    }
+    if (document.getElementById("help-overlay")?.classList.contains("visible")) {
+      closeHelpOverlay(); return;
+    }
+    const lb = document.getElementById("lightbox-overlay");
+    if (lb?.classList.contains("open")) { lbClose(); return; }
+    const transit = document.getElementById("transit-overlay");
+    if (transit?.classList.contains("open")) { transit.classList.remove("open"); return; }
+    const visitPrice = document.getElementById("visit-price-overlay");
+    if (visitPrice?.classList.contains("open")) { visitPrice.classList.remove("open"); return; }
+    const tripSettings = document.getElementById("trip-settings-overlay");
+    if (tripSettings?.classList.contains("visible")) { closeTripSettings(); return; }
+    const drawer = document.getElementById("spot-drawer-overlay");
+    if (drawer?.classList.contains("visible")) { closeDrawer(); return; }
+  } finally {
+    _handlingPopstate = false;
+  }
+});
 
 /* ─────────────────────────────────────────────────────────────
    APP INIT

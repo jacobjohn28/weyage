@@ -193,7 +193,7 @@ export function openLightbox(attachments, startIndex, spotName) {
   lbRender();
 }
 
-function lbClose() {
+export function lbClose() {
   document.getElementById("lightbox-overlay").classList.remove("open");
   document.body.style.overflow = "";
   lbZoom = 1; lbPan = { x: 0, y: 0 }; lbDrag = null;
