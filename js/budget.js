@@ -1833,42 +1833,22 @@ export function renderBudget() {
     });
   });
 
-  // ── Wire: currency tab drag-to-reorder ──────────────────────
-  let _dragSrc = null;
-  content.querySelectorAll(".budget-tab[data-dragcur]").forEach(tab => {
-    tab.addEventListener("dragstart", e => {
-      _dragSrc = tab.dataset.dragcur;
-      e.dataTransfer.effectAllowed = "move";
-      requestAnimationFrame(() => tab.classList.add("tab-dragging"));
+  // ── Wire: currency tab drag-to-reorder (Sortable.js) ────────
+  const tabBar = content.querySelector(".budget-tab-bar");
+  if (tabBar && window.Sortable) {
+    window.Sortable.create(tabBar, {
+      animation: 150,
+      filter: '[data-budgettab="all"]',
+      preventOnFilter: false,
+      onEnd: () => {
+        const order = [...tabBar.querySelectorAll(".budget-tab[data-dragcur]")]
+          .map(el => el.dataset.dragcur);
+        _currencyOrder      = order;
+        _currencyOrderTripId = state.trip?.id || null;
+        _saveCurrencyOrder(_currencyOrderTripId, _currencyOrder);
+      },
     });
-    tab.addEventListener("dragend", () => {
-      tab.classList.remove("tab-dragging");
-      content.querySelectorAll(".budget-tab").forEach(t => t.classList.remove("tab-drag-over"));
-    });
-    tab.addEventListener("dragover", e => {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = "move";
-      content.querySelectorAll(".budget-tab").forEach(t => t.classList.remove("tab-drag-over"));
-      if (tab.dataset.dragcur !== _dragSrc) tab.classList.add("tab-drag-over");
-    });
-    tab.addEventListener("dragleave", () => tab.classList.remove("tab-drag-over"));
-    tab.addEventListener("drop", e => {
-      e.preventDefault();
-      tab.classList.remove("tab-drag-over");
-      const src = _dragSrc, tgt = tab.dataset.dragcur;
-      if (!src || !tgt || src === tgt) return;
-      const base = _currencyOrder || currencyList;
-      const next = [...base];
-      const si = next.indexOf(src), ti = next.indexOf(tgt);
-      if (si < 0 || ti < 0) return;
-      next.splice(si, 1);
-      next.splice(ti, 0, src);
-      _currencyOrder      = next;
-      _currencyOrderTripId = state.trip?.id || null;
-      _saveCurrencyOrder(_currencyOrderTripId, _currencyOrder);
-      renderBudget();
-    });
-  });
+  }
 
   // ── Wire: My Portion filter pills ──────────────────────────
   content.querySelectorAll(".budget-person-pill[data-myfilter]").forEach(pill => {

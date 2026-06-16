@@ -2860,11 +2860,10 @@
   .budget-chart-block canvas { position: absolute; top: 0; left: 0; width: 100% !important; height: 100% !important; }
   /* Center the tab bar on desktop so it sits visually between both columns */
   @media (min-width: 601px) { .budget-tab-bar { justify-content: center; } }
-  /* Drag-and-drop tab reordering */
-  .budget-tab[draggable="true"] { cursor: grab; }
-  .budget-tab[draggable="true"]:active { cursor: grabbing; }
-  .budget-tab.tab-dragging { opacity: 0.35; }
-  .budget-tab.tab-drag-over { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); }
+  /* Drag-and-drop tab reordering (Sortable.js) */
+  .budget-tab[data-dragcur] { cursor: grab; }
+  .budget-tab[data-dragcur].sortable-chosen { opacity: 0.5; cursor: grabbing; }
+  .budget-tab[data-dragcur].sortable-ghost { opacity: 0.25; }
 
   /* ── Settle-up panel — bottom, collapsible ───────────────── */
   .budget-settleup-section {
