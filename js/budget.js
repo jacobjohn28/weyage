@@ -7,8 +7,8 @@ import { escapeHtml, localDateStr } from "./utils.js";
    CALLBACK REGISTRATION
    ───────────────────────────────────────────────────────────── */
 const cb = {};
-export function registerBudgetCallbacks({ pushModalHistory, popModalHistory, getDrawerBudgetMode, clearDrawerContext }) {
-  Object.assign(cb, { pushModalHistory, popModalHistory, getDrawerBudgetMode, clearDrawerContext });
+export function registerBudgetCallbacks({ pushModalHistory, popModalHistory, getDrawerBudgetMode, setDrawerBudgetMode, clearDrawerContext }) {
+  Object.assign(cb, { pushModalHistory, popModalHistory, getDrawerBudgetMode, setDrawerBudgetMode, clearDrawerContext });
 }
 
 /* Refresh the budget drawer after external data change (e.g. Firestore snapshot) */
@@ -2615,7 +2615,7 @@ function _renderBudgetDrawer() {
 
 function openBudgetDrawer(groupLabel, currency, entries, mode = "", column = "group") {
   cb.clearDrawerContext?.();
-  currentDrawerBudgetMode = true;
+  cb.setDrawerBudgetMode?.(true);
 
   _bdEntries       = entries;
   _bdCurrency      = currency;
