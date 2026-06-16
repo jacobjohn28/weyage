@@ -5817,6 +5817,27 @@ function exitToTripList() {
   showTripList();
 }
 
+// Waits for the trip document AND towns AND spots snapshots to all fire at least once
+// before calling callback — prevents renderSharePage from running with empty subcollection data.
+// Falls back after 3 s so the page still renders even if subcollection reads are denied.
+function _waitForShareData(prevTowns, prevSpots, callback) {
+  let tripFired = false, townsFired = false, spotsFired = false, rendered = false;
+  const doRender = () => {
+    if (rendered) return;
+    rendered = true;
+    clearTimeout(timeout);
+    unsub();
+    callback();
+  };
+  const timeout = setTimeout(doRender, 3000);
+  const unsub = subscribe(() => {
+    if (state.trip) tripFired = true;
+    if (state.towns !== prevTowns) townsFired = true;
+    if (state.spots !== prevSpots) spotsFired = true;
+    if (tripFired && townsFired && spotsFired) doRender();
+  });
+}
+
 function openSharedTrip(tripId) {
   detachTripListeners();
   activeTripId = tripId;
@@ -5824,13 +5845,11 @@ function openSharedTrip(tripId) {
   document.getElementById("sp-page").innerHTML =
     `<div style="padding:60px 20px;text-align:center;color:var(--text-2)">Loading…</div>`;
   showShareSection(true);
+  const prevTowns = state.towns;
+  const prevSpots = state.spots;
   listenToTrip(tripId);
-  let resolved = false;
-  const unsub = subscribe(() => {
-    if (!state.trip || resolved) return;
-    resolved = true;
-    unsub();
-    renderSharePage(state.user, state.trip.allowedUsers || []);
+  _waitForShareData(prevTowns, prevSpots, () => {
+    renderSharePage(state.user, state.trip?.allowedUsers || []);
   });
 }
 
@@ -13037,12 +13056,10 @@ async function initSharedView(token) {
     `<div style="padding:60px 20px;text-align:center;color:var(--text-2)">Loading…</div>`;
   showShareSection(false);
 
+  const prevTowns = state.towns;
+  const prevSpots = state.spots;
   listenToTrip(activeTripId);
-  let resolved = false;
-  const unsub = subscribe(() => {
-    if (!state.trip || resolved) return;
-    resolved = true;
-    unsub();
+  _waitForShareData(prevTowns, prevSpots, () => {
     const viewerUser = (currentUser && !currentUser.isAnonymous) ? currentUser : null;
     renderSharePage(viewerUser, tripAllowedUsers);
   });
