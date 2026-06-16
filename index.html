@@ -13595,11 +13595,11 @@ function renderSharePage(viewerUser, tripAllowedUsers) {
     ${bannerHTML}
     ${heroHTML}
     <div class="sp-view-toggle">
-      <button class="sp-view-tab active" data-view="list" onclick="spSwitchView('list')">List</button>
-      <button class="sp-view-tab" data-view="calendar" onclick="spSwitchView('calendar')">Calendar</button>
+      <button class="sp-view-tab" data-view="list" onclick="spSwitchView('list')">List</button>
+      <button class="sp-view-tab active" data-view="calendar" onclick="spSwitchView('calendar')">Calendar</button>
     </div>
-    <div id="sp-list-view" class="sp-city-cards">${listHTML}</div>
-    <div id="sp-cal-view" class="sp-calendar" style="display:none">${_renderSpCalendar()}</div>`;
+    <div id="sp-list-view" class="sp-city-cards" style="display:none">${listHTML}</div>
+    <div id="sp-cal-view" class="sp-calendar">${_renderSpCalendar()}</div>`;
 }
 
 /* ─────────────────────────────────────────────────────────────
