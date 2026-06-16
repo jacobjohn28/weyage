@@ -2,7 +2,7 @@
    Weyage Service Worker
    Deployed at: /weyage/ subdirectory on GitHub Pages
    ============================================================ */
-const CACHE_NAME = "weyage-v12";
+const CACHE_NAME = "weyage-v13";
 
 // Static assets that rarely change — cache-first
 const STATIC_ASSETS = [
@@ -19,6 +19,7 @@ const STATIC_ASSETS = [
   "/weyage/js/guides.js",
   "/weyage/js/documents.js",
   "/weyage/js/disruption.js",
+  "/weyage/js/budget.js",
   "/weyage/manifest.json",
   "/weyage/icon.svg",
   "/weyage/icon-192.png",
