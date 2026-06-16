@@ -2,14 +2,13 @@ import { state, activeTripId, setState } from "./state.js";
 import { db, doc, updateDoc, deleteDoc, addDoc, collection,
          serverTimestamp, writeBatch, arrayUnion, deleteField } from "./firebase.js";
 import { escapeHtml, localDateStr } from "./utils.js";
-import { openModal, openAccomModal } from "./itinerary.js";
 
 /* ─────────────────────────────────────────────────────────────
    CALLBACK REGISTRATION
    ───────────────────────────────────────────────────────────── */
 const cb = {};
-export function registerBudgetCallbacks({ pushModalHistory, popModalHistory, getDrawerBudgetMode, setDrawerBudgetMode, clearDrawerContext }) {
-  Object.assign(cb, { pushModalHistory, popModalHistory, getDrawerBudgetMode, setDrawerBudgetMode, clearDrawerContext });
+export function registerBudgetCallbacks({ pushModalHistory, popModalHistory, getDrawerBudgetMode, setDrawerBudgetMode, clearDrawerContext, openModal, openAccomModal }) {
+  Object.assign(cb, { pushModalHistory, popModalHistory, getDrawerBudgetMode, setDrawerBudgetMode, clearDrawerContext, openModal, openAccomModal });
 }
 
 /* Refresh the budget drawer after external data change (e.g. Firestore snapshot) */
@@ -1610,10 +1609,10 @@ export function renderExpenses() {
         openExpenseModal(id);
       } else if (source === "spot") {
         const spot = state.spots.find(s => s.id === id);
-        if (spot) openModal(spot);
+        if (spot) cb.openModal(spot);
       } else if (source === "accommodation") {
         const town = state.towns.find(t => t.id === townId);
-        if (town) openAccomModal(town);
+        if (town) cb.openAccomModal(town);
       } else if (source === "transit") {
         const town = state.towns.find(t => t.id === townId);
         const entry = (town?.transitExpenses || []).find(e => e.id === id);
@@ -2601,10 +2600,10 @@ function _renderBudgetDrawer() {
       const townId = btn.dataset.bdOpenTownid;
       if (source === "spot") {
         const spot = state.spots.find(s => s.id === id);
-        if (spot) openModal(spot);
+        if (spot) cb.openModal(spot);
       } else if (source === "accommodation") {
         const town = state.towns.find(t => t.id === townId);
-        if (town) openAccomModal(town);
+        if (town) cb.openAccomModal(town);
       } else if (source === "transit") {
         const town = state.towns.find(t => t.id === townId);
         const entry = (town?.transitExpenses || []).find(e => e.id === id);

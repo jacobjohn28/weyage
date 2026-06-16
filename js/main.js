@@ -379,6 +379,8 @@ registerBudgetCallbacks({
   getDrawerBudgetMode: () => currentDrawerBudgetMode,
   setDrawerBudgetMode: setCurrentDrawerBudgetMode,
   clearDrawerContext: () => { setCurrentDrawerSpot(null); setCurrentDrawerAccomTownId(null); },
+  openModal,
+  openAccomModal,
 });
 registerItineraryCallbacks({
   pushModalHistory,
