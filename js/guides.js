@@ -2,7 +2,8 @@ import { GEMINI_CONFIG } from "./config.js";
 import { state } from "./state.js";
 import { db, doc, updateDoc, serverTimestamp } from "./firebase.js";
 import { activeTripId } from "./state.js";
-import { escapeHtml, localDateStr, extractTripDestination } from "./utils.js";
+import { escapeHtml, localDateStr } from "./utils.js";
+import { extractTripDestination } from "./photos.js";
 
 /* ─────────────────────────────────────────────────────────────
    CALLBACK REGISTRATION
