@@ -2637,7 +2637,7 @@ function openBudgetDrawer(groupLabel, currency, entries, mode = "", column = "gr
 
   _renderBudgetDrawer();
 
-  pushModalHistory();
+  cb.pushModalHistory();
   document.getElementById("spot-drawer-overlay").classList.add("visible");
   document.body.style.overflow = "hidden";
 }
