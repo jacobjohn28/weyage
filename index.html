@@ -5830,7 +5830,7 @@ function openSharedTrip(tripId) {
     if (!state.trip || resolved) return;
     resolved = true;
     unsub();
-    renderSharePage(state.user);
+    renderSharePage(state.user, state.trip.allowedUsers || []);
   });
 }
 
@@ -12973,24 +12973,25 @@ async function generateAndCopyShareLink(btn) {
 
 function showInvalidShareLink() {
   document.getElementById("boot-screen").classList.add("hidden");
-  document.getElementById("app").classList.add("visible");
-  document.querySelector(".main").innerHTML = `
-    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:16px;color:var(--text-3);padding:40px">
+  showShareSection(false);
+  document.getElementById("sp-page").innerHTML = `
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:16px;color:var(--text-3);padding:40px;text-align:center">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="40" height="40"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      <strong style="color:var(--text-1);font-size:1.1rem">Invalid or expired link</strong>
-      <span style="font-size:0.875rem">Ask the trip organiser to share a fresh link.</span>
+      <strong style="color:var(--text);font-size:1.1rem">Link not found</strong>
+      <span style="font-size:0.875rem;max-width:280px">This share link may have expired or been removed. Ask the trip organiser to generate a new one.</span>
     </div>`;
 }
 
 async function initSharedView(token) {
   await initFirebase();
 
-  // Check if the user is already signed in before doing anything
+  // Wait for Firebase to determine auth state (handles persistence restoration)
   const existingUser = await new Promise(resolve => {
     const unsub = onAuthStateChanged(auth, u => { unsub(); resolve(u); });
   });
 
-  // Ensure we have some auth identity (anonymous if not signed in)
+  // Ensure we have some auth identity for Firestore reads.
+  // Only sign in anonymously if not already signed in — never override a Google session.
   if (!existingUser) {
     try {
       await signInAnonymously(auth);
@@ -13002,47 +13003,35 @@ async function initSharedView(token) {
     }
   }
 
-  // Look up the trip by share token
-  // Firestore rules must allow: authenticated reads where resource.data.shareToken != null
-  let tripDoc;
+  // Look up the trip by share token.
+  // Firestore rule required: allow read if request.auth != null && resource.data.shareToken != null
+  let tripDocId, tripAllowedUsers;
   try {
     const snap = await getDocs(query(collection(db, "trips"), where("shareToken", "==", token)));
     if (snap.empty) { showInvalidShareLink(); return; }
-    tripDoc = snap.docs[0];
-    activeTripId = tripDoc.id;
+    tripDocId = snap.docs[0].id;
+    tripAllowedUsers = snap.docs[0].data().allowedUsers || [];
   } catch (err) {
     console.error("Share token lookup failed:", err);
     showInvalidShareLink();
     return;
   }
 
-  const tripData = tripDoc.data();
+  activeTripId = tripDocId;
   const currentUser = auth.currentUser;
 
-  // Signed-in (non-anonymous) user who is already a collaborator → open as full trip
+  // For signed-in Google users who are NOT collaborators, record the view
   if (currentUser && !currentUser.isAnonymous) {
     const email = currentUser.email.toLowerCase();
-    if ((tripData.allowedUsers || []).includes(email)) {
+    if (!tripAllowedUsers.includes(email)) {
       try {
-        const approvalSnap = await getDoc(doc(db, "appUsers", email));
-        if (approvalSnap.exists()) {
-          setState({ user: currentUser });
-          setupUserChip(currentUser);
-          _initialTripRouted = true; // skip auto-routing; we're jumping straight to the trip
-          loadSiteConfig();
-          listenToAllTrips(currentUser.email);
-          switchTrip(activeTripId);
-          return;
-        }
-      } catch (_) { /* fall through to share view */ }
+        await updateDoc(doc(db, "trips", activeTripId), { shareViewers: arrayUnion(email) });
+      } catch (_) { /* non-fatal — rules may not allow this yet */ }
     }
-    // Not a collaborator — record that they've viewed this trip
-    try {
-      await updateDoc(doc(db, "trips", activeTripId), { shareViewers: arrayUnion(email) });
-    } catch (_) { /* non-fatal */ }
   }
 
-  // Show the standalone share page (anonymous or non-collaborator logged-in user)
+  // Always show the share page for share link visits.
+  // Collaborators see an "Open in Weyage" button; anonymous users see a clean view.
   document.getElementById("boot-screen").classList.add("hidden");
   document.getElementById("sp-page").innerHTML =
     `<div style="padding:60px 20px;text-align:center;color:var(--text-2)">Loading…</div>`;
@@ -13054,14 +13043,22 @@ async function initSharedView(token) {
     if (!state.trip || resolved) return;
     resolved = true;
     unsub();
-    renderSharePage(currentUser && !currentUser.isAnonymous ? currentUser : null);
+    const viewerUser = (currentUser && !currentUser.isAnonymous) ? currentUser : null;
+    renderSharePage(viewerUser, tripAllowedUsers);
   });
+}
+
+function _openFullTripFromShare() {
+  localStorage.setItem("last-trip-id", activeTripId);
+  localStorage.removeItem("last-screen");
+  // Reload without the ?share= param so init() runs the normal auth flow
+  location.href = location.pathname;
 }
 
 /* ─────────────────────────────────────────────────────────────
    SHARE PAGE RENDERER
    ───────────────────────────────────────────────────────────── */
-function renderSharePage(viewerUser) {
+function renderSharePage(viewerUser, tripAllowedUsers) {
   const container = document.getElementById("sp-page");
   if (!container || !state.trip) return;
 
@@ -13099,11 +13096,18 @@ function renderSharePage(viewerUser) {
   }
   allDays.sort((a, b) => a.date.localeCompare(b.date));
 
-  // Banner for known logged-in viewers who aren't collaborators
+  // Banner logic
+  const allowedUsers = tripAllowedUsers || trip.allowedUsers || [];
   let bannerHTML = "";
   if (viewerUser) {
-    const isCollab = (trip.allowedUsers || []).includes(viewerUser.email?.toLowerCase());
-    if (!isCollab) {
+    const email = viewerUser.email?.toLowerCase() || "";
+    const isCollab = allowedUsers.includes(email);
+    if (isCollab) {
+      bannerHTML = `<div class="sp-banner" style="display:flex;align-items:center;gap:10px">
+        <span style="flex:1">You have full access to this trip.</span>
+        <button onclick="_openFullTripFromShare()" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:0.8125rem;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">Open in Weyage</button>
+      </div>`;
+    } else {
       bannerHTML = `<div class="sp-banner">Viewing as <strong>${escapeHtml(viewerUser.displayName || viewerUser.email)}</strong>. This trip has been saved to your Shared Trips list.</div>`;
     }
   }
