@@ -1319,6 +1319,9 @@ import { db, auth, initFirebase, isConfigured, doc, getDoc, setDoc, updateDoc, d
 import { state, subscribe, notify, setState, activeTripId, setActiveTripId, _tripSettingsId, setTripSettingsId } from "./js/state.js";
 import { applyTheme, initTheme } from "./js/theme.js";
 import { localDateStr, fmtDateRange, fmtSpreadDates, nightsBetween, daysUntil, fmtTime12, fmtDayHeader, escapeHtml, emailToName, mapsLink, mapsSearchBtn, linkifyNotes, wirePhoneCopyBtns, typeIconSVG } from "./js/utils.js";
+import { registerPhotoCallbacks, getPendingBackfill, setPendingBackfill,
+         extractTripDestination, resolveTownImage, fetchPexelsPhotos,
+         closePhotoPicker, startBackfillForTrip, startPhotoBackfill, openPhotoPicker } from "./js/photos.js";
 
 
 /* Access is managed via the appUsers collection in Firestore — no hardcoded emails needed. */
@@ -1544,8 +1547,8 @@ function listenToTrip(tripId) {
       const towns = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       towns.sort((a, b) => (a.order || 0) - (b.order || 0));
       setState({ towns });
-      if (_pendingBackfill && towns.length > 0) {
-        _pendingBackfill = false;
+      if (getPendingBackfill() && towns.length > 0) {
+        setPendingBackfill(false);
         setTimeout(startPhotoBackfill, 600);
       }
       // Sync cityNames onto the trip doc so the trips list can display them without extra fetches.
@@ -2057,166 +2060,7 @@ function renderSidebarTowns() {
    IMAGE FETCHING — Wikipedia REST API + localStorage cache
    ───────────────────────────────────────────────────────────── */
 // Fixed city images — keyed by base city name (parenthetical suffixes stripped)
-function extractTripDestination(name) {
-  const filler = new Set(["spring","summer","autumn","fall","winter","trip","tour","holiday","vacation","travel","adventure","my"]);
-  const words = name.split(/\s+/).filter(w => !/^\d+$/.test(w) && !filler.has(w.toLowerCase()));
-  return words.join(" ").trim() || name;
-}
-
-function resolveTownImage(town) {
-  return town.photoUrl || town.customImage || town.image || "";
-}
-
-async function fetchPexelsPhotos(query, count = 3) {
-  if (!PEXELS_CONFIG.apiKey) return [];
-  try {
-    const resp = await fetch(
-      `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=${count}&orientation=landscape`,
-      { headers: { Authorization: PEXELS_CONFIG.apiKey } }
-    );
-    if (!resp.ok) { console.warn("Pexels error", resp.status); return []; }
-    const data = await resp.json();
-    return (data.photos || []).map(p => ({
-      url: p.src.large2x || p.src.large,
-      thumb: p.src.medium,
-      credit: p.photographer,
-      creditUrl: p.photographer_url
-    }));
-  } catch (err) {
-    console.warn("Pexels fetch failed:", err);
-    return [];
-  }
-}
-
-let _photoPickerTownId   = null;
-let _photoPickerTownName = null;
-let _backfillQueue   = [];   // [{id, name}, …] — towns still to process during backfill
-let _backfillTotal   = 0;    // total towns when backfill started (for progress display)
-let _pendingBackfill = false; // set before switchTrip(); cleared when towns load
-
-function closePhotoPicker(cancelBackfill = false) {
-  document.getElementById("photo-picker-overlay").classList.remove("visible");
-  document.body.style.overflow = "";
-  _photoPickerTownId   = null;
-  _photoPickerTownName = null;
-
-  if (cancelBackfill || !_backfillQueue.length) {
-    _backfillQueue = [];
-    _backfillTotal = 0;
-    return;
-  }
-
-  // Advance to the next town in the backfill sequence
-  const next = _backfillQueue.shift();
-  setTimeout(() => openPhotoPicker(next.id, next.name), 180);
-}
-
-function startBackfillForTrip(tripId) {
-  if (!tripId) return;
-  if (!PEXELS_CONFIG.apiKey) {
-    const hint = document.getElementById("site-settings-backfill-hint");
-    hint.textContent = "No Pexels API key configured — add pexelsApiKey to config/site in Firestore first.";
-    hint.style.display = "block";
-    return;
-  }
-  closeSiteSettings();
-  _pendingBackfill = true;
-  setTimeout(() => switchTrip(tripId), 150);
-}
-
-function startPhotoBackfill() {
-  if (!PEXELS_CONFIG.apiKey) {
-    alert("No Pexels API key configured. Add pexelsApiKey to config/site in Firestore.");
-    return;
-  }
-  const missing = (state.towns || []).filter(t => !t.photoUrl);
-  if (!missing.length) {
-    alert("All cities already have a photo assigned — nothing to backfill.");
-    return;
-  }
-
-  _backfillQueue = missing.map(t => ({ id: t.id, name: t.name }));
-  _backfillTotal = _backfillQueue.length;
-  const first = _backfillQueue.shift();
-  setTimeout(() => openPhotoPicker(first.id, first.name), 320);
-}
-
-async function openPhotoPicker(townId, townName) {
-  if (!PEXELS_CONFIG.apiKey) return;
-  _photoPickerTownId   = townId;
-  _photoPickerTownName = townName;
-
-  const overlay = document.getElementById("photo-picker-overlay");
-  document.getElementById("photo-picker-city-name").textContent = townName;
-  document.getElementById("photo-picker-grid").innerHTML = "";
-  document.getElementById("photo-picker-loading").style.display = "block";
-  document.getElementById("photo-picker-error").style.display = "none";
-
-  // Show backfill progress if we're in a sequence
-  const progressEl = document.getElementById("photo-picker-progress");
-  if (_backfillTotal > 1) {
-    const current = _backfillTotal - _backfillQueue.length; // already shifted, so this is the current index
-    progressEl.textContent = `City ${current} of ${_backfillTotal}`;
-    progressEl.style.display = "";
-    document.getElementById("photo-picker-skip").textContent =
-      _backfillQueue.length ? "Skip this city →" : "Skip";
-  } else {
-    progressEl.style.display = "none";
-    document.getElementById("photo-picker-skip").textContent = "Skip for now";
-  }
-
-  overlay.classList.add("visible");
-  document.body.style.overflow = "hidden";
-  pushModalHistory();
-
-  const photos = await fetchPexelsPhotos(`${townName} travel city`);
-
-  document.getElementById("photo-picker-loading").style.display = "none";
-
-  if (!photos.length) {
-    document.getElementById("photo-picker-error").style.display = "block";
-    return;
-  }
-
-  const grid = document.getElementById("photo-picker-grid");
-  grid.innerHTML = photos.map((p, i) => `
-    <div class="photo-picker-item" data-index="${i}">
-      <div class="photo-picker-img-wrap">
-        <img src="${escapeHtml(p.thumb)}" alt="${escapeHtml(p.credit)}" loading="lazy" class="photo-picker-img">
-        <div class="photo-picker-select-overlay">
-          <button class="photo-picker-select-btn btn-primary" data-index="${i}" style="font-size:0.8125rem;padding:7px 16px">Use this photo</button>
-        </div>
-      </div>
-      <div class="photo-picker-credit">
-        Photo by <a href="${escapeHtml(p.creditUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(p.credit)}</a> on Pexels
-      </div>
-    </div>
-  `).join("");
-
-  grid.querySelectorAll(".photo-picker-select-btn").forEach(btn => {
-    btn.addEventListener("click", async () => {
-      const idx = Number(btn.dataset.index);
-      const photo = photos[idx];
-      const tid = _photoPickerTownId;
-      closePhotoPicker();
-      try {
-        // Save photo to the town document
-        await updateDoc(doc(db, "trips", activeTripId, "towns", tid), {
-          photoUrl: photo.url,
-          photoCredit: photo.credit,
-          photoCreditUrl: photo.creditUrl
-        });
-        // Mirror the URL on the parent trip doc so trip cards can show a collage
-        // without additional Firestore reads
-        updateDoc(doc(db, "trips", activeTripId), {
-          [`cityPhotos.${tid}`]: photo.url
-        }).catch(() => {});
-      } catch (err) {
-        console.error("Failed to save photo:", err);
-      }
-    });
-  });
-}
+/* photos — see js/photos.js */
 
 // Day collapse overrides — keyed "townId:dateKey", value true=collapsed false=expanded
 // Only entries where the user explicitly clicked are stored; auto-rule applies to the rest.
@@ -9286,6 +9130,9 @@ function renderSharePage(viewerUser, tripAllowedUsers, showWelcomeBanner = false
 /* ─────────────────────────────────────────────────────────────
    APP INIT
    ───────────────────────────────────────────────────────────── */
+// Wire up callbacks for modules that have forward references
+registerPhotoCallbacks({ closeSiteSettings, switchTrip, pushModalHistory });
+
 async function init() {
   initTheme();
   _setStatusOnline();
