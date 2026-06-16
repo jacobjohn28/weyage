@@ -1310,70 +1310,18 @@
 <input type="file" id="attach-file-input" accept="image/*" style="display:none">
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script type="module">
-// Firebase SDK is loaded via dynamic import inside initFirebase() rather than
-// static imports. This ensures each module is fully registered before we use
-// its exports, avoiding "Component auth has not been registered yet" errors
-// that can occur with parallel static imports on some networks/browsers.
-const FIREBASE_VERSION = "10.13.2";
-const FIREBASE_BASE = `https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}`;
+// Firebase SDK is loaded via dynamic import inside initFirebase().
+import { FIREBASE_CONFIG, GEMINI_CONFIG, PEXELS_CONFIG, FIREBASE_VERSION, FIREBASE_BASE } from "./js/config.js";
+import { state, subscribe, notify, setState, activeTripId, setActiveTripId, _tripSettingsId, setTripSettingsId } from "./js/state.js";
 
 let initializeApp, getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, signInAnonymously;
 let initializeFirestore, persistentLocalCache, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs;
 let onSnapshot, writeBatch, serverTimestamp, arrayUnion, addDoc;
 let query, where, arrayRemove, deleteField;
 
-/* ─────────────────────────────────────────────────────────────
-   FIREBASE CONFIG
-   ───────────────────────────────────────────────────────────── */
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyA5zjXweiXgFakCYMQCE0tEkUrhI4UqwiM",
-  authDomain: "weyage-ed0cb.firebaseapp.com",
-  projectId: "weyage-ed0cb",
-  storageBucket: "weyage-ed0cb.firebasestorage.app",
-  messagingSenderId: "1002189778782",
-  appId: "1:1002189778782:web:81493906785a07658b69cf"
-};
-
-/* ─────────────────────────────────────────────────────────────
-   GEMINI CONFIG
-   ───────────────────────────────────────────────────────────── */
-const GEMINI_CONFIG = {
-  apiKey: "",
-  model: "gemini-3.1-flash-lite",
-};
-
-const PEXELS_CONFIG = { apiKey: "" };
-
 /* Access is managed via the appUsers collection in Firestore — no hardcoded emails needed. */
 
-/* ─────────────────────────────────────────────────────────────
-   TRIP CONSTANTS — pre-populated from initial planning
-   ───────────────────────────────────────────────────────────── */
-// activeTripId is a module-level variable (NOT in state) — mirrors pendingScrollTownId pattern
-// to avoid re-render loops. Set by switchTrip(), read by all Firestore helpers.
-let activeTripId = null;
-let _tripSettingsId = null; // trip whose settings drawer is currently open
-
-/* ─────────────────────────────────────────────────────────────
-   STATE STORE — tiny reactive object
-   ───────────────────────────────────────────────────────────── */
-const state = {
-  user: null,
-  trip: null,
-  towns: [],
-  spots: [],
-  expenses: [],
-  allTrips: [],
-  currentView: "itinerary",
-  focusTownId: null,
-  theme: "light",
-  online: navigator.onLine,
-  shareMode: false,
-};
-const listeners = new Set();
-const subscribe = (fn) => { listeners.add(fn); return () => listeners.delete(fn); };
-const notify = () => listeners.forEach(fn => fn(state));
-const setState = (patch) => { Object.assign(state, patch); notify(); };
+/* activeTripId and _tripSettingsId are imported from js/state.js */
 
 /* ─────────────────────────────────────────────────────────────
    THEME — system preference + manual override
@@ -1587,7 +1535,7 @@ document.getElementById("sp-back-btn")?.addEventListener("click", () => {
     location.href = location.pathname;
   } else {
     detachTripListeners();
-    activeTripId = null;
+    setActiveTripId(null);
     setState({ trip: null, towns: [], spots: [] });
     showTripList();
   }
@@ -1790,7 +1738,7 @@ function listenToAllTrips(userEmail) {
 // ── Switch into a trip ──────────────────────────────────────────────────────
 function switchTrip(tripId) {
   detachTripListeners();
-  activeTripId = tripId;
+  setActiveTripId(tripId);
   setState({ trip: null, towns: [], spots: [] });
   localStorage.setItem("last-trip-id", tripId);
   localStorage.removeItem("last-screen");
@@ -1801,7 +1749,7 @@ function switchTrip(tripId) {
 // ── Exit back to trip list ───────────────────────────────────────────────────
 function exitToTripList() {
   detachTripListeners();
-  activeTripId = null;
+  setActiveTripId(null);
   // GEMINI_CONFIG.apiKey is site-level — persists across trips
   // PEXELS_CONFIG.apiKey is site-level — persists across trips
   setState({ trip: null, towns: [], spots: [] });
@@ -1832,7 +1780,7 @@ function _waitForShareData(prevTowns, prevSpots, callback) {
 
 function openSharedTrip(tripId) {
   detachTripListeners();
-  activeTripId = tripId;
+  setActiveTripId(tripId);
   setState({ trip: null, towns: [], spots: [] });
   document.getElementById("sp-page").innerHTML =
     `<div style="padding:60px 20px;text-align:center;color:var(--text-2)">Loading…</div>`;
@@ -8736,7 +8684,7 @@ function renderExtraCurrencyChips() {
 function openTripSettings(tripId) {
   const trip = state.allTrips.find(t => t.id === tripId);
   if (!trip) return;
-  _tripSettingsId = tripId;
+  setTripSettingsId(tripId);
 
   // Populate edit fields
   document.getElementById("ts-name").value = trip.name || "";
@@ -8826,7 +8774,7 @@ function openTripSettings(tripId) {
 
 function closeTripSettings() {
   document.getElementById("trip-settings-overlay").classList.remove("visible");
-  _tripSettingsId = null;
+  setTripSettingsId(null);
 }
 
 function renderTripSettingsCollaborators(trip) {
@@ -9028,7 +8976,7 @@ async function initSharedView(token) {
     return;
   }
 
-  activeTripId = tripDocId;
+  setActiveTripId(tripDocId);
   const currentUser = auth.currentUser;
 
   // For signed-in Google users who are NOT collaborators, record the view
@@ -9560,7 +9508,7 @@ async function init() {
       _sharedTripsUnsub = null;
       _myOwnedTrips = [];
       _mySharedTrips = [];
-      activeTripId = null;
+      setActiveTripId(null);
       setState({ user: null, trip: null, towns: [], spots: [], allTrips: [] });
       showAuthScreen();
       return;
