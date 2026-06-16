@@ -1993,10 +1993,16 @@
   .sp-cal-month-hd { font-size: 0.8125rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-2); padding: 14px 0 8px; }
   .sp-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 16px; }
   .sp-cal-dow { font-size: 0.5625rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--text-3); text-align: center; padding: 6px 0 5px; background: var(--surface); border-bottom: 1px solid var(--border); }
-  .sp-cal-cell { min-height: 52px; padding: 4px 2px 3px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
-  .sp-cal-cell:nth-child(7n) { border-right: none; }
-  .sp-cal-day-num { font-size: 0.5625rem; font-weight: 600; color: var(--text-3); text-align: right; line-height: 1; margin-bottom: 3px; padding-right: 2px; }
-  .sp-cal-block { border-radius: 3px; padding: 1px 3px; margin-bottom: 2px; font-size: 0.5625rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; line-height: 1.65; color: #fff; }
+  .sp-cal-week { grid-column: 1 / -1; border-top: 1px solid var(--border); }
+  .sp-cal-week-days { display: grid; grid-template-columns: repeat(7, 1fr); }
+  .sp-cal-cell { min-height: 26px; padding: 3px 3px 2px; border-right: 1px solid var(--border); }
+  .sp-cal-cell:last-child { border-right: none; }
+  .sp-cal-cell-empty { background: var(--surface); }
+  .sp-cal-day-num { font-size: 0.5625rem; font-weight: 600; color: var(--text-3); text-align: right; line-height: 1; }
+  .sp-cal-week-events { display: grid; grid-template-columns: repeat(7, 1fr); padding: 3px 0 5px; }
+  .sp-cal-span { display: flex; align-items: center; border-radius: 3px; padding: 3px 4px 3px 6px; margin: 0 2px; font-size: 0.5625rem; font-weight: 700; color: #fff; cursor: pointer; line-height: 1; overflow: hidden; gap: 3px; -webkit-tap-highlight-color: transparent; }
+  .sp-cal-span-label { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sp-cal-span:active { opacity: .85; }
 
   /* Share drawer */
   .sp-drawer { position: fixed; inset: 0; z-index: 200; display: none; }
@@ -13426,27 +13432,47 @@ function _renderSpCalendar() {
   const endMonth = new Date(endD.getFullYear(), endD.getMonth(), 1);
   while (cur <= endMonth) { months.push(new Date(cur)); cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1); }
   const dowLabels = ["Mo","Tu","We","Th","Fr","Sa","Su"];
+  const chevron = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="8" height="8" style="flex-shrink:0;opacity:.9"><polyline points="9 18 15 12 9 6"/></svg>`;
   return months.map(monthStart => {
     const year = monthStart.getFullYear();
     const month = monthStart.getMonth();
     const monthName = monthStart.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const firstDow = (new Date(year, month, 1).getDay() + 6) % 7;
-    let cells = "";
-    for (let i = 0; i < firstDow; i++) cells += `<div class="sp-cal-cell"></div>`;
+    const weeks = [];
+    let week = new Array(7).fill(null);
+    let dow = firstDow;
     for (let day = 1; day <= daysInMonth; day++) {
       const ds = `${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
-      const active = towns.filter(t => t.arrivalDate && t.departureDate && ds >= t.arrivalDate && ds <= t.departureDate);
-      const blocks = active.slice(0, 2).map(t => {
-        const color = _spCityColors[towns.indexOf(t) % _spCityColors.length];
-        const showLabel = ds === t.arrivalDate || day === 1;
-        const name = t.name.length > 8 ? t.name.slice(0, 7) + "…" : t.name;
-        return `<div class="sp-cal-block" style="background:${color}" onclick="spOpenCityDrawer('${t.id}')" title="${escapeHtml(t.name)}">${showLabel ? escapeHtml(name) : "&nbsp;"}</div>`;
-      }).join("");
-      cells += `<div class="sp-cal-cell"><div class="sp-cal-day-num">${day}</div>${blocks}</div>`;
+      week[dow] = { day, ds };
+      if (++dow === 7) { weeks.push([...week]); week = new Array(7).fill(null); dow = 0; }
     }
+    if (dow > 0) weeks.push([...week]);
+    const weeksHTML = weeks.map(slots => {
+      const dayRowHTML = slots.map(s =>
+        s ? `<div class="sp-cal-cell"><div class="sp-cal-day-num">${s.day}</div></div>`
+          : `<div class="sp-cal-cell sp-cal-cell-empty"></div>`
+      ).join("");
+      const spans = [];
+      towns.forEach((town, tIdx) => {
+        if (!town.arrivalDate || !town.departureDate) return;
+        let start = -1, end = -1;
+        slots.forEach((s, i) => {
+          if (s && s.ds >= town.arrivalDate && s.ds <= town.departureDate) {
+            if (start === -1) start = i;
+            end = i;
+          }
+        });
+        if (start === -1) return;
+        const color = _spCityColors[tIdx % _spCityColors.length];
+        const showLabel = slots[start]?.ds === town.arrivalDate || start === 0;
+        const name = town.name.length > 10 ? town.name.slice(0, 9) + "…" : town.name;
+        spans.push(`<div class="sp-cal-span" style="grid-column:${start+1}/span ${end-start+1};background:${color}" onclick="spOpenCityDrawer('${town.id}')" title="${escapeHtml(town.name)}"><span class="sp-cal-span-label">${showLabel ? escapeHtml(name) : ""}</span>${chevron}</div>`);
+      });
+      return `<div class="sp-cal-week"><div class="sp-cal-week-days">${dayRowHTML}</div>${spans.length ? `<div class="sp-cal-week-events">${spans.join("")}</div>` : ""}</div>`;
+    }).join("");
     return `<div class="sp-cal-month-hd">${monthName}</div>
-      <div class="sp-cal-grid">${dowLabels.map(d => `<div class="sp-cal-dow">${d}</div>`).join("")}${cells}</div>`;
+      <div class="sp-cal-grid">${dowLabels.map(d => `<div class="sp-cal-dow">${d}</div>`).join("")}${weeksHTML}</div>`;
   }).join("");
 }
 
