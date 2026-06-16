@@ -13282,10 +13282,28 @@ function spOpenTransportDetail(spotId) {
   const typeIcons = { train:"🚂", flight:"✈️", bus:"🚌", ferry:"⛴️", car:"🚗", taxi:"🚕", metro:"🚇", tram:"🚊" };
   const icon = typeIcons[spot.transportSubtype] || "🚌";
   const label = spot.transportSubtype ? spot.transportSubtype.charAt(0).toUpperCase() + spot.transportSubtype.slice(1) : "Transport";
-  _spPushDrawer(_spTransportDetailHTML(spotId), icon, spot.name || label, "");
+  _spDrawerHistory = [];
+  _spShowDrawer(_spTransportDetailHTML(spotId), icon, spot.name || label, "");
 }
 
 function spOpenAccomDetail(townId) {
+  const town = state.towns.find(t => t.id === townId);
+  if (!town?.accommodation?.name) return;
+  _spDrawerHistory = [];
+  _spShowDrawer(_spAccomDetailHTML(townId), "🏨", town.accommodation.name, town.name);
+}
+
+/* Called from within city drawer — pushes so user can navigate back to city level */
+function _spDrillTransportDetail(spotId) {
+  const spot = state.spots.find(s => s.id === spotId);
+  if (!spot) return;
+  const typeIcons = { train:"🚂", flight:"✈️", bus:"🚌", ferry:"⛴️", car:"🚗", taxi:"🚕", metro:"🚇", tram:"🚊" };
+  const icon = typeIcons[spot.transportSubtype] || "🚌";
+  const label = spot.transportSubtype ? spot.transportSubtype.charAt(0).toUpperCase() + spot.transportSubtype.slice(1) : "Transport";
+  _spPushDrawer(_spTransportDetailHTML(spotId), icon, spot.name || label, "");
+}
+
+function _spDrillAccomDetail(townId) {
   const town = state.towns.find(t => t.id === townId);
   if (!town?.accommodation?.name) return;
   _spPushDrawer(_spAccomDetailHTML(townId), "🏨", town.accommodation.name, town.name);
@@ -13310,7 +13328,7 @@ function _spCityDrawerBodyHTML(town) {
       const depTime = fmtTime12(spot.departureTime);
       const depDateStr = spot.scheduledDate ? new Date(spot.scheduledDate + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
       const meta = [from && to ? `${from} → ${to}` : (from || to), depTime ? `departs ${depTime}` : "", depDateStr].filter(Boolean).join(" · ");
-      html += `<div class="sp-drawer-item" onclick="spOpenTransportDetail('${spot.id}')">
+      html += `<div class="sp-drawer-item" onclick="_spDrillTransportDetail('${spot.id}')">
         <div class="sp-drawer-item-inner">
           <div class="sp-drawer-item-icon">${icon}</div>
           <div class="sp-drawer-item-body">
@@ -13333,7 +13351,7 @@ function _spCityDrawerBodyHTML(town) {
     const ciStr = [ci, a.checkinTime].filter(Boolean).join(" ");
     const coStr = [co, a.checkoutTime].filter(Boolean).join(" ");
     const ds = ciStr && coStr ? `${ciStr} → ${coStr}` : (ciStr || coStr || "");
-    html += `<div class="sp-drawer-item" onclick="spOpenAccomDetail('${town.id}')">
+    html += `<div class="sp-drawer-item" onclick="_spDrillAccomDetail('${town.id}')">
       <div class="sp-drawer-item-inner">
         <div class="sp-drawer-item-icon">🏨</div>
         <div class="sp-drawer-item-body">
