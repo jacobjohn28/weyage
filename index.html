@@ -14294,6 +14294,18 @@ function prepareSplitwisePayload(tripData) {
 }
 window.prepareSplitwisePayload = prepareSplitwisePayload;
 
+/* Share page — called from inline onclick attributes (module scope not accessible otherwise) */
+window.spSwitchView           = spSwitchView;
+window.spCloseDrawer          = spCloseDrawer;
+window.spDrawerBack           = spDrawerBack;
+window.spOpenTransportDetail  = spOpenTransportDetail;
+window.spOpenAccomDetail      = spOpenAccomDetail;
+window.spOpenCityDrawer       = spOpenCityDrawer;
+window.spToggleVisits         = spToggleVisits;
+window._spDrillTransportDetail = _spDrillTransportDetail;
+window._spDrillAccomDetail    = _spDrillAccomDetail;
+window._openFullTripFromShare = _openFullTripFromShare;
+
 init().catch((err) => {
   console.error("Boot error:", err);
   showAuthScreen("Couldn't start the app: " + (err.message || err.code || err));
