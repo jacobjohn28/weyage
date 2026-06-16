@@ -1339,7 +1339,7 @@ import {
   _spotPayerId, _spotSplitMode, _spotCustomSplits, _spotMemberIds,
   _accomPayerId, _accomSplitMode, _accomCustomSplits, _accomMemberIds,
   applySpotTimeMode, linkSpots, unlinkSpot, initBudget,
-  openTownEditModal,
+  openTownEditModal, CURRENCY_LIST,
 } from "./js/budget.js";
 
 
@@ -4043,121 +4043,6 @@ function renderTripSettingsMembers() {
   });
 }
 
-function calculateGroupBalances() {
-  const members = state.trip?.members;
-  if (!members || members.length < 2) return {};
-
-  // Combine all split-tracked items: expenses, spots, accommodation, transit
-  const splitItems = [
-    ...(state.expenses || [])
-      .filter(e => e.paidBy && e.splits?.length)
-      .map(e => ({ currency: e.currency || state.trip?.currency || "EUR", amount: e.amount || 0, paidBy: e.paidBy, splits: e.splits })),
-    ...(state.spots || [])
-      .filter(s => s.paidBy && s.splits?.length && s.price)
-      .map(s => ({ currency: s.priceCurrency || state.trip?.currency || "EUR", amount: s.price || 0, paidBy: s.paidBy, splits: s.splits })),
-    ...(state.towns || [])
-      .filter(t => t.accommodation?.paidBy && t.accommodation?.splits?.length && t.accommodation?.price)
-      .map(t => ({ currency: t.accommodation.priceCurrency || state.trip?.currency || "EUR", amount: t.accommodation.price || 0, paidBy: t.accommodation.paidBy, splits: t.accommodation.splits })),
-    ...(state.towns || []).flatMap(t =>
-      (t.transitExpenses || [])
-        .filter(e => e.paidBy && e.splits?.length)
-        .map(e => ({ currency: e.currency || state.trip?.currency || "EUR", amount: e.amount || 0, paidBy: e.paidBy, splits: e.splits }))
-    ),
-  ];
-
-  // Net balance per currency per member
-  const netByCurrency = {};
-  splitItems.forEach(exp => {
-    const cur = exp.currency;
-    if (!netByCurrency[cur]) {
-      const obj = {};
-      members.forEach(m => { obj[m.id] = 0; });
-      netByCurrency[cur] = obj;
-    }
-    const net = netByCurrency[cur];
-    if (!(exp.paidBy in net)) return;
-    net[exp.paidBy] += exp.amount || 0;
-    (exp.splits || []).forEach(s => { if (s.memberId in net) net[s.memberId] -= s.owed; });
-  });
-  // Greedy simplification per currency
-  const result = {};
-  Object.entries(netByCurrency).forEach(([cur, net]) => {
-    const creditors = members
-      .filter(m => net[m.id] > 0.005)
-      .map(m => ({ ...m, bal: net[m.id] }))
-      .sort((a, b) => b.bal - a.bal);
-    const debtors = members
-      .filter(m => net[m.id] < -0.005)
-      .map(m => ({ ...m, bal: -net[m.id] }))
-      .sort((a, b) => b.bal - a.bal);
-    const txns = [];
-    let ci = 0, di = 0;
-    while (ci < creditors.length && di < debtors.length) {
-      const c = creditors[ci], d = debtors[di];
-      const transfer = Math.min(c.bal, d.bal);
-      txns.push({ from: d, to: c, amount: transfer, currency: cur });
-      c.bal -= transfer; d.bal -= transfer;
-      if (c.bal < 0.005) ci++;
-      if (d.bal < 0.005) di++;
-    }
-    if (txns.length) result[cur] = txns;
-  });
-  return result;
-}
-
-function renderGroupBalances() {
-  const members = state.trip?.members;
-  if (!members || members.length < 2) return "";
-  const hasSplitItems =
-    (state.expenses || []).some(e => e.paidBy && e.splits?.length) ||
-    (state.spots   || []).some(s => s.paidBy && s.splits?.length && s.price) ||
-    (state.towns   || []).some(t => t.accommodation?.paidBy && t.accommodation?.splits?.length) ||
-    (state.towns   || []).some(t => (t.transitExpenses || []).some(e => e.paidBy && e.splits?.length));
-  if (!hasSplitItems) return `
-    <div class="group-balances-card">
-      <div class="group-balances-heading">Group Balances</div>
-      <p style="font-size:0.875rem;color:var(--text-3);margin:0">No split expenses yet — add an expense and assign a payer.</p>
-    </div>`;
-  const balances = calculateGroupBalances();
-  const homeCurrency = state.trip?.currency || "EUR";
-  const currencies = Object.keys(balances).sort((a, b) => {
-    if (a === homeCurrency) return -1; if (b === homeCurrency) return 1;
-    return a.localeCompare(b);
-  });
-  if (!currencies.length) return `
-    <div class="group-balances-card">
-      <div class="group-balances-heading">Group Balances</div>
-      <p style="font-size:0.875rem;color:var(--text-3);margin:0">All settled up! ✓</p>
-    </div>`;
-  const fmt = n => n.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  let rowsHTML = "";
-  currencies.forEach(cur => {
-    const sym = currencySymbol(cur);
-    (balances[cur] || []).forEach(t => {
-      rowsHTML += `
-        <div class="balance-row">
-          <div class="balance-from">
-            <div class="balance-avatar" style="background:${escapeHtml(t.from.color || "#888")}">${escapeHtml(t.from.name.charAt(0).toUpperCase())}</div>
-            <span>${escapeHtml(t.from.name)}</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13" style="color:var(--text-3);flex-shrink:0"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-            <div class="balance-avatar" style="background:${escapeHtml(t.to.color || "#888")}">${escapeHtml(t.to.name.charAt(0).toUpperCase())}</div>
-            <span>${escapeHtml(t.to.name)}</span>
-          </div>
-          <span class="balance-amount">${sym}${fmt(t.amount)}</span>
-          <button class="balance-settle-btn"
-            data-from="${escapeHtml(t.from.id)}"
-            data-to="${escapeHtml(t.to.id)}"
-            data-amount="${t.amount}"
-            data-currency="${escapeHtml(cur)}">Settle up</button>
-        </div>`;
-    });
-  });
-  return `
-    <div class="group-balances-card" id="group-balances-card">
-      <div class="group-balances-heading">Group Balances</div>
-      ${rowsHTML}
-    </div>`;
-}
 
 function renderExtraCurrencyChips() {
   const container = document.getElementById("ts-extra-currencies");
