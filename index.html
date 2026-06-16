@@ -1837,6 +1837,131 @@
   body.share-mode #budget-add-expense-btn { display: none !important; }
   body.share-mode .bd-expense-actions { display: none !important; }
 
+  /* ── Shared trip badge (trip list cards) ── */
+  .trip-card-shared-badge {
+    position: absolute; top: 10px; left: 10px; z-index: 2;
+    background: rgba(0,0,0,0.62); color: #fff; border-radius: 4px;
+    font-size: 0.625rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .06em; padding: 2px 7px; pointer-events: none;
+  }
+  .trips-section-header {
+    font-size: 0.6875rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .07em; color: var(--text-3); padding: 20px 4px 8px;
+  }
+
+  /* ── Standalone share page ── */
+  #view-share {
+    display: none; position: fixed; inset: 0; z-index: 50;
+    background: var(--bg); overflow-y: auto; -webkit-overflow-scrolling: touch;
+  }
+  #view-share.visible { display: block; }
+  .sp-header {
+    position: sticky; top: 0; z-index: 10; display: flex;
+    align-items: center; gap: 12px; padding: 12px 20px;
+    background: var(--surface); border-bottom: 1px solid var(--border);
+  }
+  .sp-header-back {
+    background: none; border: none; cursor: pointer; color: var(--accent);
+    font-size: 0.875rem; font-weight: 500; padding: 0; display: flex;
+    align-items: center; gap: 5px; font-family: inherit; flex-shrink: 0;
+  }
+  .sp-header-brand {
+    font-family: var(--font-display); font-size: 1rem; font-weight: 500;
+    color: var(--text); flex: 1;
+  }
+  .sp-header-badge {
+    font-size: 0.6875rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .07em; background: var(--accent-bg); color: var(--accent);
+    border-radius: 20px; padding: 3px 10px; flex-shrink: 0;
+  }
+  .sp-page { max-width: 640px; margin: 0 auto; padding-bottom: 60px; }
+  .sp-banner {
+    margin: 16px 20px 0; background: var(--accent-bg);
+    border: 1px solid var(--accent-soft); border-radius: 10px;
+    padding: 12px 16px; font-size: 0.875rem; color: var(--text); line-height: 1.45;
+  }
+  .sp-hero {
+    margin: 20px 20px 0; border-radius: 14px; overflow: hidden;
+    border: 1px solid var(--border); background: var(--surface);
+  }
+  .sp-hero-img {
+    height: 150px;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-soft) 100%);
+    position: relative; overflow: hidden;
+  }
+  .sp-hero-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .sp-hero-img-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.48) 0%, transparent 60%);
+  }
+  .sp-hero-body { padding: 16px 18px 0; }
+  .sp-hero-name {
+    font-family: var(--font-display); font-size: 1.5rem; font-weight: 500;
+    line-height: 1.2; margin-bottom: 3px;
+  }
+  .sp-hero-dates { font-size: 0.875rem; color: var(--text-2); }
+  .sp-stats { display: flex; margin-top: 14px; border-top: 1px solid var(--border); }
+  .sp-stat { flex: 1; padding: 11px 0; text-align: center; border-right: 1px solid var(--border); }
+  .sp-stat:last-child { border-right: none; }
+  .sp-stat-n { font-size: 1.25rem; font-weight: 700; color: var(--text); line-height: 1; }
+  .sp-stat-l { font-size: 0.625rem; text-transform: uppercase; letter-spacing: .06em; color: var(--text-3); margin-top: 3px; }
+  .sp-sections { padding: 14px 20px 0; display: flex; flex-direction: column; gap: 10px; }
+  .sp-accordion { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .sp-accordion-header {
+    display: flex; align-items: center; gap: 10px; padding: 13px 16px;
+    background: var(--surface); cursor: pointer; user-select: none; transition: background 100ms;
+  }
+  .sp-accordion-header:hover { background: var(--surface-2); }
+  .sp-accordion-icon { font-size: 1rem; flex-shrink: 0; }
+  .sp-accordion-title { flex: 1; font-size: 0.9375rem; font-weight: 600; }
+  .sp-accordion-count { font-size: 0.75rem; color: var(--text-2); }
+  .sp-accordion-chevron { color: var(--text-2); transition: transform 200ms; flex-shrink: 0; }
+  .sp-accordion-header.open .sp-accordion-chevron { transform: rotate(180deg); }
+  .sp-accordion-body { display: none; border-top: 1px solid var(--border); }
+  .sp-accordion-body.open { display: block; }
+  .sp-city-timeline { padding: 8px 16px 6px; display: flex; flex-direction: column; }
+  .sp-city-row { display: flex; gap: 14px; align-items: stretch; }
+  .sp-city-spine { display: flex; flex-direction: column; align-items: center; width: 14px; flex-shrink: 0; padding-top: 5px; }
+  .sp-city-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--accent); border: 2px solid var(--bg); flex-shrink: 0; }
+  .sp-city-line { flex: 1; width: 2px; background: var(--border); min-height: 8px; margin: 3px 0; }
+  .sp-city-info { flex: 1; padding-bottom: 14px; }
+  .sp-city-name { font-size: 0.9375rem; font-weight: 600; }
+  .sp-city-meta { font-size: 0.8125rem; color: var(--text-2); margin-top: 2px; }
+  .sp-item-list { display: flex; flex-direction: column; }
+  .sp-item { display: flex; gap: 12px; padding: 12px 16px; align-items: flex-start; border-bottom: 1px solid var(--border); }
+  .sp-item:last-child { border-bottom: none; }
+  .sp-item-icon { font-size: 1rem; flex-shrink: 0; width: 20px; text-align: center; margin-top: 1px; }
+  .sp-item-body { flex: 1; }
+  .sp-item-name { font-size: 0.875rem; font-weight: 500; }
+  .sp-item-meta { font-size: 0.8125rem; color: var(--text-2); margin-top: 2px; }
+  .sp-day-section { border-bottom: 1px solid var(--border); }
+  .sp-day-section:last-child { border-bottom: none; }
+  .sp-day-header {
+    display: flex; align-items: center; gap: 10px; padding: 11px 16px;
+    cursor: pointer; user-select: none; transition: background 100ms;
+  }
+  .sp-day-header:hover { background: var(--surface-2); }
+  .sp-day-dow { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-2); min-width: 34px; }
+  .sp-day-date { font-size: 0.875rem; font-weight: 500; flex: 1; }
+  .sp-day-city { font-size: 0.75rem; color: var(--text-3); }
+  .sp-day-chevron { color: var(--text-2); transition: transform 200ms; flex-shrink: 0; }
+  .sp-day-chevron.open { transform: rotate(180deg); }
+  .sp-day-body { padding: 2px 16px 10px; display: none; }
+  .sp-day-body.open { display: block; }
+  .sp-day-spot { display: flex; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--border); align-items: flex-start; }
+  .sp-day-spot:last-child { border-bottom: none; }
+  .sp-day-spot-time { font-size: 0.75rem; color: var(--text-2); min-width: 44px; padding-top: 2px; }
+  .sp-day-spot-icon { font-size: 0.875rem; flex-shrink: 0; padding-top: 1px; }
+  .sp-day-spot-body { flex: 1; }
+  .sp-day-spot-name { font-size: 0.875rem; }
+  .sp-day-spot-meta { font-size: 0.75rem; color: var(--text-2); margin-top: 1px; }
+  @media (max-width: 600px) {
+    .sp-hero { margin: 14px 14px 0; border-radius: 12px; }
+    .sp-hero-name { font-size: 1.25rem; }
+    .sp-sections { padding: 12px 14px 0; gap: 8px; }
+    .sp-banner { margin: 12px 14px 0; }
+  }
+
   /* Spot list (sortable container) */
   .spot-list {
     display: flex; flex-direction: column;
@@ -4092,6 +4217,23 @@ body.share-mode .transit-entry-del { display: none !important; }
 </div>
 
 <!-- ============================================================
+     SHARE VIEW — standalone read-only trip page
+     ============================================================ -->
+<section id="view-share">
+  <div class="sp-header">
+    <button class="sp-header-back" id="sp-back-btn" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="15 18 9 12 15 6"/></svg>
+      All Trips
+    </button>
+    <div class="sp-header-brand">Weyage</div>
+    <span class="sp-header-badge">View only</span>
+  </div>
+  <div class="sp-page" id="sp-page">
+    <!-- Rendered by renderSharePage() -->
+  </div>
+</section>
+
+<!-- ============================================================
      APP SHELL
      ============================================================ -->
 <div id="app">
@@ -5406,16 +5548,28 @@ function showTripList() {
   document.getElementById("boot-screen").classList.add("hidden");
   document.getElementById("auth-screen").classList.remove("visible");
   document.getElementById("app").classList.remove("visible");
+  document.getElementById("view-share").classList.remove("visible");
   document.getElementById("trips-screen").classList.add("visible");
   localStorage.setItem("last-screen", "trips");
   renderSidebarTripList();
   renderTripCards();
 }
 
+function showShareSection(showBack) {
+  document.getElementById("boot-screen").classList.add("hidden");
+  document.getElementById("auth-screen").classList.remove("visible");
+  document.getElementById("trips-screen").classList.remove("visible");
+  document.getElementById("app").classList.remove("visible");
+  document.getElementById("view-share").classList.add("visible");
+  const backBtn = document.getElementById("sp-back-btn");
+  if (backBtn) backBtn.style.display = showBack ? "" : "none";
+}
+
 function showApp() {
   document.getElementById("boot-screen").classList.add("hidden");
   document.getElementById("auth-screen").classList.remove("visible");
   document.getElementById("trips-screen").classList.remove("visible");
+  document.getElementById("view-share").classList.remove("visible");
   document.getElementById("app").classList.add("visible");
   // Sidebar back link visibility
   const backBtn = document.getElementById("sidebar-back-btn");
@@ -5440,6 +5594,12 @@ document.getElementById("google-signin").addEventListener("click", async () => {
 });
 
 document.getElementById("signout-btn").addEventListener("click", () => signOut(auth));
+document.getElementById("sp-back-btn")?.addEventListener("click", () => {
+  detachTripListeners();
+  activeTripId = null;
+  setState({ trip: null, towns: [], spots: [] });
+  showTripList();
+});
 
 
 function setupUserChip(user) {
@@ -5469,6 +5629,8 @@ let _tripUnsub = null, _townsUnsub = null, _spotsUnsub = null, _expensesUnsub = 
 let tripSearchQuery = "";
 const collapsedYears = new Set();
 let _allTripsUnsub = null;
+let _sharedTripsUnsub = null;
+let _myOwnedTrips = [], _mySharedTrips = [];
 
 function detachTripListeners() {
   _tripUnsub?.(); _townsUnsub?.(); _spotsUnsub?.(); _expensesUnsub?.();
@@ -5574,15 +5736,28 @@ function listenToTrip(tripId) {
 // On the first snapshot it decides where to route the user.
 let _initialTripRouted = false;
 
+function _mergeAllTrips() {
+  const ownedIds = new Set(_myOwnedTrips.map(t => t.id));
+  const merged = [
+    ..._myOwnedTrips.map(t => ({ ...t, _role: "owner" })),
+    ..._mySharedTrips
+      .filter(t => !ownedIds.has(t.id))
+      .map(t => ({ ...t, _role: "shared" })),
+  ];
+  setState({ allTrips: merged });
+}
+
 function listenToAllTrips(userEmail) {
-  const q = query(
-    collection(db, "trips"),
-    where("allowedUsers", "array-contains", userEmail.toLowerCase())
-  );
-  _allTripsUnsub = onSnapshot(q, (snap) => {
-    const trips = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    trips.sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0));
-    setState({ allTrips: trips });
+  _myOwnedTrips = [];
+  _mySharedTrips = [];
+  const email = userEmail.toLowerCase();
+
+  // Query 1: trips where user is an owner / collaborator
+  const q1 = query(collection(db, "trips"), where("allowedUsers", "array-contains", email));
+  _allTripsUnsub = onSnapshot(q1, (snap) => {
+    _myOwnedTrips = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    _myOwnedTrips.sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0));
+    _mergeAllTrips();
 
     if (!_initialTripRouted) {
       _initialTripRouted = true;
@@ -5590,22 +5765,33 @@ function listenToAllTrips(userEmail) {
       const lastScreen = localStorage.getItem("last-screen");
       if (lastScreen === "trips") {
         showTripList();
-      } else if (lastId && trips.find(t => t.id === lastId)) {
+      } else if (lastId && _myOwnedTrips.find(t => t.id === lastId)) {
         switchTrip(lastId);
-      } else if (trips.length === 1) {
-        switchTrip(trips[0].id);
+      } else if (_myOwnedTrips.length === 1) {
+        switchTrip(_myOwnedTrips[0].id);
       } else {
         showTripList();
       }
-      // Show onboarding tips the first time a user logs in
       showOnboardingIfNeeded();
     } else {
-      // Subsequent updates — re-render the trip list if it's visible
       if (!activeTripId) {
         renderSidebarTripList();
         renderTripCards();
       }
     }
+  });
+
+  // Query 2: trips shared with this user via share link (view-only)
+  const q2 = query(collection(db, "trips"), where("shareViewers", "array-contains", email));
+  _sharedTripsUnsub = onSnapshot(q2, (snap) => {
+    _mySharedTrips = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    _mergeAllTrips();
+    if (_initialTripRouted && !activeTripId) {
+      renderTripCards();
+    }
+  }, (err) => {
+    // Index may not exist yet — fail silently; owned trips still work
+    console.warn("shareViewers query:", err.code);
   });
 }
 
@@ -5629,6 +5815,23 @@ function exitToTripList() {
   setState({ trip: null, towns: [], spots: [] });
   localStorage.removeItem("last-trip-id");
   showTripList();
+}
+
+function openSharedTrip(tripId) {
+  detachTripListeners();
+  activeTripId = tripId;
+  setState({ trip: null, towns: [], spots: [] });
+  document.getElementById("sp-page").innerHTML =
+    `<div style="padding:60px 20px;text-align:center;color:var(--text-2)">Loading…</div>`;
+  showShareSection(true);
+  listenToTrip(tripId);
+  let resolved = false;
+  const unsub = subscribe(() => {
+    if (!state.trip || resolved) return;
+    resolved = true;
+    unsub();
+    renderSharePage(state.user);
+  });
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -5814,12 +6017,12 @@ function wirePhoneCopyBtns(container) {
 function renderSidebarTripList() {
   const container = document.getElementById("trips-sidebar-list");
   if (!container) return;
-  const { allTrips } = state;
-  if (!allTrips.length) {
+  const ownedTrips = state.allTrips.filter(t => t._role !== "shared");
+  if (!ownedTrips.length) {
     container.innerHTML = `<div style="padding:12px;font-size:0.8125rem;color:var(--text-3);font-style:italic">No trips yet</div>`;
     return;
   }
-  container.innerHTML = allTrips.map(t => `
+  container.innerHTML = ownedTrips.map(t => `
     <button class="trips-sidebar-item" data-trip-id="${escapeHtml(t.id)}">
       <div class="trips-sidebar-item-name">${escapeHtml(t.name)}</div>
       <div class="trips-sidebar-item-dates">${t.startDate ? fmtDateRange(t.startDate, t.endDate) : "Dates TBD"}</div>
@@ -5835,31 +6038,20 @@ function renderTripCards() {
   if (!grid) return;
   const { allTrips } = state;
 
-  const q = tripSearchQuery.trim().toLowerCase();
-  const filtered = q
-    ? allTrips.filter(t =>
-        t.name?.toLowerCase().includes(q) ||
-        t.cityNames?.some(c => c.toLowerCase().includes(q)))
-    : allTrips;
+  const myTrips = allTrips.filter(t => t._role !== "shared");
+  const sharedTrips = allTrips.filter(t => t._role === "shared");
 
-  if (!filtered.length) {
+  const q = tripSearchQuery.trim().toLowerCase();
+  const filterFn = t => !q || t.name?.toLowerCase().includes(q) || t.cityNames?.some(c => c.toLowerCase().includes(q));
+  const filteredMy = myTrips.filter(filterFn);
+  const filteredShared = sharedTrips.filter(filterFn);
+
+  if (!filteredMy.length && !filteredShared.length) {
     grid.innerHTML = allTrips.length
       ? `<div class="trips-empty"><div class="trips-empty-title">No results</div><p style="font-size:0.9375rem;margin-top:8px">No trips match "<em>${escapeHtml(q)}</em>".</p></div>`
       : `<div class="trips-empty"><div class="trips-empty-title">No trips yet</div><p style="font-size:0.9375rem;margin-top:8px">Create your first trip to get started.</p></div>`;
     return;
   }
-
-  const byYear = {};
-  filtered.forEach(t => {
-    const year = t.startDate ? t.startDate.slice(0, 4) : "Upcoming";
-    if (!byYear[year]) byYear[year] = [];
-    byYear[year].push(t);
-  });
-  const years = Object.keys(byYear).sort((a, b) => {
-    if (a === "Upcoming") return -1;
-    if (b === "Upcoming") return 1;
-    return Number(b) - Number(a);
-  });
 
   const cardHTML = t => {
     const photoUrls = Object.values(t.cityPhotos || {}).filter(Boolean).slice(0, 5);
@@ -5868,11 +6060,14 @@ function renderTripCards() {
           `<div class="trip-card-collage-strip"><img src="${escapeHtml(url)}" alt="" loading="lazy" onerror="this.closest('.trip-card-collage-strip').style.display='none'"></div>`
         ).join("")}</div>`
       : `<div class="trip-card-img-placeholder">${escapeHtml((t.name || "T").charAt(0))}</div>`;
+    const actionEl = t._role === "shared"
+      ? `<span class="trip-card-shared-badge">Shared</span>`
+      : `<button class="trip-card-menu-btn" data-trip-id="${escapeHtml(t.id)}" title="Trip settings" aria-label="Trip settings">⋯</button>`;
     return `
-    <div class="trip-card" data-trip-id="${escapeHtml(t.id)}">
+    <div class="trip-card" data-trip-id="${escapeHtml(t.id)}" data-role="${escapeHtml(t._role || 'owner')}">
       <div class="trip-card-img">
         ${imgArea}
-        <button class="trip-card-menu-btn" data-trip-id="${escapeHtml(t.id)}" title="Trip settings" aria-label="Trip settings">⋯</button>
+        ${actionEl}
       </div>
       <div class="trip-card-body">
         <div class="trip-card-name">${escapeHtml(t.name)}</div>
@@ -5883,18 +6078,43 @@ function renderTripCards() {
     </div>`;
   };
 
-  grid.innerHTML = years.map(year => {
-    const collapsed = collapsedYears.has(year);
-    return `
-      <div class="trips-year-section" data-year="${escapeHtml(year)}">
-        <div class="trips-year-header">
-          <span class="trips-year-label">${escapeHtml(year)}</span>
-          <span class="trips-year-count">${byYear[year].length}</span>
-          <svg class="trips-year-chevron${collapsed ? " collapsed" : ""}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
-        <div class="trips-year-cards${collapsed ? " hidden" : ""}">${byYear[year].map(cardHTML).join("")}</div>
-      </div>`;
-  }).join("");
+  // My Trips — year-grouped
+  let myHTML = "";
+  if (filteredMy.length) {
+    const byYear = {};
+    filteredMy.forEach(t => {
+      const year = t.startDate ? t.startDate.slice(0, 4) : "Upcoming";
+      if (!byYear[year]) byYear[year] = [];
+      byYear[year].push(t);
+    });
+    const years = Object.keys(byYear).sort((a, b) => {
+      if (a === "Upcoming") return -1;
+      if (b === "Upcoming") return 1;
+      return Number(b) - Number(a);
+    });
+    myHTML = years.map(year => {
+      const collapsed = collapsedYears.has(year);
+      return `
+        <div class="trips-year-section" data-year="${escapeHtml(year)}">
+          <div class="trips-year-header">
+            <span class="trips-year-label">${escapeHtml(year)}</span>
+            <span class="trips-year-count">${byYear[year].length}</span>
+            <svg class="trips-year-chevron${collapsed ? " collapsed" : ""}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="trips-year-cards${collapsed ? " hidden" : ""}">${byYear[year].map(cardHTML).join("")}</div>
+        </div>`;
+    }).join("");
+  }
+
+  // Shared with me — flat list
+  let sharedHTML = "";
+  if (filteredShared.length) {
+    sharedHTML = `
+      <div class="trips-section-header">Shared with me</div>
+      <div class="trips-year-cards">${filteredShared.map(cardHTML).join("")}</div>`;
+  }
+
+  grid.innerHTML = myHTML + sharedHTML;
 
   grid.querySelectorAll(".trips-year-header").forEach(header => {
     header.addEventListener("click", () => {
@@ -5905,7 +6125,10 @@ function renderTripCards() {
     });
   });
   grid.querySelectorAll(".trip-card").forEach(card => {
-    card.addEventListener("click", () => switchTrip(card.dataset.tripId));
+    card.addEventListener("click", () => {
+      if (card.dataset.role === "shared") openSharedTrip(card.dataset.tripId);
+      else switchTrip(card.dataset.tripId);
+    });
   });
   grid.querySelectorAll(".trip-card-menu-btn").forEach(btn => {
     btn.addEventListener("click", (e) => { e.stopPropagation(); openTripSettings(btn.dataset.tripId); });
@@ -12761,58 +12984,290 @@ function showInvalidShareLink() {
 
 async function initSharedView(token) {
   await initFirebase();
-  try {
-    await signInAnonymously(auth);
-  } catch (err) {
-    document.getElementById("boot-screen").classList.add("hidden");
-    document.getElementById("auth-screen").classList.add("visible");
-    document.getElementById("auth-error").textContent = "Couldn't load shared itinerary. Try the link again.";
-    return;
+
+  // Check if the user is already signed in before doing anything
+  const existingUser = await new Promise(resolve => {
+    const unsub = onAuthStateChanged(auth, u => { unsub(); resolve(u); });
+  });
+
+  // Ensure we have some auth identity (anonymous if not signed in)
+  if (!existingUser) {
+    try {
+      await signInAnonymously(auth);
+    } catch (err) {
+      document.getElementById("boot-screen").classList.add("hidden");
+      document.getElementById("auth-screen").classList.add("visible");
+      document.getElementById("auth-error").textContent = "Couldn't load shared itinerary. Try the link again.";
+      return;
+    }
   }
 
-  // Apply share mode immediately so layout shifts before data loads
-  document.body.classList.add("share-mode");
-  setState({ shareMode: true, currentView: "itinerary" });
-
-  // Find the trip that owns this share token.
-  // IMPORTANT — Firestore rules must allow anonymous reads for shared trips:
-  //   match /trips/{tripId} {
-  //     allow read: if request.auth != null && resource.data.shareToken != null;
-  //     ... existing rules ...
-  //   }
+  // Look up the trip by share token
+  // Firestore rules must allow: authenticated reads where resource.data.shareToken != null
+  let tripDoc;
   try {
     const snap = await getDocs(query(collection(db, "trips"), where("shareToken", "==", token)));
     if (snap.empty) { showInvalidShareLink(); return; }
-    activeTripId = snap.docs[0].id;
+    tripDoc = snap.docs[0];
+    activeTripId = tripDoc.id;
   } catch (err) {
     console.error("Share token lookup failed:", err);
     showInvalidShareLink();
     return;
   }
 
-  listenToTrip(activeTripId);
+  const tripData = tripDoc.data();
+  const currentUser = auth.currentUser;
 
-  // Wait for first snapshot before rendering
+  // Signed-in (non-anonymous) user who is already a collaborator → open as full trip
+  if (currentUser && !currentUser.isAnonymous) {
+    const email = currentUser.email.toLowerCase();
+    if ((tripData.allowedUsers || []).includes(email)) {
+      try {
+        const approvalSnap = await getDoc(doc(db, "appUsers", email));
+        if (approvalSnap.exists()) {
+          setState({ user: currentUser });
+          setupUserChip(currentUser);
+          _initialTripRouted = true; // skip auto-routing; we're jumping straight to the trip
+          loadSiteConfig();
+          listenToAllTrips(currentUser.email);
+          switchTrip(activeTripId);
+          return;
+        }
+      } catch (_) { /* fall through to share view */ }
+    }
+    // Not a collaborator — record that they've viewed this trip
+    try {
+      await updateDoc(doc(db, "trips", activeTripId), { shareViewers: arrayUnion(email) });
+    } catch (_) { /* non-fatal */ }
+  }
+
+  // Show the standalone share page (anonymous or non-collaborator logged-in user)
+  document.getElementById("boot-screen").classList.add("hidden");
+  document.getElementById("sp-page").innerHTML =
+    `<div style="padding:60px 20px;text-align:center;color:var(--text-2)">Loading…</div>`;
+  showShareSection(false);
+
+  listenToTrip(activeTripId);
   let resolved = false;
   const unsub = subscribe(() => {
     if (!state.trip || resolved) return;
     resolved = true;
     unsub();
-
-    const s = state.trip.startDate ? new Date(state.trip.startDate + "T00:00:00") : null;
-    const e = state.trip.endDate   ? new Date(state.trip.endDate   + "T00:00:00") : null;
-    const startStr = s ? s.toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "";
-    const endStr   = e ? e.toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "";
-    const dates = startStr && endStr ? ` | ${startStr} – ${endStr}` : "";
-    document.getElementById("share-banner-trip").textContent = (state.trip.name || "Trip") + dates;
-    document.getElementById("boot-screen").classList.add("hidden");
-    document.getElementById("app").classList.add("visible");
-
-    subscribe(() => {
-      if (state.currentView === "itinerary") renderItinerary();
-    });
-    renderItinerary();
+    renderSharePage(currentUser && !currentUser.isAnonymous ? currentUser : null);
   });
+}
+
+/* ─────────────────────────────────────────────────────────────
+   SHARE PAGE RENDERER
+   ───────────────────────────────────────────────────────────── */
+function renderSharePage(viewerUser) {
+  const container = document.getElementById("sp-page");
+  if (!container || !state.trip) return;
+
+  const trip = state.trip;
+  const towns = state.towns;
+  const spots = state.spots;
+
+  // Trip duration
+  const totalNights = (trip.startDate && trip.endDate) ? nightsBetween(trip.startDate, trip.endDate) : null;
+  const totalDays = totalNights !== null ? totalNights + 1 : null;
+
+  // Cover photo — first available city photo
+  const coverPhoto = Object.values(trip.cityPhotos || {}).find(Boolean) || null;
+
+  // Transport spots (departures only, not cancelled)
+  const transportSpots = spots.filter(s => s.type === "transport" && !s._arrivalView && !s.isCancelled);
+
+  // Towns with accommodation set
+  const townsWithAccom = towns.filter(t => t.accommodation?.name);
+
+  // Non-transport spots for day-by-day
+  const daySpots = spots.filter(s => s.type !== "transport");
+
+  // All trip days ordered
+  const seenDates = new Set();
+  const allDays = [];
+  for (const town of towns) {
+    if (!town.arrivalDate || !town.departureDate) continue;
+    for (const date of getDaysForTown(town)) {
+      if (!seenDates.has(date)) {
+        seenDates.add(date);
+        allDays.push({ date, townId: town.id, townName: town.name });
+      }
+    }
+  }
+  allDays.sort((a, b) => a.date.localeCompare(b.date));
+
+  // Banner for known logged-in viewers who aren't collaborators
+  let bannerHTML = "";
+  if (viewerUser) {
+    const isCollab = (trip.allowedUsers || []).includes(viewerUser.email?.toLowerCase());
+    if (!isCollab) {
+      bannerHTML = `<div class="sp-banner">Viewing as <strong>${escapeHtml(viewerUser.displayName || viewerUser.email)}</strong>. This trip has been saved to your Shared Trips list.</div>`;
+    }
+  }
+
+  // Hero
+  const heroImgHTML = coverPhoto
+    ? `<div class="sp-hero-img"><img src="${escapeHtml(coverPhoto)}" alt="" loading="lazy"><div class="sp-hero-img-overlay"></div></div>`
+    : `<div class="sp-hero-img"></div>`;
+  const dateStr = (trip.startDate && trip.endDate) ? fmtDateRange(trip.startDate, trip.endDate) : "";
+  const heroHTML = `
+    <div class="sp-hero">
+      ${heroImgHTML}
+      <div class="sp-hero-body">
+        <div class="sp-hero-name">${escapeHtml(trip.name || "Trip")}</div>
+        ${dateStr ? `<div class="sp-hero-dates">${dateStr}</div>` : ""}
+        <div class="sp-stats">
+          ${totalDays ? `<div class="sp-stat"><div class="sp-stat-n">${totalDays}</div><div class="sp-stat-l">Days</div></div>` : ""}
+          <div class="sp-stat"><div class="sp-stat-n">${towns.length}</div><div class="sp-stat-l">Cities</div></div>
+          ${totalNights ? `<div class="sp-stat"><div class="sp-stat-n">${totalNights}</div><div class="sp-stat-l">Nights</div></div>` : ""}
+          <div class="sp-stat"><div class="sp-stat-n">${daySpots.length}</div><div class="sp-stat-l">Spots</div></div>
+        </div>
+      </div>
+    </div>`;
+
+  // City timeline
+  const cityTimelineHTML = towns.map((town, i) => {
+    const isLast = i === towns.length - 1;
+    const checkin  = town.arrivalDate   ? new Date(town.arrivalDate   + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
+    const checkout = town.departureDate ? new Date(town.departureDate + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
+    const nights = (town.arrivalDate && town.departureDate) ? nightsBetween(town.arrivalDate, town.departureDate) : null;
+    const meta = [
+      checkin && checkout ? `${checkin} – ${checkout}` : (checkin || checkout),
+      nights !== null ? `${nights} night${nights === 1 ? "" : "s"}` : "",
+    ].filter(Boolean).join(" · ");
+    return `<div class="sp-city-row">
+      <div class="sp-city-spine"><div class="sp-city-dot"></div>${!isLast ? `<div class="sp-city-line"></div>` : ""}</div>
+      <div class="sp-city-info"><div class="sp-city-name">${escapeHtml(town.name)}</div>${meta ? `<div class="sp-city-meta">${meta}</div>` : ""}</div>
+    </div>`;
+  }).join("");
+
+  // Transport rows
+  const transportIcon = { train: "🚂", flight: "✈️", bus: "🚌", ferry: "⛴️", car: "🚗", taxi: "🚕", metro: "🚇", tram: "🚊" };
+  const transportRowsHTML = transportSpots.length
+    ? transportSpots.map(spot => {
+        const subtype = spot.transportSubtype || "";
+        const icon = transportIcon[subtype] || "🚌";
+        const label = subtype ? subtype.charAt(0).toUpperCase() + subtype.slice(1) : "Transport";
+        const from = spot.customOrigin || spot.transportFrom || "";
+        const to   = spot.customDestination || spot.transportTo || "";
+        const depTime = fmtTime12(spot.departureTime);
+        const date = spot.scheduledDate ? new Date(spot.scheduledDate + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
+        const meta = [from && to ? `${from} → ${to}` : (from || to), depTime ? `departs ${depTime}` : "", date].filter(Boolean).join(" · ");
+        return `<div class="sp-item">
+          <div class="sp-item-icon">${icon}</div>
+          <div class="sp-item-body">
+            <div class="sp-item-name">${escapeHtml(spot.name || label)}</div>
+            ${meta ? `<div class="sp-item-meta">${meta}</div>` : ""}
+            ${spot.carrier ? `<div class="sp-item-meta">${escapeHtml(spot.carrier)}</div>` : ""}
+          </div>
+        </div>`;
+      }).join("")
+    : `<div class="sp-item"><div class="sp-item-icon" style="opacity:.4">—</div><div class="sp-item-body"><div class="sp-item-meta">No transport added yet</div></div></div>`;
+
+  // Accommodation rows
+  const accomRowsHTML = townsWithAccom.length
+    ? townsWithAccom.map(town => {
+        const a = town.accommodation;
+        const ci  = a.checkinDate  ? new Date(a.checkinDate  + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
+        const co  = a.checkoutDate ? new Date(a.checkoutDate + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
+        const ciStr = [ci,  a.checkinTime ].filter(Boolean).join(" ");
+        const coStr = [co, a.checkoutTime].filter(Boolean).join(" ");
+        const dateStr = ciStr && coStr ? `Check-in ${ciStr} · Check-out ${coStr}` : (ciStr ? `Check-in ${ciStr}` : coStr ? `Check-out ${coStr}` : "");
+        return `<div class="sp-item">
+          <div class="sp-item-icon">🏨</div>
+          <div class="sp-item-body">
+            <div class="sp-item-name">${escapeHtml(a.name)}</div>
+            <div class="sp-item-meta">${escapeHtml(town.name)}</div>
+            ${dateStr ? `<div class="sp-item-meta">${dateStr}</div>` : ""}
+            ${a.address ? `<div class="sp-item-meta">${escapeHtml(a.address)}</div>` : ""}
+            ${a.bookingRef ? `<div class="sp-item-meta">Ref: ${escapeHtml(a.bookingRef)}</div>` : ""}
+          </div>
+        </div>`;
+      }).join("")
+    : `<div class="sp-item"><div class="sp-item-icon" style="opacity:.4">—</div><div class="sp-item-body"><div class="sp-item-meta">No accommodation added yet</div></div></div>`;
+
+  // Day-by-day
+  const spotTypeEmoji = { sight: "👁", restaurant: "🍽", cafe: "☕", experience: "⭐" };
+  const dayByDayHTML = allDays.map(({ date, townId, townName }) => {
+    const d = new Date(date + "T00:00:00");
+    const dow      = d.toLocaleDateString("en-GB", { weekday: "short" }).toUpperCase();
+    const dateLabel = d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+    const spotList  = daySpots
+      .filter(s => s.scheduledDate === date && s.townId === townId)
+      .sort((a, b) => (a.scheduledTime || "").localeCompare(b.scheduledTime || "") || (a.order ?? 9999) - (b.order ?? 9999));
+    const spotsHTML = spotList.length
+      ? spotList.map(spot => `
+          <div class="sp-day-spot">
+            <div class="sp-day-spot-time">${escapeHtml(fmtTime12(spot.scheduledTime))}</div>
+            <div class="sp-day-spot-icon">${spotTypeEmoji[spot.type] || "📍"}</div>
+            <div class="sp-day-spot-body">
+              <div class="sp-day-spot-name">${escapeHtml(spot.name || "")}</div>
+              ${spot.neighborhood ? `<div class="sp-day-spot-meta">${escapeHtml(spot.neighborhood)}</div>` : ""}
+            </div>
+          </div>`).join("")
+      : `<p style="font-size:0.8125rem;color:var(--text-3);padding:4px 0 4px;margin:0">Nothing planned</p>`;
+    return `<div class="sp-day-section">
+      <div class="sp-day-header" onclick="
+        var body = this.nextElementSibling;
+        var chev = this.querySelector('.sp-day-chevron');
+        body.classList.toggle('open');
+        chev.classList.toggle('open');">
+        <span class="sp-day-dow">${dow}</span>
+        <span class="sp-day-date">${dateLabel}</span>
+        <span class="sp-day-city">${escapeHtml(townName)}</span>
+        <svg class="sp-day-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="sp-day-body">${spotsHTML}</div>
+    </div>`;
+  }).join("");
+
+  const chevronSVG = `<svg class="sp-accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>`;
+  const accordionToggle = `onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')"`;
+
+  container.innerHTML = `
+    ${bannerHTML}
+    ${heroHTML}
+    <div class="sp-sections">
+      <div class="sp-accordion">
+        <div class="sp-accordion-header open" ${accordionToggle}>
+          <span class="sp-accordion-icon">🗺</span>
+          <span class="sp-accordion-title">Cities</span>
+          <span class="sp-accordion-count">${towns.length} ${towns.length === 1 ? "city" : "cities"}</span>
+          ${chevronSVG}
+        </div>
+        <div class="sp-accordion-body sp-city-timeline open">${cityTimelineHTML || '<div class="sp-item"><div class="sp-item-meta">No cities added yet</div></div>'}</div>
+      </div>
+      <div class="sp-accordion">
+        <div class="sp-accordion-header" ${accordionToggle}>
+          <span class="sp-accordion-icon">🚌</span>
+          <span class="sp-accordion-title">Transport</span>
+          <span class="sp-accordion-count">${transportSpots.length} journey${transportSpots.length === 1 ? "" : "s"}</span>
+          ${chevronSVG}
+        </div>
+        <div class="sp-accordion-body sp-item-list">${transportRowsHTML}</div>
+      </div>
+      <div class="sp-accordion">
+        <div class="sp-accordion-header" ${accordionToggle}>
+          <span class="sp-accordion-icon">🏨</span>
+          <span class="sp-accordion-title">Accommodation</span>
+          <span class="sp-accordion-count">${townsWithAccom.length} stay${townsWithAccom.length === 1 ? "" : "s"}</span>
+          ${chevronSVG}
+        </div>
+        <div class="sp-accordion-body sp-item-list">${accomRowsHTML}</div>
+      </div>
+      <div class="sp-accordion">
+        <div class="sp-accordion-header" ${accordionToggle}>
+          <span class="sp-accordion-icon">📅</span>
+          <span class="sp-accordion-title">Day-by-day</span>
+          <span class="sp-accordion-count">${allDays.length} day${allDays.length === 1 ? "" : "s"}</span>
+          ${chevronSVG}
+        </div>
+        <div class="sp-accordion-body">${allDays.length ? dayByDayHTML : '<div class="sp-item"><div class="sp-item-meta">No days planned yet</div></div>'}</div>
+      </div>
+    </div>`;
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -12842,6 +13297,10 @@ async function init() {
       detachTripListeners();
       _allTripsUnsub?.();
       _allTripsUnsub = null;
+      _sharedTripsUnsub?.();
+      _sharedTripsUnsub = null;
+      _myOwnedTrips = [];
+      _mySharedTrips = [];
       activeTripId = null;
       setState({ user: null, trip: null, towns: [], spots: [], allTrips: [] });
       showAuthScreen();
