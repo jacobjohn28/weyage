@@ -1965,11 +1965,81 @@
   .sp-day-spot-body { flex: 1; }
   .sp-day-spot-name { font-size: 0.875rem; }
   .sp-day-spot-meta { font-size: 0.75rem; color: var(--text-2); margin-top: 1px; }
+
+  /* View toggle */
+  .sp-view-toggle { display: flex; margin: 14px 20px 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .sp-view-tab { flex: 1; padding: 9px 0; font-size: 0.8125rem; font-weight: 600; text-align: center; cursor: pointer; border: none; background: var(--surface); color: var(--text-2); font-family: inherit; transition: background .15s, color .15s; }
+  .sp-view-tab.active { background: var(--accent); color: #fff; }
+
+  /* City cards */
+  .sp-city-cards { padding: 12px 20px 24px; display: flex; flex-direction: column; gap: 10px; }
+  .sp-city-card { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .sp-city-card-head { padding: 14px 16px; background: var(--surface); }
+  .sp-city-card-name { font-size: 1rem; font-weight: 700; }
+  .sp-city-card-meta { font-size: 0.8125rem; color: var(--text-2); margin-top: 3px; }
+  .sp-city-section-lbl { padding: 9px 16px 4px; font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--text-3); border-top: 1px solid var(--border); }
+  .sp-visits-toggle { display: flex; align-items: center; gap: 8px; padding: 10px 16px; cursor: pointer; font-size: 0.8125rem; color: var(--text-2); border-top: 1px solid var(--border); user-select: none; -webkit-tap-highlight-color: transparent; }
+  .sp-visits-toggle:active { background: rgba(0,0,0,.04); }
+  .sp-visits-toggle svg { transition: transform .2s; }
+  .sp-visits-toggle.open svg { transform: rotate(180deg); }
+  .sp-visits-body { display: none; }
+  .sp-visits-body.open { display: block; }
+
+  /* Calendar */
+  .sp-calendar { padding: 0 20px 24px; }
+  .sp-cal-month-hd { font-size: 0.8125rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-2); padding: 14px 0 8px; }
+  .sp-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 16px; }
+  .sp-cal-dow { font-size: 0.5625rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--text-3); text-align: center; padding: 6px 0 5px; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .sp-cal-cell { min-height: 52px; padding: 4px 2px 3px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .sp-cal-cell:nth-child(7n) { border-right: none; }
+  .sp-cal-day-num { font-size: 0.5625rem; font-weight: 600; color: var(--text-3); text-align: right; line-height: 1; margin-bottom: 3px; padding-right: 2px; }
+  .sp-cal-block { border-radius: 3px; padding: 1px 3px; margin-bottom: 2px; font-size: 0.5625rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; line-height: 1.65; color: #fff; }
+
+  /* Share drawer */
+  .sp-drawer { position: fixed; inset: 0; z-index: 200; display: none; }
+  .sp-drawer.open { display: block; }
+  .sp-drawer-back { position: absolute; inset: 0; background: rgba(0,0,0,.4); cursor: pointer; }
+  .sp-drawer-panel { position: absolute; bottom: 0; left: 0; right: 0; max-height: 84vh; background: var(--bg); border-radius: 18px 18px 0 0; overflow: hidden; display: flex; flex-direction: column; }
+  .sp-drawer-panel.sp-anim-in { animation: sp-slide-up .25s cubic-bezier(.32,.72,0,1) both; }
+  .sp-drawer-panel.sp-anim-out { animation: sp-slide-down .2s cubic-bezier(.32,.72,0,1) both; }
+  @keyframes sp-slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  @keyframes sp-slide-down { from { transform: translateY(0); } to { transform: translateY(100%); } }
+  .sp-drawer-grip { width: 36px; height: 4px; border-radius: 2px; background: var(--border); margin: 10px auto 0; flex-shrink: 0; }
+  .sp-drawer-hd { padding: 10px 16px 12px; flex-shrink: 0; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
+  .sp-drawer-hd-icon { font-size: 1.125rem; flex-shrink: 0; }
+  .sp-drawer-hd-texts { flex: 1; min-width: 0; }
+  .sp-drawer-hd-title { font-size: 1rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sp-drawer-hd-sub { font-size: 0.8125rem; color: var(--text-2); margin-top: 1px; }
+  .sp-drawer-hd-back { background: none; border: 1px solid var(--border); border-radius: 50%; width: 30px; height: 30px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-2); flex-shrink: 0; padding: 0; }
+  .sp-drawer-hd-close { background: none; border: 1px solid var(--border); border-radius: 50%; width: 30px; height: 30px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.875rem; color: var(--text-2); flex-shrink: 0; font-family: inherit; }
+  .sp-drawer-bd { overflow-y: auto; flex: 1; -webkit-overflow-scrolling: touch; }
+  .sp-drawer-cat { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--text-3); padding: 12px 16px 5px; }
+  .sp-drawer-section { padding: 14px 20px; border-bottom: 1px solid var(--border); }
+  .sp-drawer-section:last-child { border-bottom: none; }
+  .sp-drawer-section-lbl { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-3); margin-bottom: 8px; }
+  .sp-drawer-row { display: flex; gap: 8px; align-items: baseline; font-size: 0.875rem; color: var(--text); margin-bottom: 4px; }
+  .sp-drawer-row:last-child { margin-bottom: 0; }
+  .sp-drawer-row-sub { font-size: 0.8125rem; color: var(--text-3); flex-shrink: 0; }
+  .sp-drawer-notes { font-size: 0.8125rem; color: var(--text-2); line-height: 1.6; white-space: pre-wrap; word-break: break-word; background: var(--surface); border-radius: 8px; padding: 10px 12px; }
+  .sp-drawer-booked { color: var(--success); }
+  .sp-drawer-item { margin: 0 14px 8px; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .sp-drawer-item:last-child { margin-bottom: 4px; }
+  .sp-drawer-item:active { background: var(--surface-2); }
+  .sp-drawer-item-inner { display: flex; gap: 12px; padding: 12px 14px; align-items: flex-start; }
+  .sp-drawer-item-icon { font-size: 1rem; flex-shrink: 0; width: 20px; text-align: center; margin-top: 1px; }
+  .sp-drawer-item-body { flex: 1; min-width: 0; }
+  .sp-drawer-item-name { font-size: 0.875rem; font-weight: 500; }
+  .sp-drawer-item-meta { font-size: 0.8125rem; color: var(--text-2); margin-top: 2px; }
+  .sp-empty-note { padding: 4px 16px 12px; font-size: 0.8125rem; color: var(--text-3); }
+
   @media (max-width: 600px) {
     .sp-hero { margin: 14px 14px 0; border-radius: 12px; }
     .sp-hero-name { font-size: 1.25rem; }
     .sp-sections { padding: 12px 14px 0; gap: 8px; }
     .sp-banner { margin: 12px 14px 0; }
+    .sp-city-cards { padding: 10px 14px 20px; }
+    .sp-view-toggle { margin: 12px 14px 0; }
+    .sp-calendar { padding: 0 14px 20px; }
   }
 
   /* Spot list (sortable container) */
@@ -4240,6 +4310,24 @@ body.share-mode .transit-entry-del { display: none !important; }
   </div>
   <div class="sp-page" id="sp-page">
     <!-- Rendered by renderSharePage() -->
+  </div>
+  <div id="sp-drawer" class="sp-drawer">
+    <div class="sp-drawer-back" onclick="spCloseDrawer()"></div>
+    <div class="sp-drawer-panel">
+      <div class="sp-drawer-grip"></div>
+      <div class="sp-drawer-hd">
+        <button id="sp-drawer-back-btn" class="sp-drawer-hd-back" onclick="spDrawerBack()" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <span id="sp-drawer-icon" class="sp-drawer-hd-icon"></span>
+        <div class="sp-drawer-hd-texts">
+          <div id="sp-drawer-title" class="sp-drawer-hd-title"></div>
+          <div id="sp-drawer-sub" class="sp-drawer-hd-sub" style="display:none"></div>
+        </div>
+        <button class="sp-drawer-hd-close" onclick="spCloseDrawer()">✕</button>
+      </div>
+      <div id="sp-drawer-body" class="sp-drawer-bd"></div>
+    </div>
   </div>
 </section>
 
@@ -13083,16 +13171,265 @@ function _openFullTripFromShare() {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   SHARE PAGE RENDERER
+   SHARE PAGE — DRAWER & VIEW CONTROLS
    ───────────────────────────────────────────────────────────── */
-function spToggleDetail(summaryEl) {
-  const expand = summaryEl.nextElementSibling;
-  if (!expand) return;
-  const open = expand.classList.toggle("open");
-  const chev = summaryEl.querySelector(".sp-item-chevron");
-  if (chev) chev.style.transform = open ? "rotate(180deg)" : "";
+let _spViewMode = "list";
+let _spDrawerHistory = [];
+const _spCityColors = ["#4F74FF","#F25D4E","#0FA676","#E87D1D","#8B5CF6","#D946EF"];
+
+function spCloseDrawer() {
+  const el = document.getElementById("sp-drawer");
+  if (!el || !el.classList.contains("open")) return;
+  const panel = el.querySelector(".sp-drawer-panel");
+  panel.classList.add("sp-anim-out");
+  setTimeout(() => { el.classList.remove("open"); panel.classList.remove("sp-anim-out"); _spDrawerHistory = []; }, 200);
 }
 
+function _spShowDrawer(bodyHTML, icon, title, subtitle) {
+  const el = document.getElementById("sp-drawer");
+  if (!el) return;
+  el.querySelector("#sp-drawer-icon").textContent = icon;
+  el.querySelector("#sp-drawer-title").textContent = title;
+  const subEl = el.querySelector("#sp-drawer-sub");
+  subEl.textContent = subtitle || "";
+  subEl.style.display = subtitle ? "" : "none";
+  el.querySelector("#sp-drawer-body").innerHTML = bodyHTML;
+  el.querySelector("#sp-drawer-back-btn").style.display = _spDrawerHistory.length ? "" : "none";
+  if (!el.classList.contains("open")) {
+    el.classList.add("open");
+    const panel = el.querySelector(".sp-drawer-panel");
+    panel.classList.add("sp-anim-in");
+    setTimeout(() => panel.classList.remove("sp-anim-in"), 260);
+  }
+}
+
+function spDrawerBack() {
+  if (!_spDrawerHistory.length) return;
+  const prev = _spDrawerHistory.pop();
+  _spShowDrawer(prev.body, prev.icon, prev.title, prev.subtitle);
+}
+
+function _spPushDrawer(bodyHTML, icon, title, subtitle) {
+  const el = document.getElementById("sp-drawer");
+  if (!el) return;
+  _spDrawerHistory.push({
+    body:     el.querySelector("#sp-drawer-body")?.innerHTML || "",
+    icon:     el.querySelector("#sp-drawer-icon")?.textContent || "",
+    title:    el.querySelector("#sp-drawer-title")?.textContent || "",
+    subtitle: el.querySelector("#sp-drawer-sub")?.textContent || ""
+  });
+  _spShowDrawer(bodyHTML, icon, title, subtitle);
+}
+
+function _spTransportDetailHTML(spotId) {
+  const spot = state.spots.find(s => s.id === spotId);
+  if (!spot) return "";
+  const subtype = spot.transportSubtype || "";
+  const from = spot.customOrigin || spot.transportFrom || state.towns.find(t => t.id === spot.townId)?.name || "";
+  const to   = spot.customDestination || spot.transportTo || state.towns.find(t => t.id === spot.arrivalTownId)?.name || "";
+  const depDate = spot.scheduledDate ? new Date(spot.scheduledDate + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }) : "";
+  const arrDate = spot.arrivalDate   ? new Date(spot.arrivalDate   + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }) : "";
+  const depTime = fmtTime12(spot.departureTime);
+  const arrTime = fmtTime12(spot.arrivalTime);
+  const depFull = [depDate, depTime].filter(Boolean).join(" · ");
+  const arrFull = [arrDate, arrTime].filter(Boolean).join(" · ");
+  let html = "";
+  if (from || to) html += `<div class="sp-drawer-section"><div class="sp-drawer-section-lbl">Route</div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:2px">
+      <span style="font-size:1.0625rem;font-weight:600">${escapeHtml(from || "—")}</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="18" height="18" style="color:var(--accent);flex-shrink:0"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      <span style="font-size:1.0625rem;font-weight:600">${escapeHtml(to || "—")}</span>
+    </div></div>`;
+  if (depFull || arrFull) html += `<div class="sp-drawer-section"><div class="sp-drawer-section-lbl">Journey</div>
+    ${depFull ? `<div class="sp-drawer-row"><span class="sp-drawer-row-sub">Departs</span>${escapeHtml(depFull)}</div>` : ""}
+    ${arrFull ? `<div class="sp-drawer-row"><span class="sp-drawer-row-sub">Arrives&nbsp;</span>${escapeHtml(arrFull)}</div>` : ""}
+    </div>`;
+  if (spot.carrier || spot.seat) html += `<div class="sp-drawer-section"><div class="sp-drawer-section-lbl">Details</div>
+    ${spot.carrier ? `<div class="sp-drawer-row">${escapeHtml(spot.carrier)}</div>` : ""}
+    ${spot.seat ? `<div class="sp-drawer-row"><span class="sp-drawer-row-sub">Seat</span>${escapeHtml(spot.seat)}</div>` : ""}
+    </div>`;
+  if (spot.notes) html += `<div class="sp-drawer-section"><div class="sp-drawer-section-lbl">Notes</div><div class="sp-drawer-notes">${escapeHtml(spot.notes)}</div></div>`;
+  if (spot.booked || spot.bookingRef) html += `<div class="sp-drawer-section"><div class="sp-drawer-section-lbl">Booking</div>
+    ${spot.booked ? `<div class="sp-drawer-row sp-drawer-booked">✓ Confirmed${spot.bookingRef ? ` · Ref: ${escapeHtml(spot.bookingRef)}` : ""}</div>` : `<div class="sp-drawer-row">Ref: ${escapeHtml(spot.bookingRef)}</div>`}
+    </div>`;
+  return html || `<div style="padding:24px;text-align:center;font-size:.875rem;color:var(--text-3)">No details available</div>`;
+}
+
+function _spAccomDetailHTML(townId) {
+  const town = state.towns.find(t => t.id === townId);
+  if (!town?.accommodation?.name) return "";
+  const a = town.accommodation;
+  const ci = a.checkinDate  ? new Date(a.checkinDate  + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }) : "";
+  const co = a.checkoutDate ? new Date(a.checkoutDate + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }) : "";
+  let html = `<div class="sp-drawer-section"><div class="sp-drawer-section-lbl">Location</div>
+    <div class="sp-drawer-row" style="font-weight:500">${escapeHtml(town.name)}</div>
+    ${a.address ? `<div class="sp-drawer-row" style="color:var(--text-2)">${escapeHtml(a.address)}</div>` : ""}
+    </div>`;
+  if (ci || co || a.checkinTime || a.checkoutTime) html += `<div class="sp-drawer-section"><div class="sp-drawer-section-lbl">Dates</div>
+    ${(ci || a.checkinTime) ? `<div class="sp-drawer-row"><span class="sp-drawer-row-sub">Check-in&nbsp;</span>${escapeHtml([ci, a.checkinTime].filter(Boolean).join(" "))}</div>` : ""}
+    ${(co || a.checkoutTime) ? `<div class="sp-drawer-row"><span class="sp-drawer-row-sub">Check-out</span>${escapeHtml([co, a.checkoutTime].filter(Boolean).join(" "))}</div>` : ""}
+    </div>`;
+  if (a.booked || a.bookingRef) html += `<div class="sp-drawer-section"><div class="sp-drawer-section-lbl">Booking</div>
+    ${a.booked ? `<div class="sp-drawer-row sp-drawer-booked">✓ Confirmed${a.bookingRef ? ` · Ref: ${escapeHtml(a.bookingRef)}` : ""}</div>` : `<div class="sp-drawer-row">Ref: ${escapeHtml(a.bookingRef)}</div>`}
+    </div>`;
+  if (a.notes) html += `<div class="sp-drawer-section"><div class="sp-drawer-section-lbl">Notes</div><div class="sp-drawer-notes">${escapeHtml(a.notes)}</div></div>`;
+  return html;
+}
+
+function spOpenTransportDetail(spotId) {
+  const spot = state.spots.find(s => s.id === spotId);
+  if (!spot) return;
+  const typeIcons = { train:"🚂", flight:"✈️", bus:"🚌", ferry:"⛴️", car:"🚗", taxi:"🚕", metro:"🚇", tram:"🚊" };
+  const icon = typeIcons[spot.transportSubtype] || "🚌";
+  const label = spot.transportSubtype ? spot.transportSubtype.charAt(0).toUpperCase() + spot.transportSubtype.slice(1) : "Transport";
+  _spPushDrawer(_spTransportDetailHTML(spotId), icon, spot.name || label, "");
+}
+
+function spOpenAccomDetail(townId) {
+  const town = state.towns.find(t => t.id === townId);
+  if (!town?.accommodation?.name) return;
+  _spPushDrawer(_spAccomDetailHTML(townId), "🏨", town.accommodation.name, town.name);
+}
+
+function _spCityDrawerBodyHTML(town) {
+  const typeIcons = { train:"🚂", flight:"✈️", bus:"🚌", ferry:"⛴️", car:"🚗", taxi:"🚕", metro:"🚇", tram:"🚊" };
+  const spotTypeEmoji = { sight:"👁", restaurant:"🍽", cafe:"☕", experience:"⭐" };
+  const townTransport = state.spots.filter(s => s.type === "transport" && !s._arrivalView && !s.isCancelled && s.townId === town.id);
+  const townDaySpots = state.spots.filter(s => s.type !== "transport" && s.townId === town.id);
+  const a = town.accommodation;
+  let html = "";
+
+  html += `<div class="sp-drawer-cat">Transport</div>`;
+  if (townTransport.length) {
+    townTransport.forEach(spot => {
+      const subtype = spot.transportSubtype || "";
+      const icon = typeIcons[subtype] || "🚌";
+      const label = subtype ? subtype.charAt(0).toUpperCase() + subtype.slice(1) : "Transport";
+      const from = spot.customOrigin || spot.transportFrom || "";
+      const to   = spot.customDestination || spot.transportTo || "";
+      const depTime = fmtTime12(spot.departureTime);
+      const depDateStr = spot.scheduledDate ? new Date(spot.scheduledDate + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
+      const meta = [from && to ? `${from} → ${to}` : (from || to), depTime ? `departs ${depTime}` : "", depDateStr].filter(Boolean).join(" · ");
+      html += `<div class="sp-drawer-item" onclick="spOpenTransportDetail('${spot.id}')">
+        <div class="sp-drawer-item-inner">
+          <div class="sp-drawer-item-icon">${icon}</div>
+          <div class="sp-drawer-item-body">
+            <div class="sp-drawer-item-name">${escapeHtml(spot.name || label)}</div>
+            ${meta ? `<div class="sp-drawer-item-meta">${meta}</div>` : ""}
+            ${spot.carrier ? `<div class="sp-drawer-item-meta">${escapeHtml(spot.carrier)}</div>` : ""}
+          </div>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="flex-shrink:0;color:var(--text-3);align-self:center"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+      </div>`;
+    });
+  } else {
+    html += `<div class="sp-empty-note">No outbound transport added</div>`;
+  }
+
+  html += `<div class="sp-drawer-cat">Accommodation</div>`;
+  if (a?.name) {
+    const ci = a.checkinDate  ? new Date(a.checkinDate  + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
+    const co = a.checkoutDate ? new Date(a.checkoutDate + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
+    const ciStr = [ci, a.checkinTime].filter(Boolean).join(" ");
+    const coStr = [co, a.checkoutTime].filter(Boolean).join(" ");
+    const ds = ciStr && coStr ? `${ciStr} → ${coStr}` : (ciStr || coStr || "");
+    html += `<div class="sp-drawer-item" onclick="spOpenAccomDetail('${town.id}')">
+      <div class="sp-drawer-item-inner">
+        <div class="sp-drawer-item-icon">🏨</div>
+        <div class="sp-drawer-item-body">
+          <div class="sp-drawer-item-name">${escapeHtml(a.name)}</div>
+          ${ds ? `<div class="sp-drawer-item-meta">${ds}</div>` : ""}
+        </div>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="flex-shrink:0;color:var(--text-3);align-self:center"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>`;
+  } else {
+    html += `<div class="sp-empty-note">No accommodation added</div>`;
+  }
+
+  if (townDaySpots.length) {
+    html += `<div class="sp-drawer-cat">${townDaySpots.length} Visit${townDaySpots.length === 1 ? "" : "s"}</div>`;
+    const visitDates = [...new Set(townDaySpots.map(s => s.scheduledDate).filter(Boolean))].sort();
+    visitDates.forEach(date => {
+      const dLabel = new Date(date + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+      const list = townDaySpots.filter(s => s.scheduledDate === date).sort((a, b) => (a.scheduledTime || "").localeCompare(b.scheduledTime || "") || (a.order ?? 9999) - (b.order ?? 9999));
+      html += `<div style="padding:4px 16px 8px">
+        <div style="font-size:.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-3);margin-bottom:6px">${dLabel}</div>
+        ${list.map(spot => `<div style="display:flex;gap:10px;padding:5px 0;font-size:.8125rem;align-items:flex-start">
+          <span style="color:var(--text-3);min-width:44px;flex-shrink:0">${escapeHtml(fmtTime12(spot.scheduledTime))}</span>
+          <span style="flex-shrink:0">${spotTypeEmoji[spot.type] || "📍"}</span>
+          <div><div>${escapeHtml(spot.name || "")}</div>${spot.neighborhood ? `<div style="font-size:.75rem;color:var(--text-3)">${escapeHtml(spot.neighborhood)}</div>` : ""}</div>
+        </div>`).join("")}
+      </div>`;
+    });
+  }
+  return html;
+}
+
+function spOpenCityDrawer(townId) {
+  const town = state.towns.find(t => t.id === townId);
+  if (!town) return;
+  _spDrawerHistory = [];
+  const arrDate = town.arrivalDate   ? new Date(town.arrivalDate   + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
+  const depDate = town.departureDate ? new Date(town.departureDate + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
+  const nights = (town.arrivalDate && town.departureDate) ? nightsBetween(town.arrivalDate, town.departureDate) : null;
+  const subtitle = [arrDate && depDate ? `${arrDate} – ${depDate}` : (arrDate || depDate), nights !== null ? `${nights} night${nights === 1 ? "" : "s"}` : ""].filter(Boolean).join(" · ");
+  _spShowDrawer(_spCityDrawerBodyHTML(town), "📍", town.name, subtitle);
+}
+
+function spToggleVisits(el) {
+  el.classList.toggle("open");
+  el.nextElementSibling?.classList.toggle("open");
+}
+
+function spSwitchView(view) {
+  _spViewMode = view;
+  document.querySelectorAll(".sp-view-tab").forEach(t => t.classList.toggle("active", t.dataset.view === view));
+  const lv = document.getElementById("sp-list-view");
+  const cv = document.getElementById("sp-cal-view");
+  if (lv) lv.style.display = view === "list" ? "" : "none";
+  if (cv) cv.style.display = view === "calendar" ? "" : "none";
+}
+
+function _renderSpCalendar() {
+  const { trip, towns } = state;
+  if (!towns.length || !trip?.startDate || !trip?.endDate) {
+    return `<div style="padding:24px;text-align:center;font-size:.875rem;color:var(--text-3)">No dates set for this trip</div>`;
+  }
+  const startD = new Date(trip.startDate + "T00:00:00");
+  const endD   = new Date(trip.endDate   + "T00:00:00");
+  const months = [];
+  let cur = new Date(startD.getFullYear(), startD.getMonth(), 1);
+  const endMonth = new Date(endD.getFullYear(), endD.getMonth(), 1);
+  while (cur <= endMonth) { months.push(new Date(cur)); cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1); }
+  const dowLabels = ["Mo","Tu","We","Th","Fr","Sa","Su"];
+  return months.map(monthStart => {
+    const year = monthStart.getFullYear();
+    const month = monthStart.getMonth();
+    const monthName = monthStart.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const firstDow = (new Date(year, month, 1).getDay() + 6) % 7;
+    let cells = "";
+    for (let i = 0; i < firstDow; i++) cells += `<div class="sp-cal-cell"></div>`;
+    for (let day = 1; day <= daysInMonth; day++) {
+      const ds = `${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+      const active = towns.filter(t => t.arrivalDate && t.departureDate && ds >= t.arrivalDate && ds <= t.departureDate);
+      const blocks = active.slice(0, 2).map(t => {
+        const color = _spCityColors[towns.indexOf(t) % _spCityColors.length];
+        const showLabel = ds === t.arrivalDate || day === 1;
+        const name = t.name.length > 8 ? t.name.slice(0, 7) + "…" : t.name;
+        return `<div class="sp-cal-block" style="background:${color}" onclick="spOpenCityDrawer('${t.id}')" title="${escapeHtml(t.name)}">${showLabel ? escapeHtml(name) : "&nbsp;"}</div>`;
+      }).join("");
+      cells += `<div class="sp-cal-cell"><div class="sp-cal-day-num">${day}</div>${blocks}</div>`;
+    }
+    return `<div class="sp-cal-month-hd">${monthName}</div>
+      <div class="sp-cal-grid">${dowLabels.map(d => `<div class="sp-cal-dow">${d}</div>`).join("")}${cells}</div>`;
+  }).join("");
+}
+
+/* ─────────────────────────────────────────────────────────────
+   SHARE PAGE RENDERER
+   ───────────────────────────────────────────────────────────── */
 function renderSharePage(viewerUser, tripAllowedUsers) {
   const container = document.getElementById("sp-page");
   if (!container || !state.trip) return;
@@ -13100,38 +13437,14 @@ function renderSharePage(viewerUser, tripAllowedUsers) {
   const trip = state.trip;
   const towns = state.towns;
   const spots = state.spots;
-
-  // Trip duration
+  const daySpots = spots.filter(s => s.type !== "transport");
   const totalNights = (trip.startDate && trip.endDate) ? nightsBetween(trip.startDate, trip.endDate) : null;
   const totalDays = totalNights !== null ? totalNights + 1 : null;
-
-  // Cover photo — first available city photo
   const coverPhoto = Object.values(trip.cityPhotos || {}).find(Boolean) || null;
+  const typeIcons = { train:"🚂", flight:"✈️", bus:"🚌", ferry:"⛴️", car:"🚗", taxi:"🚕", metro:"🚇", tram:"🚊" };
+  const spotTypeEmoji = { sight:"👁", restaurant:"🍽", cafe:"☕", experience:"⭐" };
 
-  // Transport spots (departures only, not cancelled)
-  const transportSpots = spots.filter(s => s.type === "transport" && !s._arrivalView && !s.isCancelled);
-
-  // Towns with accommodation set
-  const townsWithAccom = towns.filter(t => t.accommodation?.name);
-
-  // Non-transport spots for day-by-day
-  const daySpots = spots.filter(s => s.type !== "transport");
-
-  // All trip days ordered
-  const seenDates = new Set();
-  const allDays = [];
-  for (const town of towns) {
-    if (!town.arrivalDate || !town.departureDate) continue;
-    for (const date of getDaysForTown(town)) {
-      if (!seenDates.has(date)) {
-        seenDates.add(date);
-        allDays.push({ date, townId: town.id, townName: town.name });
-      }
-    }
-  }
-  allDays.sort((a, b) => a.date.localeCompare(b.date));
-
-  // Banner logic
+  // Banner
   const allowedUsers = tripAllowedUsers || trip.allowedUsers || [];
   let bannerHTML = "";
   if (viewerUser) {
@@ -13152,143 +13465,76 @@ function renderSharePage(viewerUser, tripAllowedUsers) {
     ? `<div class="sp-hero-img"><img src="${escapeHtml(coverPhoto)}" alt="" loading="lazy"><div class="sp-hero-img-overlay"></div></div>`
     : `<div class="sp-hero-img"></div>`;
   const dateStr = (trip.startDate && trip.endDate) ? fmtDateRange(trip.startDate, trip.endDate) : "";
-  const heroHTML = `
-    <div class="sp-hero">
-      ${heroImgHTML}
-      <div class="sp-hero-body">
-        <div class="sp-hero-name">${escapeHtml(trip.name || "Trip")}</div>
-        ${dateStr ? `<div class="sp-hero-dates">${dateStr}</div>` : ""}
-        <div class="sp-stats">
-          ${totalDays ? `<div class="sp-stat"><div class="sp-stat-n">${totalDays}</div><div class="sp-stat-l">Days</div></div>` : ""}
-          <div class="sp-stat"><div class="sp-stat-n">${towns.length}</div><div class="sp-stat-l">Cities</div></div>
-          ${totalNights ? `<div class="sp-stat"><div class="sp-stat-n">${totalNights}</div><div class="sp-stat-l">Nights</div></div>` : ""}
-          <div class="sp-stat"><div class="sp-stat-n">${daySpots.length}</div><div class="sp-stat-l">Spots</div></div>
-        </div>
+  const heroHTML = `<div class="sp-hero">
+    ${heroImgHTML}
+    <div class="sp-hero-body">
+      <div class="sp-hero-name">${escapeHtml(trip.name || "Trip")}</div>
+      ${dateStr ? `<div class="sp-hero-dates">${dateStr}</div>` : ""}
+      <div class="sp-stats">
+        ${totalDays ? `<div class="sp-stat"><div class="sp-stat-n">${totalDays}</div><div class="sp-stat-l">Days</div></div>` : ""}
+        <div class="sp-stat"><div class="sp-stat-n">${towns.length}</div><div class="sp-stat-l">Cities</div></div>
+        ${totalNights ? `<div class="sp-stat"><div class="sp-stat-n">${totalNights}</div><div class="sp-stat-l">Nights</div></div>` : ""}
+        <div class="sp-stat"><div class="sp-stat-n">${daySpots.length}</div><div class="sp-stat-l">Spots</div></div>
       </div>
-    </div>`;
+    </div>
+  </div>`;
 
-  // City timeline
-  const cityTimelineHTML = towns.map((town, i) => {
-    const isLast = i === towns.length - 1;
-    const checkin  = town.arrivalDate   ? new Date(town.arrivalDate   + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
-    const checkout = town.departureDate ? new Date(town.departureDate + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
+  // Per-city cards (list view)
+  const listHTML = towns.length ? towns.map(town => {
+    const townTransport = spots.filter(s => s.type === "transport" && !s._arrivalView && !s.isCancelled && s.townId === town.id);
+    const townDaySpots = daySpots.filter(s => s.townId === town.id);
+    const arrDate = town.arrivalDate   ? new Date(town.arrivalDate   + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
+    const depDate = town.departureDate ? new Date(town.departureDate + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
     const nights = (town.arrivalDate && town.departureDate) ? nightsBetween(town.arrivalDate, town.departureDate) : null;
-    const meta = [
-      checkin && checkout ? `${checkin} – ${checkout}` : (checkin || checkout),
-      nights !== null ? `${nights} night${nights === 1 ? "" : "s"}` : "",
-    ].filter(Boolean).join(" · ");
-    return `<div class="sp-city-row">
-      <div class="sp-city-spine"><div class="sp-city-dot"></div>${!isLast ? `<div class="sp-city-line"></div>` : ""}</div>
-      <div class="sp-city-info"><div class="sp-city-name">${escapeHtml(town.name)}</div>${meta ? `<div class="sp-city-meta">${meta}</div>` : ""}</div>
-    </div>`;
-  }).join("");
+    const meta = [arrDate && depDate ? `${arrDate} – ${depDate}` : (arrDate || depDate), nights !== null ? `${nights} night${nights === 1 ? "" : "s"}` : ""].filter(Boolean).join(" · ");
+    const chevR = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="flex-shrink:0;color:var(--text-3)"><polyline points="9 18 15 12 9 6"/></svg>`;
 
-  // Transport rows
-  const transportIcon = { train: "🚂", flight: "✈️", bus: "🚌", ferry: "⛴️", car: "🚗", taxi: "🚕", metro: "🚇", tram: "🚊" };
-  const spChevSVG = `<svg class="sp-item-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 12 15 18 9"/></svg>`;
-  const transportRowsHTML = transportSpots.length
-    ? transportSpots.map(spot => {
-        const subtype = spot.transportSubtype || "";
-        const icon = transportIcon[subtype] || "🚌";
-        const label = subtype ? subtype.charAt(0).toUpperCase() + subtype.slice(1) : "Transport";
-        const from = spot.customOrigin || spot.transportFrom || "";
-        const to   = spot.customDestination || spot.transportTo || "";
-        const depTime = fmtTime12(spot.departureTime);
-        const depDate = spot.scheduledDate ? new Date(spot.scheduledDate + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
-        const summaryMeta = [from && to ? `${from} → ${to}` : (from || to), depTime ? `departs ${depTime}` : "", depDate].filter(Boolean).join(" · ");
-        // Detail panel fields (no price/budget)
-        const depDateLong = spot.scheduledDate ? new Date(spot.scheduledDate + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }) : "";
-        const arrDateLong = spot.arrivalDate   ? new Date(spot.arrivalDate   + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }) : "";
-        const arrTime = fmtTime12(spot.arrivalTime);
-        const depFull = [depDateLong, depTime].filter(Boolean).join(" · ");
-        const arrFull = [arrDateLong, arrTime].filter(Boolean).join(" · ");
-        const expandParts = [];
-        if (depFull || arrFull) expandParts.push(
-          `<div class="sp-expand-label">Journey</div>` +
-          (depFull ? `<div class="sp-expand-row"><span class="sp-expand-sub">Departs</span>${escapeHtml(depFull)}</div>` : "") +
-          (arrFull ? `<div class="sp-expand-row"><span class="sp-expand-sub">Arrives&nbsp;&nbsp;</span>${escapeHtml(arrFull)}</div>` : "")
-        );
-        if (spot.carrier) expandParts.push(
-          `<div class="sp-expand-label">Carrier</div><div class="sp-expand-row">${escapeHtml(spot.carrier)}</div>`
-        );
-        if (spot.seat) expandParts.push(
-          `<div class="sp-expand-label">Seat</div><div class="sp-expand-row">${escapeHtml(spot.seat)}</div>`
-        );
-        if (spot.notes) expandParts.push(
-          `<div class="sp-expand-label">Notes</div><div class="sp-expand-notes">${escapeHtml(spot.notes)}</div>`
-        );
-        if (spot.booked || spot.bookingRef) expandParts.push(
-          `<div class="sp-expand-label">Booking</div>` +
-          (spot.booked
-            ? `<div class="sp-expand-row" style="color:var(--success)">✓ Confirmed${spot.bookingRef ? ` · Ref: ${escapeHtml(spot.bookingRef)}` : ""}</div>`
-            : `<div class="sp-expand-row">Ref: ${escapeHtml(spot.bookingRef)}</div>`)
-        );
-        const hasDetail = expandParts.length > 0;
-        return `<div class="sp-item">
-          <div class="sp-item-summary${hasDetail ? " expandable" : ""}"${hasDetail ? ` onclick="spToggleDetail(this)"` : ""}>
-            <div class="sp-item-icon">${icon}</div>
-            <div class="sp-item-body">
-              <div class="sp-item-name">${escapeHtml(spot.name || label)}</div>
-              ${summaryMeta ? `<div class="sp-item-meta">${summaryMeta}</div>` : ""}
-              ${spot.carrier ? `<div class="sp-item-meta">${escapeHtml(spot.carrier)}</div>` : ""}
-            </div>
-            ${hasDetail ? spChevSVG : ""}
-          </div>
-          ${hasDetail ? `<div class="sp-item-expand">${expandParts.join("")}</div>` : ""}
-        </div>`;
-      }).join("")
-    : `<div class="sp-item"><div class="sp-item-summary"><div class="sp-item-icon" style="opacity:.4">—</div><div class="sp-item-body"><div class="sp-item-meta">No transport added yet</div></div></div></div>`;
+    // Transport cards
+    const transportItemsHTML = townTransport.length ? townTransport.map(spot => {
+      const subtype = spot.transportSubtype || "";
+      const icon = typeIcons[subtype] || "🚌";
+      const label = subtype ? subtype.charAt(0).toUpperCase() + subtype.slice(1) : "Transport";
+      const from = spot.customOrigin || spot.transportFrom || "";
+      const to   = spot.customDestination || spot.transportTo || "";
+      const depTime = fmtTime12(spot.departureTime);
+      const depDateStr = spot.scheduledDate ? new Date(spot.scheduledDate + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
+      const m = [from && to ? `${from} → ${to}` : (from || to), depTime ? `departs ${depTime}` : "", depDateStr].filter(Boolean).join(" · ");
+      return `<div class="sp-item"><div class="sp-item-summary expandable" onclick="spOpenTransportDetail('${spot.id}')">
+        <div class="sp-item-icon">${icon}</div>
+        <div class="sp-item-body">
+          <div class="sp-item-name">${escapeHtml(spot.name || label)}</div>
+          ${m ? `<div class="sp-item-meta">${m}</div>` : ""}
+          ${spot.carrier ? `<div class="sp-item-meta">${escapeHtml(spot.carrier)}</div>` : ""}
+        </div>${chevR}
+      </div></div>`;
+    }).join("") : `<div class="sp-item"><div class="sp-item-summary"><div class="sp-item-icon" style="opacity:.35">—</div><div class="sp-item-body"><div class="sp-item-meta">No outbound transport added</div></div></div></div>`;
 
-  // Accommodation rows
-  const accomRowsHTML = townsWithAccom.length
-    ? townsWithAccom.map(town => {
-        const a = town.accommodation;
-        const ci  = a.checkinDate  ? new Date(a.checkinDate  + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
-        const co  = a.checkoutDate ? new Date(a.checkoutDate + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
-        const ciStr = [ci, a.checkinTime ].filter(Boolean).join(" ");
-        const coStr = [co, a.checkoutTime].filter(Boolean).join(" ");
-        const dateStr = ciStr && coStr ? `Check-in ${ciStr} · Check-out ${coStr}` : (ciStr ? `Check-in ${ciStr}` : coStr ? `Check-out ${coStr}` : "");
-        // Detail panel
-        const expandParts = [];
-        if (a.address) expandParts.push(
-          `<div class="sp-expand-label">Address</div><div class="sp-expand-row">${escapeHtml(a.address)}</div>`
-        );
-        if (a.booked || a.bookingRef) expandParts.push(
-          `<div class="sp-expand-label">Booking</div>` +
-          (a.booked
-            ? `<div class="sp-expand-row" style="color:var(--success)">✓ Confirmed${a.bookingRef ? ` · Ref: ${escapeHtml(a.bookingRef)}` : ""}</div>`
-            : `<div class="sp-expand-row">Ref: ${escapeHtml(a.bookingRef)}</div>`)
-        );
-        if (a.notes) expandParts.push(
-          `<div class="sp-expand-label">Notes</div><div class="sp-expand-notes">${escapeHtml(a.notes)}</div>`
-        );
-        const hasDetail = expandParts.length > 0;
-        return `<div class="sp-item">
-          <div class="sp-item-summary${hasDetail ? " expandable" : ""}"${hasDetail ? ` onclick="spToggleDetail(this)"` : ""}>
-            <div class="sp-item-icon">🏨</div>
-            <div class="sp-item-body">
-              <div class="sp-item-name">${escapeHtml(a.name)}</div>
-              <div class="sp-item-meta">${escapeHtml(town.name)}</div>
-              ${dateStr ? `<div class="sp-item-meta">${dateStr}</div>` : ""}
-            </div>
-            ${hasDetail ? spChevSVG : ""}
-          </div>
-          ${hasDetail ? `<div class="sp-item-expand">${expandParts.join("")}</div>` : ""}
-        </div>`;
-      }).join("")
-    : `<div class="sp-item"><div class="sp-item-summary"><div class="sp-item-icon" style="opacity:.4">—</div><div class="sp-item-body"><div class="sp-item-meta">No accommodation added yet</div></div></div></div>`;
+    // Accommodation card
+    const a = town.accommodation;
+    const accomItemHTML = a?.name ? (() => {
+      const ci = a.checkinDate  ? new Date(a.checkinDate  + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
+      const co = a.checkoutDate ? new Date(a.checkoutDate + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
+      const ds = [ci && co ? `${ci} – ${co}` : (ci || co), a.checkinTime ? `from ${a.checkinTime}` : ""].filter(Boolean).join(" · ");
+      return `<div class="sp-item"><div class="sp-item-summary expandable" onclick="spOpenAccomDetail('${town.id}')">
+        <div class="sp-item-icon">🏨</div>
+        <div class="sp-item-body">
+          <div class="sp-item-name">${escapeHtml(a.name)}</div>
+          ${ds ? `<div class="sp-item-meta">${ds}</div>` : ""}
+        </div>${chevR}
+      </div></div>`;
+    })() : `<div class="sp-item"><div class="sp-item-summary"><div class="sp-item-icon" style="opacity:.35">—</div><div class="sp-item-body"><div class="sp-item-meta">No accommodation added</div></div></div></div>`;
 
-  // Day-by-day
-  const spotTypeEmoji = { sight: "👁", restaurant: "🍽", cafe: "☕", experience: "⭐" };
-  const dayByDayHTML = allDays.map(({ date, townId, townName }) => {
-    const d = new Date(date + "T00:00:00");
-    const dow      = d.toLocaleDateString("en-GB", { weekday: "short" }).toUpperCase();
-    const dateLabel = d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-    const spotList  = daySpots
-      .filter(s => s.scheduledDate === date && s.townId === townId)
-      .sort((a, b) => (a.scheduledTime || "").localeCompare(b.scheduledTime || "") || (a.order ?? 9999) - (b.order ?? 9999));
-    const spotsHTML = spotList.length
-      ? spotList.map(spot => `
+    // Visits (expandable by day)
+    const visitDates = [...new Set(townDaySpots.map(s => s.scheduledDate).filter(Boolean))].sort();
+    const visitsBodyHTML = visitDates.length ? visitDates.map(date => {
+      const dLabel = new Date(date + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+      const list = townDaySpots.filter(s => s.scheduledDate === date).sort((a, b) => (a.scheduledTime || "").localeCompare(b.scheduledTime || "") || (a.order ?? 9999) - (b.order ?? 9999));
+      return `<div class="sp-day-section">
+        <div class="sp-day-header" onclick="var b=this.nextElementSibling,c=this.querySelector('.sp-day-chevron');b.classList.toggle('open');c.classList.toggle('open')">
+          <span class="sp-day-date">${dLabel}</span>
+          <svg class="sp-day-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="sp-day-body">${list.length ? list.map(spot => `
           <div class="sp-day-spot">
             <div class="sp-day-spot-time">${escapeHtml(fmtTime12(spot.scheduledTime))}</div>
             <div class="sp-day-spot-icon">${spotTypeEmoji[spot.type] || "📍"}</div>
@@ -13296,67 +13542,37 @@ function renderSharePage(viewerUser, tripAllowedUsers) {
               <div class="sp-day-spot-name">${escapeHtml(spot.name || "")}</div>
               ${spot.neighborhood ? `<div class="sp-day-spot-meta">${escapeHtml(spot.neighborhood)}</div>` : ""}
             </div>
-          </div>`).join("")
-      : `<p style="font-size:0.8125rem;color:var(--text-3);padding:4px 0 4px;margin:0">Nothing planned</p>`;
-    return `<div class="sp-day-section">
-      <div class="sp-day-header" onclick="
-        var body = this.nextElementSibling;
-        var chev = this.querySelector('.sp-day-chevron');
-        body.classList.toggle('open');
-        chev.classList.toggle('open');">
-        <span class="sp-day-dow">${dow}</span>
-        <span class="sp-day-date">${dateLabel}</span>
-        <span class="sp-day-city">${escapeHtml(townName)}</span>
-        <svg class="sp-day-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 12 15 18 9"/></svg>
-      </div>
-      <div class="sp-day-body">${spotsHTML}</div>
-    </div>`;
-  }).join("");
+          </div>`).join("") : `<p style="font-size:.8125rem;color:var(--text-3);padding:4px 0;margin:0">Nothing planned</p>`}
+        </div>
+      </div>`;
+    }).join("") : `<div style="padding:10px 16px;font-size:.8125rem;color:var(--text-3)">No spots added yet</div>`;
 
-  const chevronSVG = `<svg class="sp-accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>`;
-  const accordionToggle = `onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')"`;
+    return `<div class="sp-city-card">
+      <div class="sp-city-card-head">
+        <div class="sp-city-card-name">${escapeHtml(town.name)}</div>
+        ${meta ? `<div class="sp-city-card-meta">${meta}</div>` : ""}
+      </div>
+      <div class="sp-city-section-lbl">Transport</div>
+      <div class="sp-item-list">${transportItemsHTML}</div>
+      <div class="sp-city-section-lbl">Accommodation</div>
+      <div class="sp-item-list">${accomItemHTML}</div>
+      ${townDaySpots.length ? `<div class="sp-visits-toggle" onclick="spToggleVisits(this)">
+        <span style="flex:1">📍 ${townDaySpots.length} Visit${townDaySpots.length === 1 ? "" : "s"}</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="sp-visits-body">${visitsBodyHTML}</div>` : ""}
+    </div>`;
+  }).join("") : `<div style="padding:24px;text-align:center;font-size:.875rem;color:var(--text-3)">No cities added to this trip</div>`;
 
   container.innerHTML = `
     ${bannerHTML}
     ${heroHTML}
-    <div class="sp-sections">
-      <div class="sp-accordion">
-        <div class="sp-accordion-header open" ${accordionToggle}>
-          <span class="sp-accordion-icon">🗺</span>
-          <span class="sp-accordion-title">Cities</span>
-          <span class="sp-accordion-count">${towns.length} ${towns.length === 1 ? "city" : "cities"}</span>
-          ${chevronSVG}
-        </div>
-        <div class="sp-accordion-body sp-city-timeline open">${cityTimelineHTML || '<div class="sp-item"><div class="sp-item-meta">No cities added yet</div></div>'}</div>
-      </div>
-      <div class="sp-accordion">
-        <div class="sp-accordion-header" ${accordionToggle}>
-          <span class="sp-accordion-icon">🚌</span>
-          <span class="sp-accordion-title">Transport</span>
-          <span class="sp-accordion-count">${transportSpots.length} journey${transportSpots.length === 1 ? "" : "s"}</span>
-          ${chevronSVG}
-        </div>
-        <div class="sp-accordion-body sp-item-list">${transportRowsHTML}</div>
-      </div>
-      <div class="sp-accordion">
-        <div class="sp-accordion-header" ${accordionToggle}>
-          <span class="sp-accordion-icon">🏨</span>
-          <span class="sp-accordion-title">Accommodation</span>
-          <span class="sp-accordion-count">${townsWithAccom.length} stay${townsWithAccom.length === 1 ? "" : "s"}</span>
-          ${chevronSVG}
-        </div>
-        <div class="sp-accordion-body sp-item-list">${accomRowsHTML}</div>
-      </div>
-      <div class="sp-accordion">
-        <div class="sp-accordion-header" ${accordionToggle}>
-          <span class="sp-accordion-icon">📅</span>
-          <span class="sp-accordion-title">Day-by-day</span>
-          <span class="sp-accordion-count">${allDays.length} day${allDays.length === 1 ? "" : "s"}</span>
-          ${chevronSVG}
-        </div>
-        <div class="sp-accordion-body">${allDays.length ? dayByDayHTML : '<div class="sp-item"><div class="sp-item-meta">No days planned yet</div></div>'}</div>
-      </div>
-    </div>`;
+    <div class="sp-view-toggle">
+      <button class="sp-view-tab active" data-view="list" onclick="spSwitchView('list')">List</button>
+      <button class="sp-view-tab" data-view="calendar" onclick="spSwitchView('calendar')">Calendar</button>
+    </div>
+    <div id="sp-list-view" class="sp-city-cards">${listHTML}</div>
+    <div id="sp-cal-view" class="sp-calendar" style="display:none">${_renderSpCalendar()}</div>`;
 }
 
 /* ─────────────────────────────────────────────────────────────
