@@ -13266,7 +13266,9 @@ function _spAccomDetailHTML(townId) {
   const co = a.checkoutDate ? new Date(a.checkoutDate + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }) : "";
   let html = `<div class="sp-drawer-section"><div class="sp-drawer-section-lbl">Location</div>
     <div class="sp-drawer-row" style="font-weight:500">${escapeHtml(town.name)}</div>
-    ${a.address ? `<div class="sp-drawer-row" style="color:var(--text-2)">${escapeHtml(a.address)}</div>` : ""}
+    ${a.address
+      ? `<div class="sp-drawer-row" style="color:var(--text-2)">${mapsLink(a.address)}</div>`
+      : `<div class="sp-drawer-row">${mapsSearchBtn(a.name, town.name)}</div>`}
     </div>`;
   if (ci || co || a.checkinTime || a.checkoutTime) html += `<div class="sp-drawer-section"><div class="sp-drawer-section-lbl">Dates</div>
     ${(ci || a.checkinTime) ? `<div class="sp-drawer-row"><span class="sp-drawer-row-sub">Check-in&nbsp;</span>${escapeHtml([ci, a.checkinTime].filter(Boolean).join(" "))}</div>` : ""}
@@ -13379,7 +13381,7 @@ function _spCityDrawerBodyHTML(town) {
         ${list.map(spot => `<div style="display:flex;gap:10px;padding:5px 0;font-size:.8125rem;align-items:flex-start">
           <span style="color:var(--text-3);min-width:44px;flex-shrink:0">${escapeHtml(fmtTime12(spot.scheduledTime))}</span>
           <span style="flex-shrink:0">${spotTypeEmoji[spot.type] || "📍"}</span>
-          <div><div>${escapeHtml(spot.name || "")}</div>${spot.neighborhood ? `<div style="font-size:.75rem;color:var(--text-3)">${escapeHtml(spot.neighborhood)}</div>` : ""}</div>
+          <div><div>${escapeHtml(spot.name || "")}</div>${spot.neighborhood ? `<div style="font-size:.75rem;color:var(--text-3)">${escapeHtml(spot.neighborhood)}</div>` : ""}${spot.name ? mapsSearchBtn(spot.name, town.name) : ""}</div>
         </div>`).join("")}
       </div>`;
     });
@@ -13565,6 +13567,7 @@ function renderSharePage(viewerUser, tripAllowedUsers) {
             <div class="sp-day-spot-body">
               <div class="sp-day-spot-name">${escapeHtml(spot.name || "")}</div>
               ${spot.neighborhood ? `<div class="sp-day-spot-meta">${escapeHtml(spot.neighborhood)}</div>` : ""}
+              ${spot.name ? mapsSearchBtn(spot.name, town.name) : ""}
             </div>
           </div>`).join("") : `<p style="font-size:.8125rem;color:var(--text-3);padding:4px 0;margin:0">Nothing planned</p>`}
         </div>
