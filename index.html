@@ -1311,15 +1311,15 @@
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script type="module">
 // Firebase SDK is loaded via dynamic import inside initFirebase().
-import { FIREBASE_CONFIG, GEMINI_CONFIG, PEXELS_CONFIG, FIREBASE_VERSION, FIREBASE_BASE } from "./js/config.js";
+import { FIREBASE_CONFIG, GEMINI_CONFIG, PEXELS_CONFIG } from "./js/config.js";
+import { db, auth, initFirebase, isConfigured, doc, getDoc, setDoc, updateDoc, deleteDoc,
+         collection, getDocs, onSnapshot, writeBatch, serverTimestamp, arrayUnion, addDoc,
+         query, where, arrayRemove, deleteField,
+         GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, signInAnonymously } from "./js/firebase.js";
 import { state, subscribe, notify, setState, activeTripId, setActiveTripId, _tripSettingsId, setTripSettingsId } from "./js/state.js";
 import { applyTheme, initTheme } from "./js/theme.js";
 import { localDateStr, fmtDateRange, fmtSpreadDates, nightsBetween, daysUntil, fmtTime12, fmtDayHeader, escapeHtml, emailToName, mapsLink, mapsSearchBtn, linkifyNotes, wirePhoneCopyBtns, typeIconSVG } from "./js/utils.js";
 
-let initializeApp, getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, signInAnonymously;
-let initializeFirestore, persistentLocalCache, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs;
-let onSnapshot, writeBatch, serverTimestamp, arrayUnion, addDoc;
-let query, where, arrayRemove, deleteField;
 
 /* Access is managed via the appUsers collection in Firestore — no hardcoded emails needed. */
 
@@ -1404,32 +1404,7 @@ document.getElementById("sheet-disruption-btn")?.addEventListener("click", () =>
   setView("disruption");
 });
 
-/* ─────────────────────────────────────────────────────────────
-   FIREBASE INIT
-   ───────────────────────────────────────────────────────────── */
-let app, auth, db;
-function isConfigured() {
-  return FIREBASE_CONFIG.apiKey && !FIREBASE_CONFIG.apiKey.startsWith("REPLACE_ME");
-}
-
-async function initFirebase() {
-  // Load all three Firebase modules in parallel — cuts import time by ~2/3
-  const [appMod, authMod, fsMod] = await Promise.all([
-    import(`${FIREBASE_BASE}/firebase-app.js`),
-    import(`${FIREBASE_BASE}/firebase-auth.js`),
-    import(`${FIREBASE_BASE}/firebase-firestore.js`),
-  ]);
-
-  initializeApp = appMod.initializeApp;
-  ({ getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, signInAnonymously } = authMod);
-  ({ initializeFirestore, persistentLocalCache, doc, getDoc, setDoc, updateDoc, deleteDoc,
-     collection, getDocs, onSnapshot, writeBatch, serverTimestamp, arrayUnion, addDoc, query, where, arrayRemove, deleteField } = fsMod);
-
-  app = initializeApp(FIREBASE_CONFIG);
-  auth = getAuth(app);
-  // persistentLocalCache: enables IndexedDB offline persistence
-  db = initializeFirestore(app, { localCache: persistentLocalCache() });
-}
+/* isConfigured, initFirebase, db, auth — see js/firebase.js */
 
 /* ─────────────────────────────────────────────────────────────
    AUTH FLOW
