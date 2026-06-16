@@ -8,7 +8,10 @@
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<title>France · May–June 2026</title>
+<title>Weyage</title>
+<meta property="og:title" content="Weyage" />
+<meta property="og:description" content="View a shared trip itinerary" />
+<meta property="og:type" content="website" />
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -13455,6 +13458,9 @@ function renderSharePage(viewerUser, tripAllowedUsers) {
   const trip = state.trip;
   const towns = state.towns;
   const spots = state.spots;
+
+  const dateStr0 = (trip.startDate && trip.endDate) ? fmtDateRange(trip.startDate, trip.endDate) : "";
+  document.title = dateStr0 ? `${trip.name || "Trip"} · ${dateStr0}` : (trip.name || "Weyage");
   const daySpots = spots.filter(s => s.type !== "transport");
   const totalNights = (trip.startDate && trip.endDate) ? nightsBetween(trip.startDate, trip.endDate) : null;
   const totalDays = totalNights !== null ? totalNights + 1 : null;
