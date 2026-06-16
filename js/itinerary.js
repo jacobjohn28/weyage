@@ -150,7 +150,7 @@ function getDaysForTown(town) {
   return days;
 }
 
-function getSpotsForTown(townId) {
+export function getSpotsForTown(townId) {
   const own = state.spots.filter(s => s.townId === townId);
   const arrivals = state.spots
     .filter(s => s.type === "transport" && s.arrivalTownId === townId && s.townId !== townId)
