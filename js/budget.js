@@ -2536,7 +2536,7 @@ function openBudgetDrawer(groupLabel, currency, entries, mode = "", column = "gr
 let editingTownId = null;
 let townHidePhotoState = false;
 
-function openTownEditModal(town = null) {
+export function openTownEditModal(town = null) {
   editingTownId = town ? town.id : null;
   townHidePhotoState = town?.hidePhoto ?? false;
   document.getElementById("town-edit-modal-title").textContent = town ? "Edit city" : "New city";
