@@ -1928,12 +1928,22 @@
   .sp-city-name { font-size: 0.9375rem; font-weight: 600; }
   .sp-city-meta { font-size: 0.8125rem; color: var(--text-2); margin-top: 2px; }
   .sp-item-list { display: flex; flex-direction: column; }
-  .sp-item { display: flex; gap: 12px; padding: 12px 16px; align-items: flex-start; border-bottom: 1px solid var(--border); }
+  .sp-item { display: block; border-bottom: 1px solid var(--border); }
   .sp-item:last-child { border-bottom: none; }
+  .sp-item-summary { display: flex; gap: 12px; padding: 12px 16px; align-items: flex-start; }
+  .sp-item-summary.expandable { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .sp-item-summary.expandable:active { background: rgba(0,0,0,.04); }
   .sp-item-icon { font-size: 1rem; flex-shrink: 0; width: 20px; text-align: center; margin-top: 1px; }
-  .sp-item-body { flex: 1; }
+  .sp-item-body { flex: 1; min-width: 0; }
   .sp-item-name { font-size: 0.875rem; font-weight: 500; }
   .sp-item-meta { font-size: 0.8125rem; color: var(--text-2); margin-top: 2px; }
+  .sp-item-chevron { flex-shrink: 0; align-self: center; margin-left: 4px; color: var(--text-3); transition: transform .2s; }
+  .sp-item-expand { display: none; padding: 0 16px 14px 48px; }
+  .sp-item-expand.open { display: block; }
+  .sp-expand-label { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-3); margin: 10px 0 3px; }
+  .sp-expand-row { display: flex; gap: 6px; align-items: baseline; font-size: 0.8125rem; color: var(--text); margin-bottom: 2px; }
+  .sp-expand-sub { font-size: 0.8125rem; color: var(--text-3); white-space: nowrap; }
+  .sp-expand-notes { font-size: 0.8125rem; color: var(--text-2); line-height: 1.55; white-space: pre-wrap; word-break: break-word; }
   .sp-day-section { border-bottom: 1px solid var(--border); }
   .sp-day-section:last-child { border-bottom: none; }
   .sp-day-header {
@@ -13075,6 +13085,14 @@ function _openFullTripFromShare() {
 /* ─────────────────────────────────────────────────────────────
    SHARE PAGE RENDERER
    ───────────────────────────────────────────────────────────── */
+function spToggleDetail(summaryEl) {
+  const expand = summaryEl.nextElementSibling;
+  if (!expand) return;
+  const open = expand.classList.toggle("open");
+  const chev = summaryEl.querySelector(".sp-item-chevron");
+  if (chev) chev.style.transform = open ? "rotate(180deg)" : "";
+}
+
 function renderSharePage(viewerUser, tripAllowedUsers) {
   const container = document.getElementById("sp-page");
   if (!container || !state.trip) return;
@@ -13167,6 +13185,7 @@ function renderSharePage(viewerUser, tripAllowedUsers) {
 
   // Transport rows
   const transportIcon = { train: "🚂", flight: "✈️", bus: "🚌", ferry: "⛴️", car: "🚗", taxi: "🚕", metro: "🚇", tram: "🚊" };
+  const spChevSVG = `<svg class="sp-item-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 12 15 18 9"/></svg>`;
   const transportRowsHTML = transportSpots.length
     ? transportSpots.map(spot => {
         const subtype = spot.transportSubtype || "";
@@ -13175,18 +13194,50 @@ function renderSharePage(viewerUser, tripAllowedUsers) {
         const from = spot.customOrigin || spot.transportFrom || "";
         const to   = spot.customDestination || spot.transportTo || "";
         const depTime = fmtTime12(spot.departureTime);
-        const date = spot.scheduledDate ? new Date(spot.scheduledDate + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
-        const meta = [from && to ? `${from} → ${to}` : (from || to), depTime ? `departs ${depTime}` : "", date].filter(Boolean).join(" · ");
+        const depDate = spot.scheduledDate ? new Date(spot.scheduledDate + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
+        const summaryMeta = [from && to ? `${from} → ${to}` : (from || to), depTime ? `departs ${depTime}` : "", depDate].filter(Boolean).join(" · ");
+        // Detail panel fields (no price/budget)
+        const depDateLong = spot.scheduledDate ? new Date(spot.scheduledDate + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }) : "";
+        const arrDateLong = spot.arrivalDate   ? new Date(spot.arrivalDate   + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }) : "";
+        const arrTime = fmtTime12(spot.arrivalTime);
+        const depFull = [depDateLong, depTime].filter(Boolean).join(" · ");
+        const arrFull = [arrDateLong, arrTime].filter(Boolean).join(" · ");
+        const expandParts = [];
+        if (depFull || arrFull) expandParts.push(
+          `<div class="sp-expand-label">Journey</div>` +
+          (depFull ? `<div class="sp-expand-row"><span class="sp-expand-sub">Departs</span>${escapeHtml(depFull)}</div>` : "") +
+          (arrFull ? `<div class="sp-expand-row"><span class="sp-expand-sub">Arrives&nbsp;&nbsp;</span>${escapeHtml(arrFull)}</div>` : "")
+        );
+        if (spot.carrier) expandParts.push(
+          `<div class="sp-expand-label">Carrier</div><div class="sp-expand-row">${escapeHtml(spot.carrier)}</div>`
+        );
+        if (spot.seat) expandParts.push(
+          `<div class="sp-expand-label">Seat</div><div class="sp-expand-row">${escapeHtml(spot.seat)}</div>`
+        );
+        if (spot.notes) expandParts.push(
+          `<div class="sp-expand-label">Notes</div><div class="sp-expand-notes">${escapeHtml(spot.notes)}</div>`
+        );
+        if (spot.booked || spot.bookingRef) expandParts.push(
+          `<div class="sp-expand-label">Booking</div>` +
+          (spot.booked
+            ? `<div class="sp-expand-row" style="color:var(--success)">✓ Confirmed${spot.bookingRef ? ` · Ref: ${escapeHtml(spot.bookingRef)}` : ""}</div>`
+            : `<div class="sp-expand-row">Ref: ${escapeHtml(spot.bookingRef)}</div>`)
+        );
+        const hasDetail = expandParts.length > 0;
         return `<div class="sp-item">
-          <div class="sp-item-icon">${icon}</div>
-          <div class="sp-item-body">
-            <div class="sp-item-name">${escapeHtml(spot.name || label)}</div>
-            ${meta ? `<div class="sp-item-meta">${meta}</div>` : ""}
-            ${spot.carrier ? `<div class="sp-item-meta">${escapeHtml(spot.carrier)}</div>` : ""}
+          <div class="sp-item-summary${hasDetail ? " expandable" : ""}"${hasDetail ? ` onclick="spToggleDetail(this)"` : ""}>
+            <div class="sp-item-icon">${icon}</div>
+            <div class="sp-item-body">
+              <div class="sp-item-name">${escapeHtml(spot.name || label)}</div>
+              ${summaryMeta ? `<div class="sp-item-meta">${summaryMeta}</div>` : ""}
+              ${spot.carrier ? `<div class="sp-item-meta">${escapeHtml(spot.carrier)}</div>` : ""}
+            </div>
+            ${hasDetail ? spChevSVG : ""}
           </div>
+          ${hasDetail ? `<div class="sp-item-expand">${expandParts.join("")}</div>` : ""}
         </div>`;
       }).join("")
-    : `<div class="sp-item"><div class="sp-item-icon" style="opacity:.4">—</div><div class="sp-item-body"><div class="sp-item-meta">No transport added yet</div></div></div>`;
+    : `<div class="sp-item"><div class="sp-item-summary"><div class="sp-item-icon" style="opacity:.4">—</div><div class="sp-item-body"><div class="sp-item-meta">No transport added yet</div></div></div></div>`;
 
   // Accommodation rows
   const accomRowsHTML = townsWithAccom.length
@@ -13194,21 +13245,38 @@ function renderSharePage(viewerUser, tripAllowedUsers) {
         const a = town.accommodation;
         const ci  = a.checkinDate  ? new Date(a.checkinDate  + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
         const co  = a.checkoutDate ? new Date(a.checkoutDate + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
-        const ciStr = [ci,  a.checkinTime ].filter(Boolean).join(" ");
+        const ciStr = [ci, a.checkinTime ].filter(Boolean).join(" ");
         const coStr = [co, a.checkoutTime].filter(Boolean).join(" ");
         const dateStr = ciStr && coStr ? `Check-in ${ciStr} · Check-out ${coStr}` : (ciStr ? `Check-in ${ciStr}` : coStr ? `Check-out ${coStr}` : "");
+        // Detail panel
+        const expandParts = [];
+        if (a.address) expandParts.push(
+          `<div class="sp-expand-label">Address</div><div class="sp-expand-row">${escapeHtml(a.address)}</div>`
+        );
+        if (a.booked || a.bookingRef) expandParts.push(
+          `<div class="sp-expand-label">Booking</div>` +
+          (a.booked
+            ? `<div class="sp-expand-row" style="color:var(--success)">✓ Confirmed${a.bookingRef ? ` · Ref: ${escapeHtml(a.bookingRef)}` : ""}</div>`
+            : `<div class="sp-expand-row">Ref: ${escapeHtml(a.bookingRef)}</div>`)
+        );
+        if (a.notes) expandParts.push(
+          `<div class="sp-expand-label">Notes</div><div class="sp-expand-notes">${escapeHtml(a.notes)}</div>`
+        );
+        const hasDetail = expandParts.length > 0;
         return `<div class="sp-item">
-          <div class="sp-item-icon">🏨</div>
-          <div class="sp-item-body">
-            <div class="sp-item-name">${escapeHtml(a.name)}</div>
-            <div class="sp-item-meta">${escapeHtml(town.name)}</div>
-            ${dateStr ? `<div class="sp-item-meta">${dateStr}</div>` : ""}
-            ${a.address ? `<div class="sp-item-meta">${escapeHtml(a.address)}</div>` : ""}
-            ${a.bookingRef ? `<div class="sp-item-meta">Ref: ${escapeHtml(a.bookingRef)}</div>` : ""}
+          <div class="sp-item-summary${hasDetail ? " expandable" : ""}"${hasDetail ? ` onclick="spToggleDetail(this)"` : ""}>
+            <div class="sp-item-icon">🏨</div>
+            <div class="sp-item-body">
+              <div class="sp-item-name">${escapeHtml(a.name)}</div>
+              <div class="sp-item-meta">${escapeHtml(town.name)}</div>
+              ${dateStr ? `<div class="sp-item-meta">${dateStr}</div>` : ""}
+            </div>
+            ${hasDetail ? spChevSVG : ""}
           </div>
+          ${hasDetail ? `<div class="sp-item-expand">${expandParts.join("")}</div>` : ""}
         </div>`;
       }).join("")
-    : `<div class="sp-item"><div class="sp-item-icon" style="opacity:.4">—</div><div class="sp-item-body"><div class="sp-item-meta">No accommodation added yet</div></div></div>`;
+    : `<div class="sp-item"><div class="sp-item-summary"><div class="sp-item-icon" style="opacity:.4">—</div><div class="sp-item-body"><div class="sp-item-meta">No accommodation added yet</div></div></div></div>`;
 
   // Day-by-day
   const spotTypeEmoji = { sight: "👁", restaurant: "🍽", cafe: "☕", experience: "⭐" };
