@@ -944,7 +944,7 @@ export function buildTabBarHTML(entries, budgetTargets, fmt, currencyList) {
   currencyList.forEach(cur => {
     const sym   = currencySymbol(cur);
     const total = entries.filter(e => e.currency === cur).reduce((s, e) => s + e.amount, 0);
-    tabs.push(`<button class="budget-tab${_budgetTab === cur ? " active" : ""}" data-budgettab="${escapeHtml(cur)}" draggable="true" data-dragcur="${escapeHtml(cur)}">${escapeHtml(cur)} · ${sym}${compact(Math.round(total))}</button>`);
+    tabs.push(`<button class="budget-tab${_budgetTab === cur ? " active" : ""}" data-budgettab="${escapeHtml(cur)}" draggable="true" data-dragcur="${escapeHtml(cur)}"><span class="tab-drag-handle" aria-hidden="true">⠿</span>${escapeHtml(cur)} · ${sym}${compact(Math.round(total))}</button>`);
   });
   return `<div class="budget-tab-bar">${tabs.join("")}</div>`;
 }
@@ -1844,9 +1844,7 @@ export function renderBudget() {
   if (tabBar && window.Sortable) {
     window.Sortable.create(tabBar, {
       animation: 150,
-      delay: 300,
-      delayOnTouchOnly: true,
-      touchStartThreshold: 4,
+      handle: ".tab-drag-handle",
       filter: '[data-budgettab="all"]',
       preventOnFilter: false,
       onEnd: () => {

@@ -2861,7 +2861,8 @@
   /* Center the tab bar on desktop so it sits visually between both columns */
   @media (min-width: 601px) { .budget-tab-bar { justify-content: center; } }
   /* Drag-and-drop tab reordering (Sortable.js) */
-  .budget-tab[data-dragcur] { cursor: grab; }
+  .budget-tab[data-dragcur] { cursor: pointer; }
+  .tab-drag-handle { cursor: grab; font-size: 0.75rem; margin-right: 4px; opacity: 0.4; touch-action: none; }
   .budget-tab[data-dragcur].sortable-chosen { opacity: 0.5; cursor: grabbing; }
   .budget-tab[data-dragcur].sortable-ghost { opacity: 0.25; }
 
