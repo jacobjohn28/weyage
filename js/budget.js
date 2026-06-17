@@ -796,9 +796,9 @@ export async function deleteExpense(expenseId) {
   }
 }
 
-let _aggrCache = null, _aggrSpotsRef = null, _aggrTownsRef = null;
+let _aggrCache = null, _aggrSpotsRef = null, _aggrTownsRef = null, _aggrExpensesRef = null;
 export function aggregateBudget() {
-  if (_aggrCache && _aggrSpotsRef === state.spots && _aggrTownsRef === state.towns) return _aggrCache;
+  if (_aggrCache && _aggrSpotsRef === state.spots && _aggrTownsRef === state.towns && _aggrExpensesRef === state.expenses) return _aggrCache;
   const entries = [];
   state.spots.forEach(s => {
     if (s.price) entries.push({
@@ -874,6 +874,7 @@ export function aggregateBudget() {
   _aggrCache = entries;
   _aggrSpotsRef = state.spots;
   _aggrTownsRef = state.towns;
+  _aggrExpensesRef = state.expenses;
   return entries;
 }
 
