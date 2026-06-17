@@ -796,7 +796,9 @@ export async function deleteExpense(expenseId) {
   }
 }
 
+let _aggrCache = null, _aggrSpotsRef = null, _aggrTownsRef = null;
 export function aggregateBudget() {
+  if (_aggrCache && _aggrSpotsRef === state.spots && _aggrTownsRef === state.towns) return _aggrCache;
   const entries = [];
   state.spots.forEach(s => {
     if (s.price) entries.push({
@@ -869,6 +871,9 @@ export function aggregateBudget() {
       splits: e.splits || null,
     });
   });
+  _aggrCache = entries;
+  _aggrSpotsRef = state.spots;
+  _aggrTownsRef = state.towns;
   return entries;
 }
 
@@ -1767,10 +1772,6 @@ export function renderBudget() {
   const budgetTargets = { ...(state.trip?.budgetTargets || {}) };
   if (state.trip?.totalBudget && !budgetTargets.EUR) budgetTargets.EUR = state.trip.totalBudget;
 
-  // Destroy stale chart instances before rebuilding DOM
-  Object.values(budgetChartInstances).forEach(c => c.destroy());
-  budgetChartInstances = {};
-
   const myMemberId = currentUserMemberId();
 
   // Reset tab if currency no longer exists
@@ -1823,7 +1824,25 @@ export function renderBudget() {
   // ── Settle-up at bottom ─────────────────────────────────────
   const settleupHTML = buildSettleUpHTML();
 
+  // Preserve live chart canvases so existing Chart instances can be updated in place
+  // rather than destroyed and recreated on every Firestore snapshot.
+  const _savedCanvases = {};
+  Object.entries(budgetChartInstances).forEach(([key, inst]) => {
+    if (inst?.canvas?.id) _savedCanvases[key] = inst.canvas;
+  });
+
   content.innerHTML = colHeadersHTML + tabBarHTML + tabContentHTML + unbookedHTML + settleupHTML;
+
+  // Re-insert saved canvases; destroy instances whose canvas is no longer in this tab's DOM.
+  Object.entries(_savedCanvases).forEach(([key, canvas]) => {
+    const placeholder = content.querySelector(`canvas#${canvas.id}`);
+    if (placeholder) {
+      placeholder.replaceWith(canvas);
+    } else {
+      budgetChartInstances[key]?.destroy();
+      delete budgetChartInstances[key];
+    }
+  });
 
   // ── Wire: tab switching ─────────────────────────────────────
   content.querySelectorAll(".budget-tab[data-budgettab]").forEach(tab => {
@@ -2033,44 +2052,64 @@ export function renderBudgetCharts(byCurrency, fmt, allEntries) {
     const cityCtx = document.getElementById(`budget-chart-${cur}-city`);
     if (cityCtx) {
       cityCtx.parentElement.style.height = chartH(cityLabelsGroup.length);
-      budgetChartInstances[`${cur}-city`] = new Chart(cityCtx, {
-        type: "bar",
-        data: { labels: cityLabelsGroup, datasets: [{ data: cityDataGroup, backgroundColor: cityColorsGroup, borderRadius: 4, borderSkipped: false }] },
-        options: {
-          ...makeOpts(groupXMax),
-          onHover: (event, elements, chart) => { cityCtx.style.cursor = rowHover(event, elements, chart, cityLabelsGroup) ? "pointer" : "default"; },
-          onClick: (event, elements, chart) => {
-            const i = rowIdx(event, chart, cityLabelsGroup);
-            if (i < 0) return;
-            const cityName = cityLabelsGroup[i];
-            const cityEntries = (allEntries || ces).filter(e => {
-              const town = state.towns.find(t => t.id === e.townId);
-              return (town?.name || "Other") === cityName && e.currency === cur;
-            });
-            openBudgetDrawer(cityName, cur, cityEntries, "city", "group");
+      const _exCity = budgetChartInstances[`${cur}-city`];
+      if (_exCity && _exCity.canvas === cityCtx) {
+        _exCity.data.labels = cityLabelsGroup;
+        _exCity.data.datasets[0].data = cityDataGroup;
+        _exCity.data.datasets[0].backgroundColor = cityColorsGroup;
+        _exCity.options.scales.x.max = groupXMax;
+        _exCity.update('none');
+      } else {
+        _exCity?.destroy();
+        budgetChartInstances[`${cur}-city`] = new Chart(cityCtx, {
+          type: "bar",
+          data: { labels: cityLabelsGroup, datasets: [{ data: cityDataGroup, backgroundColor: cityColorsGroup, borderRadius: 4, borderSkipped: false }] },
+          options: {
+            ...makeOpts(groupXMax),
+            onHover: (event, elements, chart) => { cityCtx.style.cursor = rowHover(event, elements, chart, cityLabelsGroup) ? "pointer" : "default"; },
+            onClick: (event, elements, chart) => {
+              const i = rowIdx(event, chart, cityLabelsGroup);
+              if (i < 0) return;
+              const cityName = cityLabelsGroup[i];
+              const cityEntries = (allEntries || ces).filter(e => {
+                const town = state.towns.find(t => t.id === e.townId);
+                return (town?.name || "Other") === cityName && e.currency === cur;
+              });
+              openBudgetDrawer(cityName, cur, cityEntries, "city", "group");
+            },
           },
-        },
-      });
+        });
+      }
     }
 
     const catCtx = document.getElementById(`budget-chart-${cur}-cat`);
     if (catCtx) {
       catCtx.parentElement.style.height = chartH(catLabelsGroup.length);
-      budgetChartInstances[`${cur}-cat`] = new Chart(catCtx, {
-        type: "bar",
-        data: { labels: catLabelsGroup, datasets: [{ data: catDataGroup, backgroundColor: catColorsGroup, borderRadius: 4, borderSkipped: false }] },
-        options: {
-          ...makeOpts(groupXMax),
-          onHover: (event, elements, chart) => { catCtx.style.cursor = rowHover(event, elements, chart, catLabelsGroup) ? "pointer" : "default"; },
-          onClick: (event, elements, chart) => {
-            const i = rowIdx(event, chart, catLabelsGroup);
-            if (i < 0) return;
-            const category = catLabelsGroup[i];
-            const catEntries = (allEntries || ces).filter(e => e.category === category && e.currency === cur);
-            openBudgetDrawer(category, cur, catEntries, "category", "group");
+      const _exCat = budgetChartInstances[`${cur}-cat`];
+      if (_exCat && _exCat.canvas === catCtx) {
+        _exCat.data.labels = catLabelsGroup;
+        _exCat.data.datasets[0].data = catDataGroup;
+        _exCat.data.datasets[0].backgroundColor = catColorsGroup;
+        _exCat.options.scales.x.max = groupXMax;
+        _exCat.update('none');
+      } else {
+        _exCat?.destroy();
+        budgetChartInstances[`${cur}-cat`] = new Chart(catCtx, {
+          type: "bar",
+          data: { labels: catLabelsGroup, datasets: [{ data: catDataGroup, backgroundColor: catColorsGroup, borderRadius: 4, borderSkipped: false }] },
+          options: {
+            ...makeOpts(groupXMax),
+            onHover: (event, elements, chart) => { catCtx.style.cursor = rowHover(event, elements, chart, catLabelsGroup) ? "pointer" : "default"; },
+            onClick: (event, elements, chart) => {
+              const i = rowIdx(event, chart, catLabelsGroup);
+              if (i < 0) return;
+              const category = catLabelsGroup[i];
+              const catEntries = (allEntries || ces).filter(e => e.category === category && e.currency === cur);
+              openBudgetDrawer(category, cur, catEntries, "category", "group");
+            },
           },
-        },
-      });
+        });
+      }
     }
 
     // Sync group y-axis widths so grid lines stay perfectly aligned
@@ -2091,41 +2130,61 @@ export function renderBudgetCharts(byCurrency, fmt, allEntries) {
     const cityCMine = document.getElementById(`budget-chart-${cur}-city-mine`);
     if (cityCMine) {
       cityCMine.parentElement.style.height = chartH(cityLabelsMine.length);
-      budgetChartInstances[`${cur}-city-mine`] = new Chart(cityCMine, {
-        type: "bar",
-        data: { labels: cityLabelsMine, datasets: [{ data: cityDataMine, backgroundColor: cityColorsMine, borderRadius: 4, borderSkipped: false }] },
-        options: {
-          ...makeOpts(mineXMax),
-          onHover: (event, elements, chart) => { cityCMine.style.cursor = rowHover(event, elements, chart, cityLabelsMine) ? "pointer" : "default"; },
-          onClick: (event, elements, chart) => {
-            const i = rowIdx(event, chart, cityLabelsMine);
-            if (i < 0) return;
-            const cityName = cityLabelsMine[i];
-            const cityEntries = myCesAll.filter(e => (state.towns.find(t => t.id === e.townId)?.name || "Other") === cityName);
-            openBudgetDrawer(cityName, cur, cityEntries, "city", "mine");
+      const _exCityMine = budgetChartInstances[`${cur}-city-mine`];
+      if (_exCityMine && _exCityMine.canvas === cityCMine) {
+        _exCityMine.data.labels = cityLabelsMine;
+        _exCityMine.data.datasets[0].data = cityDataMine;
+        _exCityMine.data.datasets[0].backgroundColor = cityColorsMine;
+        _exCityMine.options.scales.x.max = mineXMax;
+        _exCityMine.update('none');
+      } else {
+        _exCityMine?.destroy();
+        budgetChartInstances[`${cur}-city-mine`] = new Chart(cityCMine, {
+          type: "bar",
+          data: { labels: cityLabelsMine, datasets: [{ data: cityDataMine, backgroundColor: cityColorsMine, borderRadius: 4, borderSkipped: false }] },
+          options: {
+            ...makeOpts(mineXMax),
+            onHover: (event, elements, chart) => { cityCMine.style.cursor = rowHover(event, elements, chart, cityLabelsMine) ? "pointer" : "default"; },
+            onClick: (event, elements, chart) => {
+              const i = rowIdx(event, chart, cityLabelsMine);
+              if (i < 0) return;
+              const cityName = cityLabelsMine[i];
+              const cityEntries = myCesAll.filter(e => (state.towns.find(t => t.id === e.townId)?.name || "Other") === cityName);
+              openBudgetDrawer(cityName, cur, cityEntries, "city", "mine");
+            },
           },
-        },
-      });
+        });
+      }
     }
 
     const catCMine = document.getElementById(`budget-chart-${cur}-cat-mine`);
     if (catCMine) {
       catCMine.parentElement.style.height = chartH(catLabelsMine.length);
-      budgetChartInstances[`${cur}-cat-mine`] = new Chart(catCMine, {
-        type: "bar",
-        data: { labels: catLabelsMine, datasets: [{ data: catDataMine, backgroundColor: catColorsMine, borderRadius: 4, borderSkipped: false }] },
-        options: {
-          ...makeOpts(mineXMax),
-          onHover: (event, elements, chart) => { catCMine.style.cursor = rowHover(event, elements, chart, catLabelsMine) ? "pointer" : "default"; },
-          onClick: (event, elements, chart) => {
-            const i = rowIdx(event, chart, catLabelsMine);
-            if (i < 0) return;
-            const category = catLabelsMine[i];
-            const catEntries = myCesAll.filter(e => e.category === category);
-            openBudgetDrawer(category, cur, catEntries, "category", "mine");
+      const _exCatMine = budgetChartInstances[`${cur}-cat-mine`];
+      if (_exCatMine && _exCatMine.canvas === catCMine) {
+        _exCatMine.data.labels = catLabelsMine;
+        _exCatMine.data.datasets[0].data = catDataMine;
+        _exCatMine.data.datasets[0].backgroundColor = catColorsMine;
+        _exCatMine.options.scales.x.max = mineXMax;
+        _exCatMine.update('none');
+      } else {
+        _exCatMine?.destroy();
+        budgetChartInstances[`${cur}-cat-mine`] = new Chart(catCMine, {
+          type: "bar",
+          data: { labels: catLabelsMine, datasets: [{ data: catDataMine, backgroundColor: catColorsMine, borderRadius: 4, borderSkipped: false }] },
+          options: {
+            ...makeOpts(mineXMax),
+            onHover: (event, elements, chart) => { catCMine.style.cursor = rowHover(event, elements, chart, catLabelsMine) ? "pointer" : "default"; },
+            onClick: (event, elements, chart) => {
+              const i = rowIdx(event, chart, catLabelsMine);
+              if (i < 0) return;
+              const category = catLabelsMine[i];
+              const catEntries = myCesAll.filter(e => e.category === category);
+              openBudgetDrawer(category, cur, catEntries, "category", "mine");
+            },
           },
-        },
-      });
+        });
+      }
     }
 
     // Sync mine y-axis widths
@@ -2183,9 +2242,16 @@ export function renderBudgetTimelineChart(entries, fmt) {
       )
     : null;
 
-  // Destroy any previous timeline chart instance
-  if (budgetChartInstances.__timeline) {
-    budgetChartInstances.__timeline.destroy();
+  // Reuse the existing instance if the canvas node is the same (canvas was preserved).
+  const _existingTimeline = budgetChartInstances.__timeline;
+  if (_existingTimeline && _existingTimeline.canvas === canvas) {
+    _existingTimeline.data.labels = dateLabels;
+    _existingTimeline.data.datasets = datasets;
+    _existingTimeline.update('none');
+    return;
+  }
+  if (_existingTimeline) {
+    _existingTimeline.destroy();
     delete budgetChartInstances.__timeline;
   }
 

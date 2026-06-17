@@ -294,7 +294,7 @@ function _spCityDrawerBodyHTML(town) {
       const depTime = fmtTime12(spot.departureTime);
       const depDateStr = spot.scheduledDate ? new Date(spot.scheduledDate + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
       const meta = [from && to ? `${from} → ${to}` : (from || to), depTime ? `departs ${depTime}` : "", depDateStr].filter(Boolean).join(" · ");
-      html += `<div class="sp-drawer-item" onclick="_spDrillTransportDetail('${spot.id}')">
+      html += `<div class="sp-drawer-item" data-action="drill-transport" data-id="${escapeHtml(spot.id)}">
         <div class="sp-drawer-item-inner">
           <div class="sp-drawer-item-icon">${icon}</div>
           <div class="sp-drawer-item-body">
@@ -317,7 +317,7 @@ function _spCityDrawerBodyHTML(town) {
     const ciStr = [ci, a.checkinTime].filter(Boolean).join(" ");
     const coStr = [co, a.checkoutTime].filter(Boolean).join(" ");
     const ds = ciStr && coStr ? `${ciStr} → ${coStr}` : (ciStr || coStr || "");
-    html += `<div class="sp-drawer-item" onclick="_spDrillAccomDetail('${town.id}')">
+    html += `<div class="sp-drawer-item" data-action="drill-accom" data-id="${escapeHtml(town.id)}">
       <div class="sp-drawer-item-inner">
         <div class="sp-drawer-item-icon">🏨</div>
         <div class="sp-drawer-item-body">
@@ -422,7 +422,7 @@ function _renderSpCalendar() {
         const color = _spCityColors[tIdx % _spCityColors.length];
         const showLabel = slots[start]?.ds === town.arrivalDate || start === 0;
         const name = town.name.length > 10 ? town.name.slice(0, 9) + "…" : town.name;
-        spans.push(`<div class="sp-cal-span" style="grid-column:${start+1}/span ${end-start+1};background:${color}" onclick="spOpenCityDrawer('${town.id}')" title="${escapeHtml(town.name)}"><span class="sp-cal-span-label">${showLabel ? escapeHtml(name) : ""}</span>${chevron}</div>`);
+        spans.push(`<div class="sp-cal-span" style="grid-column:${start+1}/span ${end-start+1};background:${color}" data-action="open-city-drawer" data-id="${escapeHtml(town.id)}" title="${escapeHtml(town.name)}"><span class="sp-cal-span-label">${showLabel ? escapeHtml(name) : ""}</span>${chevron}</div>`);
       });
       return `<div class="sp-cal-week"><div class="sp-cal-week-days">${dayRowHTML}</div>${spans.length ? `<div class="sp-cal-week-events">${spans.join("")}</div>` : ""}</div>`;
     }).join("");
@@ -460,7 +460,7 @@ export function renderSharePage(viewerUser, tripAllowedUsers, showWelcomeBanner 
     if (isCollab) {
       bannerHTML = `<div class="sp-banner" style="display:flex;align-items:center;gap:10px">
         <span style="flex:1">You have full access to this trip.</span>
-        <button onclick="_openFullTripFromShare()" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:0.8125rem;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">Open in Weyage</button>
+        <button data-action="open-full-trip" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:0.8125rem;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">Open in Weyage</button>
       </div>`;
     } else if (showWelcomeBanner) {
       bannerHTML = `<div class="sp-banner">Viewing as <strong>${escapeHtml(viewerUser.displayName || viewerUser.email)}</strong>. This trip has been saved to your Shared Trips list.</div>`;
@@ -506,7 +506,7 @@ export function renderSharePage(viewerUser, tripAllowedUsers, showWelcomeBanner 
       const depTime = fmtTime12(spot.departureTime);
       const depDateStr = spot.scheduledDate ? new Date(spot.scheduledDate + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
       const m = [from && to ? `${from} → ${to}` : (from || to), depTime ? `departs ${depTime}` : "", depDateStr].filter(Boolean).join(" · ");
-      return `<div class="sp-item"><div class="sp-item-summary expandable" onclick="spOpenTransportDetail('${spot.id}')">
+      return `<div class="sp-item"><div class="sp-item-summary expandable" data-action="open-transport" data-id="${escapeHtml(spot.id)}">
         <div class="sp-item-icon">${icon}</div>
         <div class="sp-item-body">
           <div class="sp-item-name">${escapeHtml(spot.name || label)}</div>
@@ -522,7 +522,7 @@ export function renderSharePage(viewerUser, tripAllowedUsers, showWelcomeBanner 
       const ci = a.checkinDate  ? new Date(a.checkinDate  + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
       const co = a.checkoutDate ? new Date(a.checkoutDate + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
       const ds = [ci && co ? `${ci} – ${co}` : (ci || co), a.checkinTime ? `from ${a.checkinTime}` : ""].filter(Boolean).join(" · ");
-      return `<div class="sp-item"><div class="sp-item-summary expandable" onclick="spOpenAccomDetail('${town.id}')">
+      return `<div class="sp-item"><div class="sp-item-summary expandable" data-action="open-accom" data-id="${escapeHtml(town.id)}">
         <div class="sp-item-icon">🏨</div>
         <div class="sp-item-body">
           <div class="sp-item-name">${escapeHtml(a.name)}</div>
@@ -537,7 +537,7 @@ export function renderSharePage(viewerUser, tripAllowedUsers, showWelcomeBanner 
       const dLabel = new Date(date + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
       const list = townDaySpots.filter(s => s.scheduledDate === date).sort((a, b) => (a.scheduledTime || "").localeCompare(b.scheduledTime || "") || (a.order ?? 9999) - (b.order ?? 9999));
       return `<div class="sp-day-section">
-        <div class="sp-day-header" onclick="var b=this.nextElementSibling,c=this.querySelector('.sp-day-chevron');b.classList.toggle('open');c.classList.toggle('open')">
+        <div class="sp-day-header" data-action="toggle-day">
           <span class="sp-day-date">${dLabel}</span>
           <svg class="sp-day-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
@@ -564,7 +564,7 @@ export function renderSharePage(viewerUser, tripAllowedUsers, showWelcomeBanner 
       <div class="sp-item-list">${transportItemsHTML}</div>
       <div class="sp-city-section-lbl">Accommodation</div>
       <div class="sp-item-list">${accomItemHTML}</div>
-      ${townDaySpots.length ? `<div class="sp-visits-toggle" onclick="spToggleVisits(this)">
+      ${townDaySpots.length ? `<div class="sp-visits-toggle" data-action="toggle-visits">
         <span style="flex:1">📍 ${townDaySpots.length} Visit${townDaySpots.length === 1 ? "" : "s"}</span>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
@@ -572,27 +572,43 @@ export function renderSharePage(viewerUser, tripAllowedUsers, showWelcomeBanner 
     </div>`;
   }).join("") : `<div style="padding:24px;text-align:center;font-size:.875rem;color:var(--text-3)">No cities added to this trip</div>`;
 
+  _initShareEventDelegation();
   container.innerHTML = `
     ${bannerHTML}
     ${heroHTML}
     <div class="sp-view-toggle">
-      <button class="sp-view-tab" data-view="list" onclick="spSwitchView('list')">List</button>
-      <button class="sp-view-tab active" data-view="calendar" onclick="spSwitchView('calendar')">Calendar</button>
+      <button class="sp-view-tab" data-view="list" data-action="switch-view">List</button>
+      <button class="sp-view-tab active" data-view="calendar" data-action="switch-view">Calendar</button>
     </div>
     <div id="sp-list-view" class="sp-city-cards" style="display:none">${listHTML}</div>
     <div id="sp-cal-view" class="sp-calendar">${_renderSpCalendar()}</div>`;
 }
 
 /* ─────────────────────────────────────────────────────────────
-   GLOBAL BINDINGS for inline onclick handlers
+   DELEGATED EVENT LISTENER (replaces inline onclick handlers)
    ───────────────────────────────────────────────────────────── */
-window.spCloseDrawer = spCloseDrawer;
-window.spDrawerBack = spDrawerBack;
-window.spOpenTransportDetail = spOpenTransportDetail;
-window.spOpenAccomDetail = spOpenAccomDetail;
-window._spDrillTransportDetail = _spDrillTransportDetail;
-window._spDrillAccomDetail = _spDrillAccomDetail;
-window.spOpenCityDrawer = spOpenCityDrawer;
-window.spToggleVisits = spToggleVisits;
-window.spSwitchView = spSwitchView;
-window._openFullTripFromShare = _openFullTripFromShare;
+let _shareEventsInitialized = false;
+function _initShareEventDelegation() {
+  if (_shareEventsInitialized) return;
+  _shareEventsInitialized = true;
+  document.addEventListener("click", e => {
+    const target = e.target.closest("[data-action]");
+    if (!target) return;
+    const { action, id, view } = target.dataset;
+    switch (action) {
+      case "drill-transport":   _spDrillTransportDetail(id); break;
+      case "drill-accom":       _spDrillAccomDetail(id); break;
+      case "open-city-drawer":  spOpenCityDrawer(id); break;
+      case "open-full-trip":    _openFullTripFromShare(); break;
+      case "open-transport":    spOpenTransportDetail(id); break;
+      case "open-accom":        spOpenAccomDetail(id); break;
+      case "toggle-day": {
+        target.nextElementSibling?.classList.toggle("open");
+        target.querySelector(".sp-day-chevron")?.classList.toggle("open");
+        break;
+      }
+      case "toggle-visits":     spToggleVisits(target); break;
+      case "switch-view":       spSwitchView(view); break;
+    }
+  });
+}
