@@ -19,6 +19,7 @@ import {
   currentUserMemberId, showTransitSheet, openTownEditModal,
 } from "./budget.js";
 import { renderDisruption, updateDisruptionBadge } from "./disruption.js";
+import { triggerTicketImport } from "./ticketImport.js";
 import { addAttachment, deleteAttachment, toggleAttachmentPin, openLightbox } from "./documents.js";
 
 /* ─────────────────────────────────────────────────────────────
@@ -677,12 +678,18 @@ export function renderItinerary() {
   // Ensure "Add city" footer exists once at the end
   if (!state.shareMode && !container.querySelector("#itinerary-add-city-footer-btn")) {
     const footer = document.createElement("div");
-    footer.style.cssText = "padding:8px 0 32px;text-align:center";
-    footer.innerHTML = `<button class="btn-secondary" id="itinerary-add-city-footer-btn" style="font-size:0.875rem;padding:9px 20px">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="margin-right:6px;vertical-align:-2px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Add city
-    </button>`;
-    footer.querySelector("button").addEventListener("click", () => openTownEditModal());
+    footer.style.cssText = "padding:8px 0 32px;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap";
+    footer.innerHTML = `
+      <button class="btn-secondary" id="itinerary-add-city-footer-btn" style="font-size:0.875rem;padding:9px 20px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="margin-right:6px;vertical-align:-2px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add city
+      </button>
+      <button class="btn-secondary" id="itinerary-import-ticket-btn" style="font-size:0.875rem;padding:9px 20px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="margin-right:6px;vertical-align:-2px"><rect x="3" y="3" width="18" height="14" rx="2"/><polyline points="3 9 21 9"/><line x1="8" y1="21" x2="8" y2="17"/><line x1="16" y1="21" x2="16" y2="17"/><line x1="8" y1="19" x2="16" y2="19"/></svg>
+        Import ticket
+      </button>`;
+    footer.querySelector("#itinerary-add-city-footer-btn").addEventListener("click", () => openTownEditModal());
+    footer.querySelector("#itinerary-import-ticket-btn").addEventListener("click", () => triggerTicketImport());
     container.append(footer);
   }
 
