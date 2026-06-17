@@ -1844,6 +1844,9 @@ export function renderBudget() {
   if (tabBar && window.Sortable) {
     window.Sortable.create(tabBar, {
       animation: 150,
+      delay: 300,
+      delayOnTouchOnly: true,
+      touchStartThreshold: 4,
       filter: '[data-budgettab="all"]',
       preventOnFilter: false,
       onEnd: () => {
