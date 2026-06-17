@@ -63,6 +63,8 @@ let _tripUnsub = null, _townsUnsub = null, _spotsUnsub = null, _expensesUnsub = 
 let _allTripsUnsub = null;
 let _sharedTripsUnsub = null;
 let _myOwnedTrips = [], _mySharedTrips = [];
+// Tracks trips that have already had the one-time cityPhotos migration run this session
+const _migratedCityPhotos = new Set();
 
 function detachTripListeners() {
   _tripUnsub?.(); _townsUnsub?.(); _spotsUnsub?.(); _expensesUnsub?.();
@@ -104,7 +106,10 @@ function listenToTrip(tripId) {
         updateDoc(doc(db, "trips", tripId), { cityNames: names }).catch(() => {});
       }
       // One-time migration: populate cityPhotos on the trip doc from existing town photoUrls.
-      if (existing && !existing.cityPhotos) {
+      // Guard with a session-level Set so this never fires more than once per trip per session,
+      // regardless of how many snapshot updates arrive.
+      if (existing && !existing.cityPhotos && !_migratedCityPhotos.has(tripId)) {
+        _migratedCityPhotos.add(tripId);
         const photoMap = {};
         towns.forEach(t => { if (t.photoUrl) photoMap[t.id] = t.photoUrl; });
         if (Object.keys(photoMap).length) {

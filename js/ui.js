@@ -554,6 +554,11 @@ async function saveNewTrip() {
 /* ─────────────────────────────────────────────────────────────
    INIT — wire all UI event listeners
    ───────────────────────────────────────────────────────────── */
+function debounce(fn, ms) {
+  let timer;
+  return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), ms); };
+}
+
 export function initUI() {
   // Nav items
   document.querySelectorAll(".nav-item, .bottom-nav-item").forEach(btn => {
@@ -661,14 +666,16 @@ export function initUI() {
   });
 
   // Guides search + generate all
-  document.getElementById("guides-search")?.addEventListener("input", () => renderGuides());
+  const debouncedRenderGuides = debounce(() => renderGuides(), 250);
+  document.getElementById("guides-search")?.addEventListener("input", debouncedRenderGuides);
   document.getElementById("guides-generate-all-btn")?.addEventListener("click", () => generateAllGuides());
 
   // Documents search
+  const debouncedRenderDocuments = debounce(() => renderDocuments(), 250);
   document.getElementById("docs-search")?.addEventListener("input", e => {
     const clearBtn = document.getElementById("docs-search-clear");
     if (clearBtn) clearBtn.style.display = e.target.value ? "" : "none";
-    renderDocuments();
+    debouncedRenderDocuments();
   });
   document.getElementById("docs-search-clear")?.addEventListener("click", () => {
     const input = document.getElementById("docs-search");
@@ -695,8 +702,9 @@ export function initUI() {
   document.getElementById("trips-new-btn-main")?.addEventListener("click", openCreateTripModal);
   document.getElementById("trips-signout-btn")?.addEventListener("click", () => signOut(auth));
   document.getElementById("trips-main-signout-btn")?.addEventListener("click", () => signOut(auth));
+  const debouncedRenderTripCards = debounce(() => renderTripCards(), 250);
   document.getElementById("trips-search-input")?.addEventListener("input", e => {
     tripSearchQuery = e.target.value;
-    renderTripCards();
+    debouncedRenderTripCards();
   });
 }
