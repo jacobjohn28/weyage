@@ -1,7 +1,7 @@
 import { GEMINI_CONFIG } from "./config.js";
 import { state, activeTripId } from "./state.js";
 import { db, doc, setDoc, serverTimestamp } from "./firebase.js";
-import { currencySymbol, escapeHtml } from "./utils.js";
+import { escapeHtml } from "./utils.js";
 import { currentUserMemberId } from "./budget.js";
 
 const LAYOVER_MS = 6 * 60 * 60 * 1000; // 6 hours
