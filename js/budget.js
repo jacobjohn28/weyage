@@ -2242,22 +2242,8 @@ export function renderBudgetTimelineChart(entries, fmt) {
       )
     : null;
 
-  // Reuse the existing instance if the canvas node is the same (canvas was preserved).
-  const _existingTimeline = budgetChartInstances.__timeline;
-  if (_existingTimeline && _existingTimeline.canvas === canvas) {
-    _existingTimeline.data.labels = dateLabels;
-    _existingTimeline.data.datasets = datasets;
-    _existingTimeline.update('none');
-    return;
-  }
-  if (_existingTimeline) {
-    _existingTimeline.destroy();
-    delete budgetChartInstances.__timeline;
-  }
-
   const accentColor  = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim()  || "#4E8774";
   const successColor = getComputedStyle(document.documentElement).getPropertyValue("--success").trim() || "#6F8B68";
-  // Build a 10%-opacity fill from the border color using a hidden canvas alpha trick
   const _hexToRgba = (hex, alpha) => {
     const h = hex.replace("#", "");
     const r = parseInt(h.slice(0, 2), 16);
@@ -2293,6 +2279,19 @@ export function renderBudgetTimelineChart(entries, fmt) {
       tension: 0.3,
       borderWidth: 2,
     });
+  }
+
+  // Reuse the existing instance if the canvas node is the same (canvas was preserved).
+  const _existingTimeline = budgetChartInstances.__timeline;
+  if (_existingTimeline && _existingTimeline.canvas === canvas) {
+    _existingTimeline.data.labels = dateLabels;
+    _existingTimeline.data.datasets = datasets;
+    _existingTimeline.update('none');
+    return;
+  }
+  if (_existingTimeline) {
+    _existingTimeline.destroy();
+    delete budgetChartInstances.__timeline;
   }
 
   budgetChartInstances.__timeline = new Chart(canvas, {
