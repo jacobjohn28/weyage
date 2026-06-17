@@ -160,7 +160,303 @@ export function getSpotsForTown(townId) {
   return [...own, ...arrivals];
 }
 
-const sortableInstances = [];
+const _townFingerprints = new Map(); // townId → fingerprint string
+const _townSortables    = new Map(); // townId → Sortable[]
+
+function _townFingerprint(town) {
+  const spots = getSpotsForTown(town.id);
+  const collapseKeys = [...dayCollapseOverrides.entries()]
+    .filter(([k]) => k.startsWith(town.id + ":"))
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([k, v]) => `${k}=${v}`)
+    .join("|");
+  const spotsFP = spots.map(s =>
+    [s.id, s.name, s.type, s.scheduledDate, s.scheduledTime,
+     s.order ?? "", s.booked ?? "", s.isCancelled ?? "",
+     s.transportSubtype ?? "", s.groupId ?? "", s._arrivalView ?? ""].join("|")
+  ).join(";");
+  return JSON.stringify(town) + "\0" + spotsFP + "\0" + collapseKeys;
+}
+
+function _buildTownHTML(town) {
+  const townSpots = getSpotsForTown(town.id);
+  const days = getDaysForTown(town);
+  const nights = nightsBetween(town.arrivalDate, town.departureDate);
+
+  const byDate = {};
+  for (const spot of townSpots) {
+    const key = spot.scheduledDate || "unscheduled";
+    (byDate[key] = byDate[key] || []).push(spot);
+  }
+  for (const key of Object.keys(byDate)) {
+    byDate[key].sort((a, b) => {
+      const aTime = a.scheduledTime;
+      const bTime = b.scheduledTime;
+      if (aTime && bTime) return aTime.localeCompare(bTime);
+      if (aTime) return -1;
+      if (bTime) return 1;
+      if (a._arrivalView && !b._arrivalView) return -1;
+      if (!a._arrivalView && b._arrivalView) return 1;
+      return (a.order ?? 9999) - (b.order ?? 9999);
+    });
+  }
+  const unscheduled = byDate["unscheduled"] || [];
+  const townImgUrl = resolveTownImage(town);
+  const showPhoto = !!townImgUrl && !town.hidePhoto;
+
+  const editBtn = `<button class="town-edit-btn icon-btn" data-town-id="${escapeHtml(town.id)}" title="Edit city" style="padding:4px;opacity:0.55;margin-right:2px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="15" height="15"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>`;
+  const photoBanner = showPhoto ? `
+      <div class="town-photo-banner">
+        <img src="${escapeHtml(townImgUrl)}" alt="${escapeHtml(town.name)}" loading="lazy"
+             onerror="this.closest('.town-photo-banner').style.display='none'">
+        <div class="town-photo-banner-overlay">
+          <div style="position:absolute;top:10px;right:10px;display:flex;gap:6px;z-index:2">
+            <button class="town-edit-btn icon-btn" data-town-id="${escapeHtml(town.id)}" title="Edit city"
+              style="padding:5px;background:rgba(0,0,0,0.38);border:1px solid rgba(255,255,255,0.18);border-radius:8px;color:#fff;backdrop-filter:blur(6px)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="14" height="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <button class="change-photo-btn icon-btn" data-town-id="${escapeHtml(town.id)}" title="Change photo"
+              style="padding:5px;background:rgba(0,0,0,0.38);border:1px solid rgba(255,255,255,0.18);border-radius:8px;color:#fff;backdrop-filter:blur(6px)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="14" height="14"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>` : "";
+
+  return `
+      <div class="town-group" id="itinerary-town-${escapeHtml(town.id)}" data-town="${escapeHtml(town.id)}">
+        ${photoBanner}
+        <div class="town-group-header"${showPhoto ? ' style="margin-top:-4px;border-radius:0 0 12px 12px"' : ""}>
+          ${!showPhoto ? `<div class="town-header-img" style="background-image:url('${escapeHtml(townImgUrl)}')"></div>` : ""}
+          <span class="town-group-dot"></span>
+          <span class="town-group-name">${escapeHtml(town.name)}</span>
+          <span class="town-group-dates">${fmtSpreadDates(town.arrivalDate, town.departureDate)} &middot; ${nights}n</span>
+          ${showPhoto ? "" : editBtn}
+        </div>
+        ${renderAccomCard(town)}
+        ${(() => {
+          const todayKey = localDateStr(new Date());
+          return days.map(dk => {
+            const daySpots = byDate[dk] || [];
+            const { dow, full } = fmtDayHeader(dk);
+            const isEmpty = daySpots.length === 0;
+            const key = `${town.id}:${dk}`;
+            const override = dayCollapseOverrides.get(key);
+            const isPast = dk < todayKey;
+            const isCollapsed = override !== undefined ? override : isPast;
+            const spotSummary = daySpots.length === 0 ? "No spots" : `${daySpots.length} spot${daySpots.length !== 1 ? "s" : ""}`;
+            return `
+              <div class="day-group${isCollapsed ? " collapsed" : ""}" data-day-key="${escapeHtml(key)}">
+                <div class="day-header">
+                  <span class="day-label">${dow}</span>
+                  <span class="day-date-full">${full}</span>
+                  <span class="day-spot-count">${spotSummary}</span>
+                  <div class="day-rule"></div>
+                  <button class="day-ai-btn" data-date="${dk}" data-town-id="${escapeHtml(town.id)}" title="AI suggestions for this day">✨</button>
+                  <span class="day-chevron">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="6 9 12 15 18 9"/></svg>
+                  </span>
+                </div>
+                <div class="day-body">
+                  <div class="spot-list" data-date="${dk}" data-town-id="${escapeHtml(town.id)}">
+                    ${daySpots.map(s => spotCardHTML(s)).join("")}
+                  </div>
+                  ${isEmpty
+                    ? `<div class="day-empty"><span>Drop a spot here</span><button class="add-spot-inline" data-town-id="${escapeHtml(town.id)}" data-date="${dk}">+ Add</button></div>`
+                    : `<button class="add-spot-inline" data-town-id="${escapeHtml(town.id)}" data-date="${dk}" style="margin-top:5px">+ Add to this day</button>`
+                  }
+                  <button class="transit-day-chip" data-town-id="${escapeHtml(town.id)}" data-date="${dk}">🚌 Transit</button>
+                </div>
+              </div>`;
+          }).join("");
+        })()}
+        ${state.shareMode ? "" : (() => {
+          const wKey = `${town.id}:wishlist`;
+          const wOverride = dayCollapseOverrides.get(wKey);
+          const wCollapsed = wOverride !== undefined ? wOverride : false;
+          const wCount = unscheduled.length;
+          return `<div class="day-group${wCollapsed ? " collapsed" : ""}" data-day-key="${wKey}">
+            <div class="day-header">
+              <span class="day-label" style="color:var(--text-3);font-style:italic;font-family:var(--font-display)">Wishlist</span>
+              <span class="day-spot-count">${wCount} spot${wCount !== 1 ? "s" : ""}</span>
+              <div class="day-rule"></div>
+              <span class="day-chevron">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="6 9 12 15 18 9"/></svg>
+              </span>
+            </div>
+            <div class="day-body">
+              <div class="spot-list" data-date="unscheduled" data-town-id="${escapeHtml(town.id)}">
+                ${unscheduled.map(s => spotCardHTML(s)).join("")}
+              </div>
+              <button class="add-spot-inline" data-town-id="${escapeHtml(town.id)}" data-date="" style="margin-top:5px">+ Add to wishlist</button>
+            </div>
+          </div>`;
+        })()}
+      </div>`;
+}
+
+function _wireTownElement(el) {
+  el.querySelectorAll(".accom-card").forEach(card => {
+    card.addEventListener("click", () => {
+      const town = state.towns.find(t => t.id === card.dataset.townId);
+      if (town) openAccomDrawer(town);
+    });
+  });
+  el.querySelectorAll(".add-accom-link").forEach(link => {
+    link.addEventListener("click", () => {
+      const town = state.towns.find(t => t.id === link.dataset.townId);
+      if (town) openAccomModal(town);
+    });
+  });
+  el.querySelectorAll(".town-edit-btn").forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      const town = state.towns.find(t => t.id === btn.dataset.townId);
+      if (town) openTownEditModal(town);
+    });
+  });
+  el.querySelectorAll(".change-photo-btn").forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      const town = state.towns.find(t => t.id === btn.dataset.townId);
+      if (town) openPhotoPicker(town.id, town.name);
+    });
+  });
+  el.querySelectorAll(".day-ai-btn").forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      cb.openRecommendationsPanel(btn.dataset.townId, btn.dataset.date);
+    });
+  });
+  el.querySelectorAll(".day-header").forEach(header => {
+    header.addEventListener("click", e => {
+      if (e.target.closest(".day-ai-btn")) return;
+      const group = header.closest(".day-group");
+      if (!group?.dataset.dayKey) return;
+      const nowCollapsed = group.classList.toggle("collapsed");
+      dayCollapseOverrides.set(group.dataset.dayKey, nowCollapsed);
+      saveDayCollapse(dayCollapseOverrides);
+    });
+  });
+  el.querySelectorAll(".add-spot-inline").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const townId = btn.dataset.townId;
+      const date = "date" in btn.dataset ? (btn.dataset.date || null) : null;
+      openModal(null, { townId, scheduledDate: date });
+    });
+  });
+  el.querySelectorAll(".transit-day-chip").forEach(btn => {
+    btn.addEventListener("click", () => {
+      showTransitSheet(btn.dataset.townId, btn.dataset.date);
+    });
+  });
+  el.querySelectorAll(".spot-card").forEach(card => {
+    card.addEventListener("click", e => {
+      if (e.target.closest(".spot-guide-link")) return;
+      const spot = state.spots.find(s => s.id === card.dataset.spotId);
+      if (spot) openDrawer(spot);
+    });
+  });
+  el.querySelectorAll(".spot-guide-link").forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      pendingGuideSpotId = btn.dataset.spotId;
+      cb.setView("guides");
+    });
+  });
+}
+
+function _initTownSortables(el, townId, container) {
+  if (typeof Sortable === "undefined" || document.body.classList.contains("share-mode")) return;
+  const instances = [];
+  el.querySelectorAll(".spot-list").forEach(list => {
+    const inst = Sortable.create(list, {
+      animation: 150,
+      draggable: ".spot-card:not([data-draggable='false'])",
+      delay: 500,
+      delayOnTouchOnly: false,
+      touchStartThreshold: 4,
+      ghostClass: "sortable-ghost",
+      chosenClass: "sortable-chosen",
+      dragClass: "sortable-drag",
+      group: "spots",
+      onChoose: (evt) => {
+        const spotId = evt.item.dataset.spotId;
+        const spot = state.spots.find(s => s.id === spotId);
+        if (spot?.groupId) {
+          container.querySelectorAll(".spot-card").forEach(card => {
+            const peer = state.spots.find(s => s.id === card.dataset.spotId);
+            if (peer?.groupId === spot.groupId && peer.id !== spotId) {
+              card.classList.add("drag-linked-peer");
+            }
+          });
+        }
+      },
+      onUnchoose: () => {
+        container.querySelectorAll(".drag-linked-peer").forEach(e => e.classList.remove("drag-linked-peer"));
+      },
+      onEnd: async (evt) => {
+        container.querySelectorAll(".drag-linked-peer").forEach(e => e.classList.remove("drag-linked-peer"));
+
+        const batch = writeBatch(db);
+        const spotId = evt.item.dataset.spotId;
+        const spot = state.spots.find(s => s.id === spotId);
+        const newDateKey = evt.to.dataset.date;
+        const newTownId = evt.to.dataset.townId;
+
+        if (spot) {
+          const updates = {};
+          const oldDateKey = spot.scheduledDate || "unscheduled";
+          if (newDateKey !== oldDateKey) {
+            updates.scheduledDate = (!newDateKey || newDateKey === "unscheduled") ? null : newDateKey;
+          }
+          if (newTownId && newTownId !== spot.townId) {
+            updates.townId = newTownId;
+          }
+          if (Object.keys(updates).length) batch.update(spotDocRef(spotId), updates);
+        }
+
+        const affectedLists = new Set([evt.from, evt.to]);
+        if (spot?.groupId) {
+          const peers = state.spots
+            .filter(s => s.groupId === spot.groupId && s.id !== spotId)
+            .sort((a, b) => (a.order ?? 9999) - (b.order ?? 9999));
+
+          let insertRef = evt.item.nextSibling;
+          for (const peer of peers) {
+            const peerCard = container.querySelector(`.spot-card[data-spot-id="${peer.id}"]`);
+            if (!peerCard) continue;
+            const fromList = peerCard.parentElement;
+            if (fromList) affectedLists.add(fromList);
+            evt.to.insertBefore(peerCard, insertRef);
+            insertRef = peerCard.nextSibling;
+
+            const peerUpdates = {};
+            const peerDateKey = peer.scheduledDate || "unscheduled";
+            if (newDateKey !== peerDateKey) {
+              peerUpdates.scheduledDate = (!newDateKey || newDateKey === "unscheduled") ? null : newDateKey;
+            }
+            if (newTownId && newTownId !== peer.townId) {
+              peerUpdates.townId = newTownId;
+            }
+            if (Object.keys(peerUpdates).length) batch.update(spotDocRef(peer.id), peerUpdates);
+          }
+        }
+
+        for (const l of affectedLists) {
+          [...l.querySelectorAll(".spot-card:not([data-draggable='false'])")].forEach((card, idx) => {
+            batch.update(spotDocRef(card.dataset.spotId), { order: idx });
+          });
+        }
+        await batch.commit().catch(e => console.error("Reorder failed:", e));
+      },
+    });
+    instances.push(inst);
+  });
+  _townSortables.set(townId, instances);
+}
 
 function _membersBadgeHTML(memberIds) {
   const allMembers = state.trip?.members || [];
@@ -300,10 +596,10 @@ export function renderItinerary() {
   const container = document.getElementById("itinerary-content");
   if (!container) return;
 
-  sortableInstances.forEach(s => s.destroy());
-  sortableInstances.length = 0;
-
   if (state.towns.length === 0) {
+    _townSortables.forEach(arr => arr.forEach(s => s.destroy()));
+    _townSortables.clear();
+    _townFingerprints.clear();
     if (!state.trip) {
       container.innerHTML = `<div class="itinerary-empty"><p>Loading…</p></div>`;
     } else {
@@ -321,298 +617,73 @@ export function renderItinerary() {
     return;
   }
 
-  const html = [];
+  // Clear empty-state placeholder when transitioning from 0 → N towns
+  container.querySelector(".itinerary-empty")?.remove();
+
+  // Remove DOM elements for towns that no longer exist
+  const currentTownIds = new Set(state.towns.map(t => t.id));
+  container.querySelectorAll(".town-group[data-town]").forEach(el => {
+    const id = el.dataset.town;
+    if (!currentTownIds.has(id)) {
+      _townSortables.get(id)?.forEach(s => s.destroy());
+      _townSortables.delete(id);
+      _townFingerprints.delete(id);
+      el.remove();
+    }
+  });
+
+  // Process each town in order — only rebuild sections whose fingerprint changed
+  let prevEl = null;
   for (const town of state.towns) {
-    const townSpots = getSpotsForTown(town.id);
-    const days = getDaysForTown(town);
-    const nights = nightsBetween(town.arrivalDate, town.departureDate);
+    const fp = _townFingerprint(town);
+    let el = document.getElementById(`itinerary-town-${town.id}`);
 
-    const byDate = {};
-    for (const spot of townSpots) {
-      const key = spot.scheduledDate || "unscheduled";
-      (byDate[key] = byDate[key] || []).push(spot);
+    if (el && _townFingerprints.get(town.id) === fp) {
+      // Unchanged — verify DOM ordering and move if necessary
+      const expected = prevEl ? prevEl.nextElementSibling : container.firstElementChild;
+      if (expected !== el) {
+        if (prevEl) prevEl.after(el);
+        else container.prepend(el);
+      }
+      prevEl = el;
+      continue;
     }
-    for (const key of Object.keys(byDate)) {
-      byDate[key].sort((a, b) => {
-        const aTime = a.scheduledTime;
-        const bTime = b.scheduledTime;
-        if (aTime && bTime) return aTime.localeCompare(bTime);
-        if (aTime) return -1;
-        if (bTime) return 1;
-        if (a._arrivalView && !b._arrivalView) return -1;
-        if (!a._arrivalView && b._arrivalView) return 1;
-        return (a.order ?? 9999) - (b.order ?? 9999);
-      });
+
+    // Build replacement element
+    const tmp = document.createElement("div");
+    tmp.innerHTML = _buildTownHTML(town);
+    const newEl = tmp.firstElementChild;
+
+    _townSortables.get(town.id)?.forEach(s => s.destroy());
+    _townSortables.delete(town.id);
+
+    if (el) {
+      el.replaceWith(newEl);
+    } else if (prevEl) {
+      prevEl.after(newEl);
+    } else {
+      const footer = container.querySelector("#itinerary-add-city-footer-btn")?.closest("div");
+      if (footer) container.insertBefore(newEl, footer);
+      else container.prepend(newEl);
     }
-    const unscheduled = byDate["unscheduled"] || [];
+    el = newEl;
 
-    const townImgUrl = resolveTownImage(town);
-    const showPhoto = !!townImgUrl && !town.hidePhoto;
-
-    const editBtn = `<button class="town-edit-btn icon-btn" data-town-id="${escapeHtml(town.id)}" title="Edit city" style="padding:4px;opacity:0.55;margin-right:2px">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="15" height="15"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          </button>`;
-    const photoBanner = showPhoto ? `
-      <div class="town-photo-banner">
-        <img src="${escapeHtml(townImgUrl)}" alt="${escapeHtml(town.name)}" loading="lazy"
-             onerror="this.closest('.town-photo-banner').style.display='none'">
-        <div class="town-photo-banner-overlay">
-          <div style="position:absolute;top:10px;right:10px;display:flex;gap:6px;z-index:2">
-            <button class="town-edit-btn icon-btn" data-town-id="${escapeHtml(town.id)}" title="Edit city"
-              style="padding:5px;background:rgba(0,0,0,0.38);border:1px solid rgba(255,255,255,0.18);border-radius:8px;color:#fff;backdrop-filter:blur(6px)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="14" height="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            </button>
-            <button class="change-photo-btn icon-btn" data-town-id="${escapeHtml(town.id)}" title="Change photo"
-              style="padding:5px;background:rgba(0,0,0,0.38);border:1px solid rgba(255,255,255,0.18);border-radius:8px;color:#fff;backdrop-filter:blur(6px)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="14" height="14"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-            </button>
-          </div>
-        </div>
-      </div>` : "";
-
-    html.push(`
-      <div class="town-group" id="itinerary-town-${escapeHtml(town.id)}" data-town="${escapeHtml(town.id)}">
-        ${photoBanner}
-        <div class="town-group-header"${showPhoto ? ' style="margin-top:-4px;border-radius:0 0 12px 12px"' : ""}>
-          ${!showPhoto ? `<div class="town-header-img" style="background-image:url('${escapeHtml(townImgUrl)}')"></div>` : ""}
-          <span class="town-group-dot"></span>
-          <span class="town-group-name">${escapeHtml(town.name)}</span>
-          <span class="town-group-dates">${fmtSpreadDates(town.arrivalDate, town.departureDate)} &middot; ${nights}n</span>
-          ${showPhoto ? "" : editBtn}
-        </div>
-        ${renderAccomCard(town)}
-        ${(() => {
-          const todayKey = localDateStr(new Date());
-          return days.map(dk => {
-            const daySpots = byDate[dk] || [];
-            const { dow, full } = fmtDayHeader(dk);
-            const isEmpty = daySpots.length === 0;
-            const key = `${town.id}:${dk}`;
-            const override = dayCollapseOverrides.get(key);
-            const isPast = dk < todayKey;
-            const isCollapsed = override !== undefined ? override : isPast;
-            const spotSummary = daySpots.length === 0 ? "No spots" : `${daySpots.length} spot${daySpots.length !== 1 ? "s" : ""}`;
-            return `
-              <div class="day-group${isCollapsed ? " collapsed" : ""}" data-day-key="${escapeHtml(key)}">
-                <div class="day-header">
-                  <span class="day-label">${dow}</span>
-                  <span class="day-date-full">${full}</span>
-                  <span class="day-spot-count">${spotSummary}</span>
-                  <div class="day-rule"></div>
-                  <button class="day-ai-btn" data-date="${dk}" data-town-id="${escapeHtml(town.id)}" title="AI suggestions for this day">✨</button>
-                  <span class="day-chevron">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="6 9 12 15 18 9"/></svg>
-                  </span>
-                </div>
-                <div class="day-body">
-                  <div class="spot-list" data-date="${dk}" data-town-id="${escapeHtml(town.id)}">
-                    ${daySpots.map(s => spotCardHTML(s)).join("")}
-                  </div>
-                  ${isEmpty
-                    ? `<div class="day-empty"><span>Drop a spot here</span><button class="add-spot-inline" data-town-id="${escapeHtml(town.id)}" data-date="${dk}">+ Add</button></div>`
-                    : `<button class="add-spot-inline" data-town-id="${escapeHtml(town.id)}" data-date="${dk}" style="margin-top:5px">+ Add to this day</button>`
-                  }
-                  <button class="transit-day-chip" data-town-id="${escapeHtml(town.id)}" data-date="${dk}">🚌 Transit</button>
-                </div>
-              </div>`;
-          }).join("");
-        })()}
-        ${state.shareMode ? "" : (() => {
-          const wKey = `${town.id}:wishlist`;
-          const wOverride = dayCollapseOverrides.get(wKey);
-          const wCollapsed = wOverride !== undefined ? wOverride : false;
-          const wCount = unscheduled.length;
-          return `<div class="day-group${wCollapsed ? " collapsed" : ""}" data-day-key="${wKey}">
-            <div class="day-header">
-              <span class="day-label" style="color:var(--text-3);font-style:italic;font-family:var(--font-display)">Wishlist</span>
-              <span class="day-spot-count">${wCount} spot${wCount !== 1 ? "s" : ""}</span>
-              <div class="day-rule"></div>
-              <span class="day-chevron">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="6 9 12 15 18 9"/></svg>
-              </span>
-            </div>
-            <div class="day-body">
-              <div class="spot-list" data-date="unscheduled" data-town-id="${escapeHtml(town.id)}">
-                ${unscheduled.map(s => spotCardHTML(s)).join("")}
-              </div>
-              <button class="add-spot-inline" data-town-id="${escapeHtml(town.id)}" data-date="" style="margin-top:5px">+ Add to wishlist</button>
-            </div>
-          </div>`;
-        })()}
-      </div>`);
+    _wireTownElement(el);
+    _initTownSortables(el, town.id, container);
+    _townFingerprints.set(town.id, fp);
+    prevEl = el;
   }
 
-  container.innerHTML = html.join("") + (state.shareMode ? "" : `
-    <div style="padding:8px 0 32px;text-align:center">
-      <button class="btn-secondary" id="itinerary-add-city-footer-btn" style="font-size:0.875rem;padding:9px 20px">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="margin-right:6px;vertical-align:-2px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Add city
-      </button>
-    </div>`);
-  container.querySelector("#itinerary-add-city-footer-btn")?.addEventListener("click", () => openTownEditModal());
-
-  container.querySelectorAll(".accom-card").forEach(el => {
-    el.addEventListener("click", () => {
-      const town = state.towns.find(t => t.id === el.dataset.townId);
-      if (town) openAccomDrawer(town);
-    });
-  });
-  container.querySelectorAll(".add-accom-link").forEach(el => {
-    el.addEventListener("click", () => {
-      const town = state.towns.find(t => t.id === el.dataset.townId);
-      if (town) openAccomModal(town);
-    });
-  });
-
-  container.querySelectorAll(".town-edit-btn").forEach(btn => {
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const town = state.towns.find(t => t.id === btn.dataset.townId);
-      if (town) openTownEditModal(town);
-    });
-  });
-
-  container.querySelectorAll(".change-photo-btn").forEach(btn => {
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const town = state.towns.find(t => t.id === btn.dataset.townId);
-      if (town) openPhotoPicker(town.id, town.name);
-    });
-  });
-
-  container.querySelectorAll(".day-ai-btn").forEach(btn => {
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      cb.openRecommendationsPanel(btn.dataset.townId, btn.dataset.date);
-    });
-  });
-
-  container.querySelectorAll(".day-header").forEach(header => {
-    header.addEventListener("click", (e) => {
-      if (e.target.closest(".day-ai-btn")) return;
-      const group = header.closest(".day-group");
-      if (!group?.dataset.dayKey) return;
-      const nowCollapsed = group.classList.toggle("collapsed");
-      dayCollapseOverrides.set(group.dataset.dayKey, nowCollapsed);
-      saveDayCollapse(dayCollapseOverrides);
-    });
-  });
-
-  container.querySelectorAll(".add-spot-inline").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const townId = btn.dataset.townId;
-      const date = "date" in btn.dataset ? (btn.dataset.date || null) : null;
-      openModal(null, { townId, scheduledDate: date });
-    });
-  });
-
-  container.querySelectorAll(".transit-day-chip").forEach(btn => {
-    btn.addEventListener("click", () => {
-      showTransitSheet(btn.dataset.townId, btn.dataset.date);
-    });
-  });
-
-  container.querySelectorAll(".spot-card").forEach(card => {
-    card.addEventListener("click", (e) => {
-      if (e.target.closest(".spot-guide-link")) return;
-      const spot = state.spots.find(s => s.id === card.dataset.spotId);
-      if (spot) openDrawer(spot);
-    });
-  });
-
-  container.querySelectorAll(".spot-guide-link").forEach(btn => {
-    btn.addEventListener("click", e => {
-      e.stopPropagation();
-      pendingGuideSpotId = btn.dataset.spotId;
-      cb.setView("guides");
-    });
-  });
-
-  if (typeof Sortable !== "undefined" && !document.body.classList.contains("share-mode")) {
-    container.querySelectorAll(".spot-list").forEach(list => {
-      const inst = Sortable.create(list, {
-        animation: 150,
-        draggable: ".spot-card:not([data-draggable='false'])",
-        delay: 500,
-        delayOnTouchOnly: false,
-        touchStartThreshold: 4,
-        ghostClass: "sortable-ghost",
-        chosenClass: "sortable-chosen",
-        dragClass: "sortable-drag",
-        group: "spots",
-        onChoose: (evt) => {
-          const spotId = evt.item.dataset.spotId;
-          const spot = state.spots.find(s => s.id === spotId);
-          if (spot?.groupId) {
-            container.querySelectorAll(".spot-card").forEach(card => {
-              const peer = state.spots.find(s => s.id === card.dataset.spotId);
-              if (peer?.groupId === spot.groupId && peer.id !== spotId) {
-                card.classList.add("drag-linked-peer");
-              }
-            });
-          }
-        },
-        onUnchoose: () => {
-          container.querySelectorAll(".drag-linked-peer").forEach(el => el.classList.remove("drag-linked-peer"));
-        },
-        onEnd: async (evt) => {
-          container.querySelectorAll(".drag-linked-peer").forEach(el => el.classList.remove("drag-linked-peer"));
-
-          const batch = writeBatch(db);
-          const spotId = evt.item.dataset.spotId;
-          const spot = state.spots.find(s => s.id === spotId);
-          const newDateKey = evt.to.dataset.date;
-          const newTownId = evt.to.dataset.townId;
-
-          if (spot) {
-            const updates = {};
-            const oldDateKey = spot.scheduledDate || "unscheduled";
-            if (newDateKey !== oldDateKey) {
-              updates.scheduledDate = (!newDateKey || newDateKey === "unscheduled") ? null : newDateKey;
-            }
-            if (newTownId && newTownId !== spot.townId) {
-              updates.townId = newTownId;
-            }
-            if (Object.keys(updates).length) batch.update(spotDocRef(spotId), updates);
-          }
-
-          const affectedLists = new Set([evt.from, evt.to]);
-          if (spot?.groupId) {
-            const peers = state.spots
-              .filter(s => s.groupId === spot.groupId && s.id !== spotId)
-              .sort((a, b) => (a.order ?? 9999) - (b.order ?? 9999));
-
-            let insertRef = evt.item.nextSibling;
-            for (const peer of peers) {
-              const peerCard = container.querySelector(`.spot-card[data-spot-id="${peer.id}"]`);
-              if (!peerCard) continue;
-              const fromList = peerCard.parentElement;
-              if (fromList) affectedLists.add(fromList);
-              evt.to.insertBefore(peerCard, insertRef);
-              insertRef = peerCard.nextSibling;
-
-              const peerUpdates = {};
-              const peerDateKey = peer.scheduledDate || "unscheduled";
-              if (newDateKey !== peerDateKey) {
-                peerUpdates.scheduledDate = (!newDateKey || newDateKey === "unscheduled") ? null : newDateKey;
-              }
-              if (newTownId && newTownId !== peer.townId) {
-                peerUpdates.townId = newTownId;
-              }
-              if (Object.keys(peerUpdates).length) batch.update(spotDocRef(peer.id), peerUpdates);
-            }
-          }
-
-          for (const l of affectedLists) {
-            [...l.querySelectorAll(".spot-card:not([data-draggable='false'])")].forEach((card, idx) => {
-              batch.update(spotDocRef(card.dataset.spotId), { order: idx });
-            });
-          }
-          await batch.commit().catch(e => console.error("Reorder failed:", e));
-        },
-      });
-      sortableInstances.push(inst);
-    });
+  // Ensure "Add city" footer exists once at the end
+  if (!state.shareMode && !container.querySelector("#itinerary-add-city-footer-btn")) {
+    const footer = document.createElement("div");
+    footer.style.cssText = "padding:8px 0 32px;text-align:center";
+    footer.innerHTML = `<button class="btn-secondary" id="itinerary-add-city-footer-btn" style="font-size:0.875rem;padding:9px 20px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="margin-right:6px;vertical-align:-2px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Add city
+    </button>`;
+    footer.querySelector("button").addEventListener("click", () => openTownEditModal());
+    container.append(footer);
   }
 
   if (pendingScrollTownId) {
