@@ -1,5 +1,5 @@
 import { state, activeTripId, setState } from "./state.js";
-import { db, doc, updateDoc, deleteDoc, addDoc, collection,
+import { db, doc, setDoc, updateDoc, deleteDoc, addDoc, collection,
          serverTimestamp, writeBatch, arrayUnion, deleteField } from "./firebase.js";
 import { escapeHtml, localDateStr } from "./utils.js";
 import { PEXELS_CONFIG } from "./config.js";
