@@ -28,8 +28,8 @@ export const PEXELS_CONFIG = { apiKey: "" };
    3. Copy your Cloud name from the top-left of the Cloudinary dashboard
    ───────────────────────────────────────────────────────────── */
 export const CLOUDINARY_CONFIG = {
-  cloudName:    "",   // e.g. "dxyz123abc"
-  uploadPreset: "",   // e.g. "weyage_unsigned"
+  cloudName:    "dkzhgcons",   // e.g. "dxyz123abc"
+  uploadPreset: "Weyage",   // e.g. "weyage_unsigned"
 };
 
 /* ─────────────────────────────────────────────────────────────
