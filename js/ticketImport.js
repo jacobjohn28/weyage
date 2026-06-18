@@ -1,6 +1,6 @@
 import { GEMINI_CONFIG } from "./config.js";
 import { state, activeTripId } from "./state.js";
-import { db, doc, setDoc, updateDoc, serverTimestamp } from "./firebase.js";
+import { db, doc, setDoc, serverTimestamp } from "./firebase.js";
 import { escapeHtml } from "./utils.js";
 import { currentUserMemberId } from "./budget.js";
 
@@ -427,54 +427,60 @@ function _wordSimilarity(a, b) {
 
 /* ─────────────────────────────────────────────────────────────
    TOWN RESOLUTION
-   Three-tier matching:
-   1. Date-range  — if this leg's date falls inside an existing town's stay
-                    it is almost certainly the same city
-   2. Norm-name   — normalized substring / word-overlap comparison
-   3. Create new  — infer dates from all legs, write a new town doc
    ───────────────────────────────────────────────────────────── */
-const _sessionTownCache = new Map(); // normCity → townId
+// Cache keyed by "normCity::legDate" so the same city on two different
+// dates in one import (e.g. a return trip A→B→A) maps to separate records.
+const _sessionTownCache = new Map();
+
+function _nameMatches(a, b) {
+  if (!a || !b) return false;
+  return a === b || a.includes(b) || b.includes(a) || _wordSimilarity(a, b) >= 0.5;
+}
 
 async function _resolveOrCreateTown(cityName, leg, allLegs, role /* "from" | "to" */) {
   if (!cityName) return null;
   const normKey = _normCity(cityName);
-
-  if (_sessionTownCache.has(normKey)) return _sessionTownCache.get(normKey);
-
-  // ── 1. Date-range matching ───────────────────────────────────────────────────
   const legDate = role === "from" ? leg.departureDate : leg.arrivalDate;
-  if (legDate) {
+  const cacheKey = `${normKey}::${legDate || ""}`;
+
+  if (_sessionTownCache.has(cacheKey)) return _sessionTownCache.get(cacheKey);
+
+  // ── 1. Name match AND leg date falls inside an existing visit ────────────────
+  // Safe to merge only when dates already cover this transport — no date
+  // modification needed or performed.
+  if (normKey) {
+    const byNameAndDate = state.towns.find(t => {
+      if (!_nameMatches(normKey, _normCity(t.name))) return false;
+      if (!legDate) return true;                         // no date → take first name match
+      if (!t.arrivalDate || !t.departureDate) return false;
+      return legDate >= t.arrivalDate && legDate <= t.departureDate;
+    });
+    if (byNameAndDate) {
+      _sessionTownCache.set(cacheKey, byNameAndDate.id);
+      return byNameAndDate.id;
+    }
+    // If the name matched but no visit covered this date → different visit.
+    // Fall through and create a separate town record for this stay.
+  }
+
+  // ── 2. IATA / 3-letter code — match by date alone ───────────────────────────
+  // When the extracted name has no word longer than 3 chars it's likely a code
+  // (LHR, CDG, AMS).  In that case a date-range match is reliable enough.
+  const hasLongWord = normKey.split(/\s+/).some(w => w.length > 3);
+  if (!hasLongWord && legDate) {
     const byDate = state.towns.find(t =>
       t.arrivalDate && t.departureDate &&
       legDate >= t.arrivalDate && legDate <= t.departureDate
     );
     if (byDate) {
-      const tn = _normCity(byDate.name);
-      // Accept if names are compatible (no strong conflict)
-      const nameOk = !normKey || !tn
-        || tn.includes(normKey) || normKey.includes(tn)
-        || _wordSimilarity(normKey, tn) >= 0.5;
-      if (nameOk) {
-        _sessionTownCache.set(normKey, byDate.id);
-        return byDate.id;
-      }
+      _sessionTownCache.set(cacheKey, byDate.id);
+      return byDate.id;
     }
   }
 
-  // ── 2. Normalized-name matching ──────────────────────────────────────────────
-  const existing = state.towns.find(t => {
-    const tn = _normCity(t.name);
-    if (!tn || !normKey) return false;
-    return tn === normKey
-      || tn.includes(normKey) || normKey.includes(tn)
-      || _wordSimilarity(normKey, tn) >= 0.5;
-  });
-  if (existing) {
-    _sessionTownCache.set(normKey, existing.id);
-    return existing.id;
-  }
-
-  // ── 3. Create new town ───────────────────────────────────────────────────────
+  // ── 3. Create a new town for this visit ──────────────────────────────────────
+  // Deliberately does NOT merge with a same-name town whose dates don't overlap —
+  // that represents a separate visit (e.g. returning to the same city later).
   const arrLegs = allLegs.filter(l => _normCity(l.toCity)   === normKey && l.arrivalDate);
   const depLegs = allLegs.filter(l => _normCity(l.fromCity) === normKey && l.departureDate);
   const arrivalDate   = arrLegs.length ? arrLegs.map(l => l.arrivalDate).sort()[0]   : null;
@@ -494,36 +500,8 @@ async function _resolveOrCreateTown(cityName, leg, allLegs, role /* "from" | "to
     createdAt: serverTimestamp(),
   });
 
-  _sessionTownCache.set(normKey, id);
+  _sessionTownCache.set(cacheKey, id);
   return id;
-}
-
-/* ─────────────────────────────────────────────────────────────
-   DATE RANGE EXTENSION
-   ───────────────────────────────────────────────────────────── */
-// Stretch an existing town's date range so `date` is covered.
-// Must run BEFORE writing the spot so getDaysForTown includes the date
-// when the Firestore listener re-renders the itinerary.
-async function _ensureTownCoversDate(townId, date, direction /* "depart" | "arrive" */) {
-  if (!townId || !date) return;
-  const town = state.towns.find(t => t.id === townId);
-  if (!town) return;
-
-  const updates = {};
-
-  if (direction === "depart") {
-    // Transport leaves from here — only push departureDate forward, never touch arrivalDate
-    if (!town.arrivalDate)                       updates.arrivalDate   = date;
-    if (!town.departureDate || date > town.departureDate) updates.departureDate = date;
-  } else {
-    // Transport arrives here — only pull arrivalDate back, never touch departureDate
-    if (!town.departureDate)                      updates.departureDate = date;
-    if (!town.arrivalDate   || date < town.arrivalDate)   updates.arrivalDate   = date;
-  }
-
-  if (Object.keys(updates).length > 0) {
-    await updateDoc(doc(db, "trips", activeTripId, "towns", townId), updates);
-  }
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -558,12 +536,6 @@ async function _saveLegs(legs) {
       console.warn("Ticket import: skipping leg — could not resolve departure city", leg);
       continue;
     }
-
-    // Extend existing town date ranges so the spot's date is always visible.
-    // Departure city: only push its end date forward.
-    // Arrival city: only pull its start date backward.
-    await _ensureTownCoversDate(townId,        leg.departureDate, "depart");
-    await _ensureTownCoversDate(arrivalTownId, leg.arrivalDate,   "arrive");
 
     const spotId = crypto.randomUUID();
     const myMemberId = currentUserMemberId();
