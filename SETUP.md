@@ -81,36 +81,86 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Change these to your two Google emails (lowercase)
-    function isAllowed() {
-      return request.auth != null && request.auth.token.email in [
-        'your.email@gmail.com',
-        'wife.email@gmail.com'
-      ];
-    }
-
-    // Allow authenticated read (including anonymous share-link viewers)
-    // when the trip document has a shareToken set
-    function isSharedRead(tripId) {
+    function isApproved() {
       return request.auth != null &&
-        exists(/databases/$(database)/documents/trips/$(tripId)) &&
-        get(/databases/$(database)/documents/trips/$(tripId)).data.keys().hasAny(['shareToken']);
+        exists(/databases/$(database)/documents/appUsers/$(request.auth.token.email));
     }
 
-    match /trips/{tripId} {
-      allow read: if isAllowed() || isSharedRead(tripId);
-      allow write: if isAllowed();
-
-      // All subcollections (towns, spots, expenses, cityGallery, …)
-      match /{document=**} {
-        allow read: if isAllowed() || isSharedRead(tripId);
-        allow write: if isAllowed();
-      }
-    }
-
-    // App-level user approval list — owners only
+    // App users allowlist — read-only for the user themselves, managed via Firebase Console
     match /appUsers/{email} {
-      allow read, write: if isAllowed();
+      allow read: if request.auth != null && request.auth.token.email == email;
+      allow write: if false;
+    }
+
+    // Site-wide config (Pexels/Gemini API keys etc.) — admin write only
+    match /config/site {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null &&
+        request.auth.token.email == "your.email@gmail.com";
+    }
+
+    // Trips
+    match /trips/{tripId} {
+      allow create: if isApproved() &&
+        request.auth.token.email in request.resource.data.allowedUsers;
+
+      allow read: if request.auth != null && (
+        resource.data.shareToken != null ||
+        request.auth.token.email in resource.data.allowedUsers ||
+        request.auth.token.email in resource.data.get('shareViewers', [])
+      );
+
+      allow update, delete: if isApproved() &&
+        request.auth.token.email in resource.data.allowedUsers;
+
+      // Allow share viewers to record themselves in shareViewers
+      allow update: if request.auth != null
+        && request.auth.firebase.sign_in_provider != 'anonymous'
+        && resource.data.shareToken != null
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['shareViewers']);
+
+      // Catch-all for any other subcollections — approved users only
+      match /{subcollection=**} {
+        allow read, write: if isApproved() &&
+          request.auth.token.email in
+            get(/databases/$(database)/documents/trips/$(tripId)).data.allowedUsers;
+      }
+
+      // Towns — approved users can read/write; share-link viewers can read
+      match /towns/{townId} {
+        allow read: if request.auth != null && (
+          get(/databases/$(database)/documents/trips/$(tripId)).data.shareToken != null ||
+          request.auth.token.email in
+            get(/databases/$(database)/documents/trips/$(tripId)).data.allowedUsers
+        );
+        allow write: if isApproved() &&
+          request.auth.token.email in
+            get(/databases/$(database)/documents/trips/$(tripId)).data.allowedUsers;
+      }
+
+      // Spots — same as towns
+      match /spots/{spotId} {
+        allow read: if request.auth != null && (
+          get(/databases/$(database)/documents/trips/$(tripId)).data.shareToken != null ||
+          request.auth.token.email in
+            get(/databases/$(database)/documents/trips/$(tripId)).data.allowedUsers
+        );
+        allow write: if isApproved() &&
+          request.auth.token.email in
+            get(/databases/$(database)/documents/trips/$(tripId)).data.allowedUsers;
+      }
+
+      // City Gallery — same read access as towns/spots
+      match /cityGallery/{photoId} {
+        allow read: if request.auth != null && (
+          get(/databases/$(database)/documents/trips/$(tripId)).data.shareToken != null ||
+          request.auth.token.email in
+            get(/databases/$(database)/documents/trips/$(tripId)).data.allowedUsers
+        );
+        allow write: if isApproved() &&
+          request.auth.token.email in
+            get(/databases/$(database)/documents/trips/$(tripId)).data.allowedUsers;
+      }
     }
   }
 }
