@@ -207,13 +207,34 @@
 
   <!-- Contacts page — shown as desktop flex panel or mobile fixed overlay -->
   <div id="trips-contacts-page" style="display:none">
+    <!-- Mobile header: mirrors trips-header with same heading-dropdown pattern -->
     <div class="tcp-header">
-      <button class="tcp-back icon-btn" id="tcp-back-btn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="15 18 9 12 15 6"/></svg>
-        Trips
-      </button>
-      <h2 class="tcp-title">Contacts</h2>
+      <div class="trips-mobile-heading-wrap" id="tcp-heading-wrap">
+        <button class="trips-heading-dropdown-btn" id="tcp-heading-dropdown-btn" aria-expanded="false">
+          <span class="trips-heading">Contacts</span>
+          <svg class="trips-heading-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="trips-top-drawer" id="tcp-top-drawer" style="display:none">
+          <button class="ttd-item" id="tcp-ttd-trips">
+            My Trips
+            <svg class="ttd-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+          <button class="ttd-item ttd-active" id="tcp-ttd-contacts">
+            Contacts
+            <svg class="ttd-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="icon-btn" id="tcp-settings-btn" title="Site settings" aria-label="Site settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="18" height="18"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+        <button class="icon-btn trips-mobile-signout-btn" id="tcp-signout-btn" title="Sign out" aria-label="Sign out">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="18" height="18"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </button>
+      </div>
     </div>
+    <!-- Desktop heading -->
     <h2 class="tcp-title-desktop">Contacts</h2>
     <p class="tcp-desc">Add people whose shared trips you receive, so you always know who shared each trip with you.</p>
 

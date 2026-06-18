@@ -780,14 +780,38 @@ export function initUI() {
     document.getElementById("trips-heading-dropdown-btn").setAttribute("aria-expanded", String(!isOpen));
   });
   document.addEventListener("click", (e) => {
-    if (!document.getElementById("trips-mobile-heading-wrap")?.contains(e.target)) _closeTopDrawer();
+    if (!document.getElementById("trips-mobile-heading-wrap")?.contains(e.target) &&
+        !document.getElementById("tcp-heading-wrap")?.contains(e.target)) _closeTopDrawer();
   });
 
   document.getElementById("trips-nav-trips-btn")?.addEventListener("click", closeContactsPage);
   document.getElementById("trips-contacts-nav-btn")?.addEventListener("click", openContactsPage);
-  document.getElementById("tcp-back-btn")?.addEventListener("click", closeContactsPage);
   document.getElementById("ttd-trips")?.addEventListener("click", closeContactsPage);
   document.getElementById("ttd-contacts")?.addEventListener("click", openContactsPage);
+
+  // Contacts page mobile header dropdown
+  document.getElementById("tcp-heading-dropdown-btn")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const drawer = document.getElementById("tcp-top-drawer");
+    const isOpen = drawer.style.display !== "none";
+    drawer.style.display = isOpen ? "none" : "";
+    document.getElementById("tcp-heading-dropdown-btn").setAttribute("aria-expanded", String(!isOpen));
+  });
+  document.addEventListener("click", (e) => {
+    if (!document.getElementById("tcp-heading-wrap")?.contains(e.target)) {
+      const d = document.getElementById("tcp-top-drawer");
+      if (d) d.style.display = "none";
+      document.getElementById("tcp-heading-dropdown-btn")?.setAttribute("aria-expanded", "false");
+    }
+  });
+  document.getElementById("tcp-ttd-trips")?.addEventListener("click", closeContactsPage);
+  document.getElementById("tcp-ttd-contacts")?.addEventListener("click", () => {
+    const d = document.getElementById("tcp-top-drawer");
+    if (d) d.style.display = "none";
+    document.getElementById("tcp-heading-dropdown-btn")?.setAttribute("aria-expanded", "false");
+  });
+  document.getElementById("tcp-settings-btn")?.addEventListener("click", openSiteSettings);
+  document.getElementById("tcp-signout-btn")?.addEventListener("click", () => signOut(auth));
 
   // Trips screen buttons
   document.getElementById("trips-new-btn-sidebar")?.addEventListener("click", () => { closeContactsPage(); openCreateTripModal(); });

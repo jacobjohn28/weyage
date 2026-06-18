@@ -568,19 +568,20 @@
       background: var(--bg);
       padding: 0;
       overflow-y: auto;
+      display: flex; flex-direction: column;
     }
     .tcp-header {
-      display: flex; align-items: center; gap: 10px;
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--border);
-      position: sticky; top: 0; background: var(--bg); z-index: 1;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 24px 20px 20px;
+      flex-shrink: 0;
     }
-    .tcp-back { display: inline-flex; align-items: center; gap: 6px; font-size: 0.8125rem; color: var(--accent); }
-    .tcp-title { font-family: var(--font-display); font-size: 1.25rem; font-weight: 500; flex: 1; }
+    /* Show the mobile heading wrap inside tcp-header */
+    .tcp-header .trips-mobile-heading-wrap { display: block; }
     .tcp-title-desktop { display: none; }
-    .tcp-desc { padding: 0 20px; margin-bottom: 16px; }
-    .tcp-add-form { padding: 16px 20px 0; max-width: none; margin-bottom: 8px; }
-    #ff-contacts-list, #ff-empty { padding-left: 20px; padding-right: 20px; }
+    .tcp-desc { padding: 0 20px 16px; font-size: 0.875rem; color: var(--text-2); margin: 0; }
+    .tcp-add-form { padding: 0 20px 16px; max-width: none; margin-bottom: 0; }
+    #ff-contacts-list { padding: 0 20px; }
+    #ff-empty { padding: 4px 20px 24px; }
   }
 
   /* Mobile trips overlay (opened from the "more" sheet) */
