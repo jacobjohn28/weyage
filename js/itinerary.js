@@ -5,6 +5,7 @@ import {
   escapeHtml, localDateStr, fmtDateRange, fmtSpreadDates, nightsBetween,
   daysUntil, fmtTime12, fmtDayHeader, mapsLink, mapsSearchBtn,
   linkifyNotes, wirePhoneCopyBtns, typeIconSVG, emailToName,
+  btnLoading, btnReset,
 } from "./utils.js";
 import { generateSpotGuide, TYPE_COLORS } from "./guides.js";
 import { resolveTownImage, openPhotoPicker } from "./photos.js";
@@ -1397,8 +1398,7 @@ async function saveAccommodation() {
   const btn = document.getElementById("accom-modal-save-btn");
   const errEl = document.getElementById("accom-save-error");
   errEl.style.display = "none";
-  btn.disabled = true;
-  btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Saving…`;
+  btnLoading(btn, "Saving…");
 
   const townId = accomTownId;
   closeAccomModal();
@@ -1728,8 +1728,7 @@ export function initItinerary() {
       : null;
 
     const saveBtn = document.getElementById("modal-save-btn");
-    saveBtn.disabled = true;
-    saveBtn.textContent = "Saving…";
+    btnLoading(saveBtn, "Saving…");
     const editId = modalEditId;
     const returnView = _modalReturnView;
     closeModal();

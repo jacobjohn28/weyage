@@ -1,5 +1,5 @@
 import { state, setState, activeTripId, setActiveTripId } from "./state.js";
-import { escapeHtml, fmtDateRange, localDateStr } from "./utils.js";
+import { escapeHtml, fmtDateRange, localDateStr, btnLoading, btnReset } from "./utils.js";
 import {
   db, doc, getDoc, setDoc, auth,
   isConfigured, GoogleAuthProvider, signInWithPopup, signOut, serverTimestamp,
@@ -596,12 +596,16 @@ export function initUI() {
       showAuthScreen("Firebase isn't configured yet. Open this file in an editor and follow the SETUP.md instructions, then add your Firebase config and your two Google emails.");
       return;
     }
+    const btn = document.getElementById("google-signin");
     try {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: "select_account" });
       await signInWithPopup(auth, provider);
+      // Popup closed — show spinner while onAuthStateChanged fires and app loads
+      btnLoading(btn, "Signing in…");
     } catch (err) {
       console.error(err);
+      btnReset(btn);
       showAuthScreen("Sign-in failed: " + (err.message || err.code));
     }
   });

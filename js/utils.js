@@ -143,6 +143,25 @@ export function wirePhoneCopyBtns(container) {
 }
 
 /* ─────────────────────────────────────────────────────────────
+   BUTTON LOADING STATE
+   ───────────────────────────────────────────────────────────── */
+export function btnLoading(btn, label = "") {
+  if (!btn) return;
+  btn.disabled = true;
+  btn._savedHTML = btn.innerHTML;
+  btn.innerHTML = `<span class="btn-spinner" aria-hidden="true"></span>${label ? escapeHtml(label) : ""}`;
+}
+
+export function btnReset(btn) {
+  if (!btn) return;
+  btn.disabled = false;
+  if (btn._savedHTML !== undefined) {
+    btn.innerHTML = btn._savedHTML;
+    delete btn._savedHTML;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
    UI ICON HELPERS
    ───────────────────────────────────────────────────────────── */
 export function typeIconSVG(type) {

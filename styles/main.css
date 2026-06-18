@@ -4185,7 +4185,7 @@ body.share-mode .transit-entry-del { display: none !important; }
   .ticket-label { font-size: 0.6875rem; color: var(--text-3); font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
   .ticket-input.ticket-field-missing { border-color: var(--accent) !important; background: var(--accent-bg) !important; }
 
-  /* Loading spinner */
+  /* Loading spinner — ticket import */
   .ticket-spinner {
     display: inline-block; width: 18px; height: 18px;
     border: 2px solid var(--border-strong);
@@ -4194,3 +4194,17 @@ body.share-mode .transit-entry-del { display: none !important; }
     animation: ticket-spin 0.7s linear infinite;
   }
   @keyframes ticket-spin { to { transform: rotate(360deg); } }
+
+  /* Inline button spinner — used by btnLoading() in utils.js */
+  .btn-spinner {
+    display: inline-block;
+    width: 13px; height: 13px;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    border-radius: 50%;
+    opacity: 0.7;
+    animation: ticket-spin 0.65s linear infinite;
+    vertical-align: -2px;
+    margin-right: 6px;
+    flex-shrink: 0;
+  }

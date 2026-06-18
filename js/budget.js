@@ -1,7 +1,7 @@
 import { state, activeTripId, setState } from "./state.js";
 import { db, doc, setDoc, updateDoc, deleteDoc, addDoc, collection,
          serverTimestamp, writeBatch, arrayUnion, deleteField } from "./firebase.js";
-import { escapeHtml, localDateStr } from "./utils.js";
+import { escapeHtml, localDateStr, btnLoading, btnReset } from "./utils.js";
 import { PEXELS_CONFIG } from "./config.js";
 import { extractTripDestination } from "./photos.js";
 
@@ -193,8 +193,7 @@ export function showTransitSheet(townId, date, existingEntry = null) {
       entry.memberIds = (tMembers.length >= 2 && _transitMemberIds.size > 0 && _transitMemberIds.size < tMembers.length)
         ? [..._transitMemberIds]
         : null;
-      saveBtn.disabled = true;
-      saveBtn.textContent = "Saving…";
+      btnLoading(saveBtn, "Saving…");
       if (existingEntry) {
         await updateTransitExpense(townId, entry);
       } else {
@@ -710,7 +709,7 @@ export async function saveExpense() {
   errEl.style.display = "none";
 
   const saveBtn = document.getElementById("exp-save-btn");
-  saveBtn.disabled = true;
+  btnLoading(saveBtn, "Saving…");
 
   const data = { description, amount, currency, category, date, townId, paymentMethod, note, isEstimated: _expEstimated };
 
@@ -749,7 +748,7 @@ export async function saveExpense() {
     errEl.textContent = "Failed to save — " + err.message;
     errEl.style.display = "block";
   } finally {
-    saveBtn.disabled = false;
+    btnReset(saveBtn);
   }
 }
 
@@ -900,7 +899,7 @@ export function toHomeCurrency(amount, currency) {
 
 export async function fetchAndSaveRates(btn) {
   const home = tripHomeCurrency();
-  if (btn) { btn.disabled = true; btn.textContent = "Fetching…"; }
+  btnLoading(btn, "Fetching…");
   try {
     const res = await fetch(`https://open.er-api.com/v6/latest/${home}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -911,10 +910,10 @@ export async function fetchAndSaveRates(btn) {
       exchangeRates: data.rates,
       exchangeRatesUpdatedAt: serverTimestamp(),
     });
-    if (btn) { btn.textContent = "Updated ✓"; setTimeout(() => { if (btn) btn.textContent = "Refresh rates"; btn.disabled = false; }, 2000); }
+    if (btn) { btnReset(btn); btn.textContent = "Updated ✓"; setTimeout(() => btnReset(btn), 2000); }
   } catch (err) {
     console.error("Rate fetch failed:", err);
-    if (btn) { btn.textContent = "Failed — retry"; btn.disabled = false; }
+    if (btn) { btnReset(btn); btn.textContent = "Failed — retry"; }
   }
 }
 
@@ -1711,7 +1710,7 @@ export async function saveBulkExpenses() {
     return;
   }
 
-  if (saveBtn) saveBtn.disabled = true;
+  if (saveBtn) btnLoading(saveBtn, "Saving…");
   try {
     const batch = writeBatch(db);
     ids.forEach(id => {
@@ -1726,7 +1725,7 @@ export async function saveBulkExpenses() {
     console.error("Bulk save failed:", err);
     if (errEl) { errEl.textContent = "Save failed — please try again."; errEl.style.display = "block"; }
   } finally {
-    if (saveBtn) saveBtn.disabled = false;
+    if (saveBtn) btnReset(saveBtn);
   }
 }
 
@@ -2674,7 +2673,7 @@ async function saveTownEdit() {
   const departureDate = document.getElementById("town-edit-departure").value;
   if (!name || !arrivalDate || !departureDate) return;
   const saveBtn = document.getElementById("town-edit-save-btn");
-  saveBtn.disabled = true;
+  btnLoading(saveBtn, "Saving…");
   try {
     if (editingTownId) {
       await updateDoc(doc(db, "trips", activeTripId, "towns", editingTownId), { name, arrivalDate, departureDate, hidePhoto: townHidePhotoState });
@@ -2700,7 +2699,7 @@ async function saveTownEdit() {
     console.error("Town save error:", err);
     alert(`Could not save city: ${err.message}`);
   } finally {
-    saveBtn.disabled = false;
+    btnReset(saveBtn);
   }
 }
 
@@ -2712,7 +2711,7 @@ function deleteTownEdit() {
 
 async function confirmDeleteTown() {
   const confirmBtn = document.getElementById("town-edit-delete-confirm-btn");
-  confirmBtn.disabled = true;
+  btnLoading(confirmBtn, "Deleting…");
   try {
     const batch = writeBatch(db);
     state.spots.filter(s => s.townId === editingTownId)
@@ -2724,7 +2723,7 @@ async function confirmDeleteTown() {
     closeTownEditModal();
   } catch (err) {
     console.error("Town delete error:", err);
-    confirmBtn.disabled = false;
+    btnReset(confirmBtn);
     document.getElementById("town-edit-footer-main").style.display = "";
     document.getElementById("town-edit-footer-confirm").style.display = "none";
   }
