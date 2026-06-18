@@ -173,8 +173,10 @@ function listenToTrip(tripId) {
       const cityGallery = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       cityGallery.sort((a, b) => (a.takenDate || "").localeCompare(b.takenDate || ""));
       setState({ cityGallery });
-      if (state.currentView === "gallery") renderGallery();
-      if (state.currentView === "itinerary") renderItinerary();
+      try {
+        if (state.currentView === "gallery") renderGallery();
+        if (state.currentView === "itinerary") renderItinerary();
+      } catch (e) { console.error("Gallery render after update:", e); }
     },
     (err) => {
       console.error("Gallery listener error:", err.code);

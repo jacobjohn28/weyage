@@ -172,14 +172,14 @@ export function initGalleryLightbox() {
   const lb = document.getElementById("gallery-lightbox");
   if (!lb) return;
 
-  lb.querySelector("#lb-close").addEventListener("click", galleryLightboxClose);
+  lb.querySelector("#lb-close")?.addEventListener("click", galleryLightboxClose);
   lb.addEventListener("click", e => { if (e.target === lb) galleryLightboxClose(); });
 
-  lb.querySelector("#lb-prev").addEventListener("click", e => {
+  lb.querySelector("#lb-prev")?.addEventListener("click", e => {
     e.stopPropagation();
     if (_lbIndex > 0) { _lbIndex--; _lbRender(); }
   });
-  lb.querySelector("#lb-next").addEventListener("click", e => {
+  lb.querySelector("#lb-next")?.addEventListener("click", e => {
     e.stopPropagation();
     if (_lbIndex < _lbPhotos.length - 1) { _lbIndex++; _lbRender(); }
   });
@@ -372,11 +372,11 @@ export function initUploadModal() {
   const submitBtn  = modal.querySelector("#upload-submit-btn");
   const statusEl   = modal.querySelector("#upload-status");
 
-  modal.querySelector("#upload-modal-close").addEventListener("click", closeUploadModal);
+  modal.querySelector("#upload-modal-close")?.addEventListener("click", closeUploadModal);
   modal.addEventListener("click", e => { if (e.target === modal) closeUploadModal(); });
-  modal.querySelector("#upload-modal-sheet").addEventListener("click", e => e.stopPropagation());
+  modal.querySelector("#upload-modal-sheet")?.addEventListener("click", e => e.stopPropagation());
 
-  fileInput.addEventListener("change", () => {
+  fileInput?.addEventListener("change", () => {
     const files = Array.from(fileInput.files);
     if (!files.length) return;
     preview.innerHTML = files.map(f =>

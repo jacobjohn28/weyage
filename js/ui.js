@@ -593,8 +593,8 @@ export function initUI() {
   });
 
   // Gallery lightbox + upload modal
-  initGalleryLightbox();
-  initUploadModal();
+  try { initGalleryLightbox(); } catch (e) { console.error("Gallery lightbox init:", e); }
+  try { initUploadModal(); } catch (e) { console.error("Gallery upload modal init:", e); }
   document.getElementById("upload-cancel-btn")?.addEventListener("click", closeUploadModal);
 
   // Online / offline status
