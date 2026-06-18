@@ -373,7 +373,8 @@ export function initUploadModal() {
   const statusEl   = modal.querySelector("#upload-status");
 
   modal.querySelector("#upload-modal-close").addEventListener("click", closeUploadModal);
-  modal.querySelector("#upload-modal-backdrop").addEventListener("click", closeUploadModal);
+  modal.addEventListener("click", e => { if (e.target === modal) closeUploadModal(); });
+  modal.querySelector("#upload-modal-sheet").addEventListener("click", e => e.stopPropagation());
 
   fileInput.addEventListener("change", () => {
     const files = Array.from(fileInput.files);
