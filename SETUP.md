@@ -89,11 +89,28 @@ service cloud.firestore {
       ];
     }
 
+    // Allow authenticated read (including anonymous share-link viewers)
+    // when the trip document has a shareToken set
+    function isSharedRead(tripId) {
+      return request.auth != null &&
+        exists(/databases/$(database)/documents/trips/$(tripId)) &&
+        get(/databases/$(database)/documents/trips/$(tripId)).data.keys().hasAny(['shareToken']);
+    }
+
     match /trips/{tripId} {
-      allow read, write: if isAllowed();
+      allow read: if isAllowed() || isSharedRead(tripId);
+      allow write: if isAllowed();
+
+      // All subcollections (towns, spots, expenses, cityGallery, …)
       match /{document=**} {
-        allow read, write: if isAllowed();
+        allow read: if isAllowed() || isSharedRead(tripId);
+        allow write: if isAllowed();
       }
+    }
+
+    // App-level user approval list — owners only
+    match /appUsers/{email} {
+      allow read, write: if isAllowed();
     }
   }
 }

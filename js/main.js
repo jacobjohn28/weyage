@@ -31,7 +31,7 @@ import {
 } from "./itinerary.js";
 import {
   registerShareCallbacks, initSharedView, generateAndCopyShareLink,
-  renderSharePage, showInvalidShareLink,
+  renderSharePage, showInvalidShareLink, refreshShareCityDrawer,
 } from "./share.js";
 import { registerGalleryNavCallback, renderGallery, openGalleryForCity } from "./gallery.js";
 import {
@@ -176,6 +176,8 @@ function listenToTrip(tripId) {
       try {
         if (state.currentView === "gallery") renderGallery();
         if (state.currentView === "itinerary") renderItinerary();
+        // In share mode, refresh city drawer if it's open and showing a city with photos
+        if (state.shareMode) cityGallery.forEach(p => refreshShareCityDrawer(p.cityId));
       } catch (e) { console.error("Gallery render after update:", e); }
     },
     (err) => {

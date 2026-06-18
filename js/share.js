@@ -148,7 +148,7 @@ function spCloseDrawer() {
   if (!el || !el.classList.contains("open")) return;
   const panel = el.querySelector(".sp-drawer-panel");
   panel.classList.add("sp-anim-out");
-  setTimeout(() => { el.classList.remove("open"); panel.classList.remove("sp-anim-out"); _spDrawerHistory = []; }, 200);
+  setTimeout(() => { el.classList.remove("open"); panel.classList.remove("sp-anim-out"); _spDrawerHistory = []; _currentDrawerCityId = null; }, 200);
 }
 // Inline onclick in index.html requires global references
 window.spCloseDrawer = spCloseDrawer;
@@ -279,6 +279,8 @@ function _spDrillAccomDetail(townId) {
   _spPushDrawer(_spAccomDetailHTML(townId), "🏨", town.accommodation.name, town.name);
 }
 
+let _currentDrawerCityId = null;
+
 function _spCityDrawerBodyHTML(town) {
   const typeIcons = { train:"🚂", flight:"✈️", bus:"🚌", ferry:"⛴️", car:"🚗", taxi:"🚕", metro:"🚇", tram:"🚊" };
   const spotTypeEmoji = { sight:"👁", restaurant:"🍽", cafe:"☕", experience:"⭐" };
@@ -312,6 +314,12 @@ function _spCityDrawerBodyHTML(town) {
     });
   } else {
     html += `<div class="sp-empty-note">No outbound transport added</div>`;
+  }
+
+  // Photos — above accommodation
+  const photoStrip = buildCityPhotoStrip(town.id);
+  if (photoStrip) {
+    html += `<div class="sp-drawer-cat">Photos</div><div style="padding:0 14px 10px">${photoStrip}</div>`;
   }
 
   html += `<div class="sp-drawer-cat">Accommodation</div>`;
@@ -351,27 +359,33 @@ function _spCityDrawerBodyHTML(town) {
       </div>`;
     });
   }
-  // Photo strip
-  const photoStrip = buildCityPhotoStrip(town.id);
-  if (photoStrip) {
-    html += `<div class="sp-drawer-cat">Photos</div><div style="padding:0 14px 12px">${photoStrip}</div>`;
-  }
-
   return html;
 }
 
 function spOpenCityDrawer(townId) {
   const town = state.towns.find(t => t.id === townId);
   if (!town) return;
+  _currentDrawerCityId = townId;
   _spDrawerHistory = [];
   const arrDate = town.arrivalDate   ? new Date(town.arrivalDate   + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
   const depDate = town.departureDate ? new Date(town.departureDate + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
   const nights = (town.arrivalDate && town.departureDate) ? nightsBetween(town.arrivalDate, town.departureDate) : null;
   const subtitle = [arrDate && depDate ? `${arrDate} – ${depDate}` : (arrDate || depDate), nights !== null ? `${nights} night${nights === 1 ? "" : "s"}` : ""].filter(Boolean).join(" · ");
   _spShowDrawer(_spCityDrawerBodyHTML(town), "📍", town.name, subtitle);
-  // Wire photo strip lightbox after drawer body is set
-  const strip = document.querySelector(`[data-stripfor="${townId}"]`);
+  _wireDrawerPhotoStrip(townId);
+}
+
+function _wireDrawerPhotoStrip(townId) {
+  const body = document.getElementById("sp-drawer-body");
+  const strip = body?.querySelector(`[data-stripfor="${townId}"]`);
   if (strip) wireCityPhotoStrip(strip, townId);
+}
+
+// Called from main.js gallery listener — refreshes drawer photos if it's open for this city
+export function refreshShareCityDrawer(cityId) {
+  const drawer = document.getElementById("sp-drawer");
+  if (!drawer?.classList.contains("open") || _currentDrawerCityId !== cityId) return;
+  spOpenCityDrawer(cityId);
 }
 
 function spToggleVisits(el) {
