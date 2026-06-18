@@ -4,6 +4,7 @@ import {
   auth, onAuthStateChanged, signInAnonymously, initFirebase,
 } from "./firebase.js";
 import { escapeHtml, fmtTime12, fmtDateRange, nightsBetween, mapsLink, mapsSearchBtn } from "./utils.js";
+import { buildCityPhotoStrip, wireCityPhotoStrip } from "./gallery.js";
 
 /* ─────────────────────────────────────────────────────────────
    CALLBACK REGISTRATION
@@ -149,6 +150,8 @@ function spCloseDrawer() {
   panel.classList.add("sp-anim-out");
   setTimeout(() => { el.classList.remove("open"); panel.classList.remove("sp-anim-out"); _spDrawerHistory = []; }, 200);
 }
+// Inline onclick in index.html requires global references
+window.spCloseDrawer = spCloseDrawer;
 
 function _spShowDrawer(bodyHTML, icon, title, subtitle) {
   const el = document.getElementById("sp-drawer");
@@ -173,6 +176,7 @@ function spDrawerBack() {
   const prev = _spDrawerHistory.pop();
   _spShowDrawer(prev.body, prev.icon, prev.title, prev.subtitle);
 }
+window.spDrawerBack = spDrawerBack;
 
 function _spPushDrawer(bodyHTML, icon, title, subtitle) {
   const el = document.getElementById("sp-drawer");
@@ -347,6 +351,12 @@ function _spCityDrawerBodyHTML(town) {
       </div>`;
     });
   }
+  // Photo strip
+  const photoStrip = buildCityPhotoStrip(town.id);
+  if (photoStrip) {
+    html += `<div class="sp-drawer-cat">Photos</div><div style="padding:0 14px 12px">${photoStrip}</div>`;
+  }
+
   return html;
 }
 
@@ -359,6 +369,9 @@ function spOpenCityDrawer(townId) {
   const nights = (town.arrivalDate && town.departureDate) ? nightsBetween(town.arrivalDate, town.departureDate) : null;
   const subtitle = [arrDate && depDate ? `${arrDate} – ${depDate}` : (arrDate || depDate), nights !== null ? `${nights} night${nights === 1 ? "" : "s"}` : ""].filter(Boolean).join(" · ");
   _spShowDrawer(_spCityDrawerBodyHTML(town), "📍", town.name, subtitle);
+  // Wire photo strip lightbox after drawer body is set
+  const strip = document.querySelector(`[data-stripfor="${townId}"]`);
+  if (strip) wireCityPhotoStrip(strip, townId);
 }
 
 function spToggleVisits(el) {
