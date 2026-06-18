@@ -21,6 +21,18 @@ export const GEMINI_CONFIG = {
 export const PEXELS_CONFIG = { apiKey: "" };
 
 /* ─────────────────────────────────────────────────────────────
+   CLOUDINARY CONFIG  (free tier — no auth required for uploads)
+   1. Sign up at cloudinary.com (free)
+   2. Dashboard → Settings → Upload → Upload presets → Add preset
+      → set Signing Mode to "Unsigned" → save → copy the preset name
+   3. Copy your Cloud name from the top-left of the Cloudinary dashboard
+   ───────────────────────────────────────────────────────────── */
+export const CLOUDINARY_CONFIG = {
+  cloudName:    "",   // e.g. "dxyz123abc"
+  uploadPreset: "",   // e.g. "weyage_unsigned"
+};
+
+/* ─────────────────────────────────────────────────────────────
    FIREBASE SDK
    ───────────────────────────────────────────────────────────── */
 export const FIREBASE_VERSION = "10.13.2";

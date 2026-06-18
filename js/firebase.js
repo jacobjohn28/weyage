@@ -9,7 +9,7 @@ export let auth = null;
 export let db = null;
 
 // Auth SDK functions
-export let getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, signInAnonymously;
+export let getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, signInAnonymously;
 
 // Firestore SDK functions
 export let initializeFirestore, persistentLocalCache;
@@ -30,7 +30,7 @@ export async function initFirebase() {
   ]);
 
   const { initializeApp } = appMod;
-  ({ getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, signInAnonymously } = authMod);
+  ({ getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, signInAnonymously } = authMod);
   ({ initializeFirestore, persistentLocalCache, doc, getDoc, setDoc, updateDoc, deleteDoc,
      collection, getDocs, onSnapshot, writeBatch, serverTimestamp, arrayUnion, addDoc,
      query, where, arrayRemove, deleteField } = fsMod);
