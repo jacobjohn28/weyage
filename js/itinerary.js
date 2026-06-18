@@ -715,15 +715,10 @@ export function renderItinerary() {
         const spot = state.spots.find(s => s.id === spotId);
         const sameDay = state.spots.filter(s => s.townId === townId && s.scheduledDate === (spot?.scheduledDate || null));
 
-        // Extend town date range to cover the spot's scheduledDate
+        // Extend town's departureDate if the spot departs later
         const spotDate = spot?.scheduledDate;
-        if (spotDate && town) {
-          const townUpdates = {};
-          if (!town.arrivalDate || spotDate < town.arrivalDate) townUpdates.arrivalDate = spotDate;
-          if (!town.departureDate || spotDate > town.departureDate) townUpdates.departureDate = spotDate;
-          if (Object.keys(townUpdates).length > 0) {
-            await updateDoc(doc(db, "trips", activeTripId, "towns", townId), townUpdates);
-          }
+        if (spotDate && town && (!town.departureDate || spotDate > town.departureDate)) {
+          await updateDoc(doc(db, "trips", activeTripId, "towns", townId), { departureDate: spotDate });
         }
 
         await updateDoc(doc(db, "trips", activeTripId, "spots", spotId), {
