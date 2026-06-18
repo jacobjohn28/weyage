@@ -713,14 +713,19 @@ export function renderItinerary() {
         if (!townId) return;
         const town = state.towns.find(t => t.id === townId);
         const spot = state.spots.find(s => s.id === spotId);
-        const sameDay = state.spots.filter(s => s.townId === townId && s.scheduledDate === (spot?.scheduledDate || null));
-
-        // Extend town's departureDate if the spot departs later
         const spotDate = spot?.scheduledDate;
-        if (spotDate && town && (!town.departureDate || spotDate > town.departureDate)) {
-          await updateDoc(doc(db, "trips", activeTripId, "towns", townId), { departureDate: spotDate });
+
+        // Reject if the spot's date falls outside the city's date range
+        if (spotDate && town) {
+          if ((town.arrivalDate && spotDate < town.arrivalDate) ||
+              (town.departureDate && spotDate > town.departureDate)) {
+            sel.value = "";
+            alert(`"${spot.name}" is dated ${spotDate}, which is outside ${town.name}'s dates (${town.arrivalDate} – ${town.departureDate}). Adjust the city dates first or choose a different city.`);
+            return;
+          }
         }
 
+        const sameDay = state.spots.filter(s => s.townId === townId && s.scheduledDate === (spotDate || null));
         await updateDoc(doc(db, "trips", activeTripId, "spots", spotId), {
           townId,
           order: sameDay.length,
