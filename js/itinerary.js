@@ -738,7 +738,7 @@ export function renderItinerary() {
       </button>
       <button class="btn-secondary" id="itinerary-import-ticket-btn" style="font-size:0.875rem;padding:9px 20px">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="margin-right:6px;vertical-align:-2px"><rect x="3" y="3" width="18" height="14" rx="2"/><polyline points="3 9 21 9"/><line x1="8" y1="21" x2="8" y2="17"/><line x1="16" y1="21" x2="16" y2="17"/><line x1="8" y1="19" x2="16" y2="19"/></svg>
-        Import ticket
+        Import transport
       </button>`;
     footer.querySelector("#itinerary-add-city-footer-btn").addEventListener("click", () => openTownEditModal());
     footer.querySelector("#itinerary-import-ticket-btn").addEventListener("click", () => triggerTicketImport());
