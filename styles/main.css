@@ -264,6 +264,7 @@
   .trips-sidebar-item:hover { background: var(--surface); color: var(--text); }
   .trips-sidebar-item-name { font-size: 0.875rem; font-weight: 600; color: var(--text); }
   .trips-sidebar-item-dates { font-size: 0.75rem; color: var(--text-3); margin-top: 2px; }
+  .trips-sidebar-section-label { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-3); padding: 12px 12px 4px; }
 
   /* Main content */
   .trips-main {

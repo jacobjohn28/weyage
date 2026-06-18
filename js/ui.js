@@ -227,19 +227,34 @@ export async function saveSiteSettings() {
 export function renderSidebarTripList() {
   const container = document.getElementById("trips-sidebar-list");
   if (!container) return;
-  const ownedTrips = state.allTrips.filter(t => t._role !== "shared");
-  if (!ownedTrips.length) {
+  const ownedTrips  = state.allTrips.filter(t => t._role !== "shared");
+  const sharedTrips = state.allTrips.filter(t => t._role === "shared");
+
+  if (!ownedTrips.length && !sharedTrips.length) {
     container.innerHTML = `<div style="padding:12px;font-size:0.8125rem;color:var(--text-3);font-style:italic">No trips yet</div>`;
     return;
   }
-  container.innerHTML = ownedTrips.map(t => `
-    <button class="trips-sidebar-item" data-trip-id="${escapeHtml(t.id)}">
+
+  const itemHTML = (t, role) => `
+    <button class="trips-sidebar-item" data-trip-id="${escapeHtml(t.id)}" data-role="${role}">
       <div class="trips-sidebar-item-name">${escapeHtml(t.name)}</div>
       <div class="trips-sidebar-item-dates">${t.startDate ? fmtDateRange(t.startDate, t.endDate) : "Dates TBD"}</div>
-    </button>
-  `).join("");
+    </button>`;
+
+  let html = ownedTrips.map(t => itemHTML(t, "owner")).join("");
+
+  if (sharedTrips.length) {
+    html += `<div class="trips-sidebar-section-label">Shared with me</div>`;
+    html += sharedTrips.map(t => itemHTML(t, "shared")).join("");
+  }
+
+  container.innerHTML = html;
+
   container.querySelectorAll(".trips-sidebar-item").forEach(btn => {
-    btn.addEventListener("click", () => cb.switchTrip(btn.dataset.tripId));
+    btn.addEventListener("click", () => {
+      if (btn.dataset.role === "shared") cb.openSharedTrip(btn.dataset.tripId);
+      else cb.switchTrip(btn.dataset.tripId);
+    });
   });
 }
 
