@@ -2,7 +2,7 @@
    Weyage Service Worker
    Deployed at: /weyage/ subdirectory on GitHub Pages
    ============================================================ */
-const CACHE_NAME = "weyage-v37";
+const CACHE_NAME = "weyage-v38";
 
 // Static assets that rarely change — cache-first
 const STATIC_ASSETS = [
@@ -41,7 +41,10 @@ const NETWORK_FIRST_PREFIXES = [
   "https://identitytoolkit.googleapis.com",
   "https://securetoken.googleapis.com",
   "https://generativelanguage.googleapis.com",
-  "https://firebasestorage.googleapis.com",
+  "https://www.googleapis.com/upload/drive",
+  "https://www.googleapis.com/drive",
+  "https://lh3.googleusercontent.com",
+  "https://drive.google.com/thumbnail",
 ];
 
 // CDN assets — cache on first fetch (versioned, never change)

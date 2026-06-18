@@ -33,7 +33,7 @@ import {
   registerShareCallbacks, initSharedView, generateAndCopyShareLink,
   renderSharePage, showInvalidShareLink,
 } from "./share.js";
-import { registerGalleryNavCallback, renderGallery, openGalleryForCity } from "./gallery.js";
+import { registerGalleryNavCallback, renderGallery, openGalleryForCity, initDriveAuth } from "./gallery.js";
 import {
   registerSettingsCallbacks, initSettings,
   openTripSettings, closeTripSettings, saveTripSettings,
@@ -443,6 +443,9 @@ async function init() {
   }
 
   await initFirebase();
+
+  // Handle post-redirect Drive auth result before anything else mounts
+  initDriveAuth();
 
   onAuthStateChanged(auth, async (user) => {
     if (!user) {

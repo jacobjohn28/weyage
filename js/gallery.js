@@ -1,7 +1,63 @@
-import { db, doc, collection, addDoc, deleteDoc, serverTimestamp,
-         storage, storageRef, uploadBytes, getDownloadURL, deleteObject, auth } from "./firebase.js";
+import { db, doc, collection, addDoc, deleteDoc, serverTimestamp, GoogleAuthProvider, signInWithRedirect, getRedirectResult, auth } from "./firebase.js";
 import { state, activeTripId } from "./state.js";
 import { escapeHtml, localDateStr, btnLoading, btnReset } from "./utils.js";
+
+/* ─────────────────────────────────────────────────────────────
+   DRIVE TOKEN  (redirect-based — avoids COOP popup issue in PWA)
+   ───────────────────────────────────────────────────────────── */
+let _driveToken = null;
+let _driveTokenExpiry = 0;
+
+const _PENDING_KEY = "weyage_pendingDriveUpload";
+
+function _driveProvider() {
+  const p = new GoogleAuthProvider();
+  p.addScope("https://www.googleapis.com/auth/drive.file");
+  // prompt:consent ensures the drive.file scope is granted even if the user
+  // previously signed in without it
+  p.setCustomParameters({ prompt: "consent", access_type: "online" });
+  return p;
+}
+
+function _hasDriveToken() {
+  return _driveToken && Date.now() < _driveTokenExpiry - 60_000;
+}
+
+function _storeDriveToken(credential) {
+  if (!credential?.accessToken) throw new Error("Drive sign-in returned no access token.");
+  _driveToken = credential.accessToken;
+  _driveTokenExpiry = Date.now() + 3_600_000;
+}
+
+// Called once on app init — picks up any pending redirect result and
+// re-opens the upload modal for the city that triggered the auth.
+export async function initDriveAuth() {
+  try {
+    const result = await getRedirectResult(auth);
+    if (!result) return;
+    const credential = GoogleAuthProvider.credentialFromResult(result);
+    _storeDriveToken(credential);
+
+    const raw = sessionStorage.getItem(_PENDING_KEY);
+    sessionStorage.removeItem(_PENDING_KEY);
+    if (raw) {
+      const { cityId } = JSON.parse(raw);
+      if (cityId) openUploadModal(cityId);
+    }
+  } catch (err) {
+    console.error("Drive redirect result error:", err);
+    sessionStorage.removeItem(_PENDING_KEY);
+  }
+}
+
+// Checks token; if missing saves intent and triggers redirect (page navigates away).
+// Returns true if token already available, false if redirect was triggered.
+export function ensureDriveToken(cityId) {
+  if (_hasDriveToken()) return true;
+  sessionStorage.setItem(_PENDING_KEY, JSON.stringify({ cityId }));
+  signInWithRedirect(auth, _driveProvider());
+  return false;
+}
 
 /* ─────────────────────────────────────────────────────────────
    IMAGE RESIZE
@@ -26,12 +82,52 @@ function _resizeImage(file, maxPx = 2000, quality = 0.85) {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   FIREBASE STORAGE UPLOAD
+   DRIVE UPLOAD
    ───────────────────────────────────────────────────────────── */
-async function _uploadToStorage(blob, path) {
-  const ref = storageRef(storage, path);
-  await uploadBytes(ref, blob, { contentType: "image/jpeg" });
-  return getDownloadURL(ref);
+async function _uploadFileToDrive(blob, name, token) {
+  // Drive API requires multipart/related — NOT multipart/form-data.
+  const boundary = "weyage_" + Math.random().toString(36).slice(2);
+  const metaJson = JSON.stringify({ name, mimeType: "image/jpeg" });
+  const enc = new TextEncoder();
+
+  const head   = enc.encode(`--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${metaJson}\r\n--${boundary}\r\nContent-Type: image/jpeg\r\n\r\n`);
+  const tail   = enc.encode(`\r\n--${boundary}--`);
+  const fileBuf = await blob.arrayBuffer();
+
+  const body = new Uint8Array(head.byteLength + fileBuf.byteLength + tail.byteLength);
+  body.set(head, 0);
+  body.set(new Uint8Array(fileBuf), head.byteLength);
+  body.set(tail, head.byteLength + fileBuf.byteLength);
+
+  const res = await fetch(
+    "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": `multipart/related; boundary=${boundary}`,
+      },
+      body,
+    }
+  );
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new Error(`Drive upload failed (${res.status}): ${detail}`);
+  }
+  const { id } = await res.json();
+
+  // Make publicly readable so view users can access without auth
+  const permRes = await fetch(`https://www.googleapis.com/drive/v3/files/${id}/permissions`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ role: "reader", type: "anyone" }),
+  });
+  if (!permRes.ok) {
+    const detail = await permRes.text().catch(() => "");
+    throw new Error(`Drive permission set failed (${permRes.status}): ${detail}`);
+  }
+
+  return id;
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -39,20 +135,20 @@ async function _uploadToStorage(blob, path) {
    ───────────────────────────────────────────────────────────── */
 export async function uploadPhotosForCity(cityId, files, statusCallback) {
   if (!files.length) return;
-  if (!auth.currentUser) throw new Error("You must be signed in to upload photos.");
+  if (!_hasDriveToken()) throw new Error("Drive token missing — please re-open the upload modal.");
+  const token = _driveToken;
 
   const tripId = activeTripId;
+  const townName = state.towns.find(t => t.id === cityId)?.name || "City";
 
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
     statusCallback?.(`Uploading ${i + 1}/${files.length}…`);
     const { blob, w, h } = await _resizeImage(file);
+    const safeName = `Weyage - ${townName} - ${file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_")}`;
+    const fileId = await _uploadFileToDrive(blob, safeName, token);
 
-    const photoId = crypto.randomUUID();
-    const path = `trips/${tripId}/gallery/${photoId}.jpg`;
-    const downloadUrl = await _uploadToStorage(blob, path);
-
-    // Use file lastModified as taken date if it's older than current month
+    // Extract date: prefer file lastModified if it looks plausible (not today)
     const modDate = new Date(file.lastModified);
     const today = new Date();
     const takenDate = (modDate.getFullYear() < today.getFullYear() ||
@@ -62,27 +158,26 @@ export async function uploadPhotosForCity(cityId, files, statusCallback) {
 
     await addDoc(collection(db, "trips", tripId, "cityGallery"), {
       cityId,
-      storagePath: path,
-      downloadUrl,
+      fileId,
       name: file.name,
       caption: null,
       takenDate,
       width: w,
       height: h,
-      uploadedBy: auth.currentUser.uid,
+      uploadedBy: auth.currentUser?.uid || null,
       uploadedAt: serverTimestamp(),
     });
   }
 }
 
 /* ─────────────────────────────────────────────────────────────
-   URL HELPERS — Firebase Storage download URLs work for everyone
+   URL HELPERS
    ───────────────────────────────────────────────────────────── */
-export function photoThumbUrl(photo) {
-  return photo.downloadUrl || "";
+export function driveThumbUrl(fileId, size = 400) {
+  return `https://drive.google.com/thumbnail?id=${fileId}&sz=w${size}`;
 }
-export function photoFullUrl(photo) {
-  return photo.downloadUrl || "";
+export function driveFullUrl(fileId) {
+  return `https://lh3.googleusercontent.com/d/${fileId}`;
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -117,7 +212,7 @@ function _lbRender() {
     ? new Date(photo.takenDate + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
     : "";
 
-  lb.querySelector("#lb-img").src = photoFullUrl(photo);
+  lb.querySelector("#lb-img").src = driveFullUrl(photo.fileId);
   lb.querySelector("#lb-img").alt = escapeHtml(photo.caption || photo.name || "");
   lb.querySelector("#lb-caption").textContent = photo.caption || "";
   lb.querySelector("#lb-meta").textContent = [town?.name, dateStr].filter(Boolean).join(" · ");
@@ -168,10 +263,6 @@ export function initGalleryLightbox() {
     const photo = _lbPhotos[_lbIndex];
     if (!photo) return;
     if (!confirm("Delete this photo? This cannot be undone.")) return;
-    // Delete from Storage then Firestore
-    if (photo.storagePath) {
-      try { await deleteObject(storageRef(storage, photo.storagePath)); } catch (_) {}
-    }
     await deleteDoc(doc(db, "trips", activeTripId, "cityGallery", photo.id));
     // Remove from local array and advance/close
     _lbPhotos.splice(_lbIndex, 1);
@@ -235,9 +326,9 @@ export function renderGallery(filterCityId) {
   container.querySelectorAll(".gallery-thumb").forEach(thumb => {
     thumb.addEventListener("click", () => {
       const cityId = thumb.dataset.cityid;
-      const photoId = thumb.dataset.photoid;
+      const fileId = thumb.dataset.fileid;
       const cityPhotos = byCity[cityId] || [];
-      const idx = cityPhotos.findIndex(p => p.id === photoId);
+      const idx = cityPhotos.findIndex(p => p.fileId === fileId);
       _lbShow(cityPhotos, idx);
     });
   });
@@ -263,8 +354,8 @@ function _buildCitySection(town, photos, compact) {
       </div>
       <div class="gallery-grid">
         ${photos.map(p => `
-          <button class="gallery-thumb" data-photoid="${escapeHtml(p.id)}" data-cityid="${escapeHtml(p.cityId)}" title="${escapeHtml(p.caption || p.name || "")}">
-            <img src="${photoThumbUrl(p)}" alt="${escapeHtml(p.name || "")}" loading="lazy" />
+          <button class="gallery-thumb" data-fileid="${escapeHtml(p.fileId)}" data-cityid="${escapeHtml(p.cityId)}" title="${escapeHtml(p.caption || p.name || "")}">
+            <img src="${driveThumbUrl(p.fileId, 400)}" alt="${escapeHtml(p.name || "")}" loading="lazy" />
             ${p.takenDate ? `<span class="gallery-thumb-date">${new Date(p.takenDate + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</span>` : ""}
           </button>`).join("")}
       </div>
@@ -282,8 +373,8 @@ export function buildCityPhotoStrip(cityId) {
   return `
     <div class="city-photo-strip" data-stripfor="${escapeHtml(cityId)}">
       ${visible.map((p, i) => `
-        <button class="city-strip-thumb" data-stripphotoid="${escapeHtml(p.id)}" data-stripcityid="${escapeHtml(cityId)}" data-stripidx="${i}">
-          <img src="${photoThumbUrl(p)}" alt="" loading="lazy" />
+        <button class="city-strip-thumb" data-stripfileid="${escapeHtml(p.fileId)}" data-stripcityid="${escapeHtml(cityId)}" data-stripidx="${i}">
+          <img src="${driveThumbUrl(p.fileId, 200)}" alt="" loading="lazy" />
         </button>`).join("")}
       ${extra > 0 ? `<button class="city-strip-more" data-stripcityid="${escapeHtml(cityId)}">+${extra}</button>` : ""}
     </div>`;
@@ -312,6 +403,9 @@ export function wireCityPhotoStrip(el, cityId) {
 let _uploadCityId = null;
 
 export function openUploadModal(cityId) {
+  // Ensure Drive token before opening — triggers redirect if missing (page navigates away)
+  if (!ensureDriveToken(cityId)) return;
+
   _uploadCityId = cityId;
   const modal = document.getElementById("gallery-upload-modal");
   if (!modal) return;
