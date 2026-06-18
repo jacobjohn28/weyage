@@ -474,11 +474,11 @@
         </div>
         <div style="padding:20px">
           <p style="font-size:0.875rem;color:var(--text-2);margin:0 0 16px">Photos are stored in your Google Drive and accessible to anyone with the trip share link.</p>
-          <input type="file" id="upload-file-input" accept="image/*" multiple style="display:none" />
-          <button class="btn-secondary" id="upload-choose-btn" style="width:100%;padding:14px;font-size:0.9375rem;border-style:dashed">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="margin-right:8px;vertical-align:-3px"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          <label id="upload-choose-btn" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;font-size:0.9375rem;border:1.5px dashed var(--border);border-radius:10px;cursor:pointer;color:var(--text-2);background:var(--surface);box-sizing:border-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
             Choose photos
-          </button>
+            <input type="file" id="upload-file-input" accept="image/*" multiple style="display:none" />
+          </label>
           <div id="upload-preview-strip" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;min-height:0"></div>
           <div id="upload-status" style="font-size:0.8125rem;color:var(--text-2);margin-top:8px;min-height:1.2em"></div>
         </div>

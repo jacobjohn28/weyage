@@ -375,8 +375,6 @@ export function initUploadModal() {
   modal.querySelector("#upload-modal-close").addEventListener("click", closeUploadModal);
   modal.querySelector("#upload-modal-backdrop").addEventListener("click", closeUploadModal);
 
-  // File picker trigger
-  modal.querySelector("#upload-choose-btn").addEventListener("click", () => fileInput.click());
   fileInput.addEventListener("change", () => {
     const files = Array.from(fileInput.files);
     if (!files.length) return;
