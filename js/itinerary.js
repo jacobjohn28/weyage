@@ -622,68 +622,8 @@ export function renderItinerary() {
   // Clear empty-state placeholder when transitioning from 0 → N towns
   container.querySelector(".itinerary-empty")?.remove();
 
-  // ── Pending imports section ────────────────────────────────────────────────
-  // Spots with townId === null were imported from a ticket but not yet assigned
-  // to a city.  Always re-render this section so it stays in sync.
-  const pendingSpots = state.spots.filter(s => s.townId === null && s.type === "transport");
-  const existingPending = container.querySelector("#itinerary-pending-imports");
-  if (existingPending) existingPending.remove();
-
-  if (pendingSpots.length > 0 && !state.shareMode) {
-    const pending = document.createElement("div");
-    pending.id = "itinerary-pending-imports";
-    pending.innerHTML = `
-      <div style="background:var(--card-bg,#fff);border:2px dashed var(--border,#e0e0e0);border-radius:12px;margin-bottom:18px;overflow:hidden">
-        <div style="display:flex;align-items:center;gap:10px;padding:14px 16px 10px;border-bottom:1px solid var(--border,#e0e0e0)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent,#2563eb)" stroke-width="2" width="18" height="18"><rect x="3" y="3" width="18" height="14" rx="2"/><polyline points="3 9 21 9"/><line x1="8" y1="21" x2="8" y2="17"/><line x1="16" y1="21" x2="16" y2="17"/><line x1="8" y1="19" x2="16" y2="19"/></svg>
-          <span style="font-weight:600;font-size:0.9375rem">Pending imports</span>
-          <span style="font-size:0.8125rem;color:var(--text-2,#666);margin-left:auto">Assign each transport to a city</span>
-        </div>
-        ${pendingSpots.map(s => `
-          <div class="pending-spot-row" data-spotid="${s.id}" style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border,#e0e0e0)20">
-            <div style="flex:1;min-width:0">
-              <div style="font-size:0.875rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(s.name)}</div>
-              <div style="font-size:0.75rem;color:var(--text-2,#666)">${s.scheduledDate || "No date"}${s.departureTime ? " · " + s.departureTime : ""}${s.arrivalDate && s.arrivalDate !== s.scheduledDate ? " → " + s.arrivalDate : ""}${s.arrivalTime ? " · " + s.arrivalTime : ""}</div>
-            </div>
-            <select class="form-input pending-assign-select" style="font-size:0.8125rem;padding:6px 8px;max-width:160px" data-spotid="${s.id}">
-              <option value="">Assign to city…</option>
-              ${state.towns.map(t => `<option value="${t.id}">${escapeHtml(t.name)}${t.arrivalDate ? " (" + t.arrivalDate + ")" : ""}</option>`).join("")}
-            </select>
-            <button class="btn-ghost pending-discard-btn" data-spotid="${s.id}" style="font-size:0.75rem;padding:4px 8px;color:var(--text-2,#666)" title="Discard">✕</button>
-          </div>
-        `).join("")}
-      </div>`;
-
-    pending.querySelectorAll(".pending-assign-select").forEach(sel => {
-      sel.addEventListener("change", async () => {
-        const spotId = sel.dataset.spotid;
-        const townId = sel.value;
-        if (!townId) return;
-        const town = state.towns.find(t => t.id === townId);
-        const spot = state.spots.find(s => s.id === spotId);
-        const sameDay = state.spots.filter(s => s.townId === townId && s.scheduledDate === (spot?.scheduledDate || null));
-        await updateDoc(doc(db, "trips", activeTripId, "spots", spotId), {
-          townId,
-          order: sameDay.length,
-        });
-      });
-    });
-
-    pending.querySelectorAll(".pending-discard-btn").forEach(btn => {
-      btn.addEventListener("click", () =>
-        deleteDoc(doc(db, "trips", activeTripId, "spots", btn.dataset.spotid))
-      );
-    });
-
-    // Insert before the first town (or before the footer if no towns yet)
-    const firstTown = container.querySelector(".town-group");
-    if (firstTown) container.insertBefore(pending, firstTown);
-    else {
-      const footer = container.querySelector("#itinerary-add-city-footer-btn")?.closest("div");
-      if (footer) container.insertBefore(pending, footer);
-      else container.prepend(pending);
-    }
-  }
+  // Clear any stale pending section — rebuilt after the town loop
+  container.querySelector("#itinerary-pending-imports")?.remove();
 
   // Remove DOM elements for towns that no longer exist
   const currentTownIds = new Set(state.towns.map(t => t.id));
@@ -737,6 +677,70 @@ export function renderItinerary() {
     _initTownSortables(el, town.id, container);
     _townFingerprints.set(town.id, fp);
     prevEl = el;
+  }
+
+  // ── Pending imports section ────────────────────────────────────────────────
+  const pendingSpots = state.spots.filter(s => s.townId === null && s.type === "transport");
+  if (pendingSpots.length > 0 && !state.shareMode) {
+    const pending = document.createElement("div");
+    pending.id = "itinerary-pending-imports";
+    pending.innerHTML = `
+      <div style="background:var(--surface);border:2px dashed var(--border);border-radius:12px;margin-bottom:18px;overflow:hidden">
+        <div style="display:flex;align-items:center;gap:10px;padding:14px 16px 10px;border-bottom:1px solid var(--border)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent,#2563eb)" stroke-width="2" width="18" height="18"><rect x="3" y="3" width="18" height="14" rx="2"/><polyline points="3 9 21 9"/><line x1="8" y1="21" x2="8" y2="17"/><line x1="16" y1="21" x2="16" y2="17"/><line x1="8" y1="19" x2="16" y2="19"/></svg>
+          <span style="font-weight:600;font-size:0.9375rem">Pending imports</span>
+          <span style="font-size:0.8125rem;color:var(--text-2);margin-left:auto">Assign each transport to a city</span>
+        </div>
+        ${pendingSpots.map(s => `
+          <div class="pending-spot-row" data-spotid="${s.id}" style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border)">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:0.875rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(s.name)}</div>
+              <div style="font-size:0.75rem;color:var(--text-2)">${s.scheduledDate || "No date"}${s.departureTime ? " · " + s.departureTime : ""}${s.arrivalDate && s.arrivalDate !== s.scheduledDate ? " → " + s.arrivalDate : ""}${s.arrivalTime ? " · " + s.arrivalTime : ""}</div>
+            </div>
+            <select class="form-input pending-assign-select" style="font-size:0.8125rem;padding:6px 8px;max-width:160px" data-spotid="${s.id}">
+              <option value="">Assign to city…</option>
+              ${state.towns.map(t => `<option value="${t.id}">${escapeHtml(t.name)}${t.arrivalDate ? " (" + t.arrivalDate + ")" : ""}</option>`).join("")}
+            </select>
+            <button class="btn-ghost pending-discard-btn" data-spotid="${s.id}" style="font-size:0.75rem;padding:4px 8px;color:var(--text-2)" title="Discard">✕</button>
+          </div>
+        `).join("")}
+      </div>`;
+
+    pending.querySelectorAll(".pending-assign-select").forEach(sel => {
+      sel.addEventListener("change", async () => {
+        const spotId = sel.dataset.spotid;
+        const townId = sel.value;
+        if (!townId) return;
+        const town = state.towns.find(t => t.id === townId);
+        const spot = state.spots.find(s => s.id === spotId);
+        const sameDay = state.spots.filter(s => s.townId === townId && s.scheduledDate === (spot?.scheduledDate || null));
+
+        // Extend town date range to cover the spot's scheduledDate
+        const spotDate = spot?.scheduledDate;
+        if (spotDate && town) {
+          const townUpdates = {};
+          if (!town.arrivalDate || spotDate < town.arrivalDate) townUpdates.arrivalDate = spotDate;
+          if (!town.departureDate || spotDate > town.departureDate) townUpdates.departureDate = spotDate;
+          if (Object.keys(townUpdates).length > 0) {
+            await updateDoc(doc(db, "trips", activeTripId, "towns", townId), townUpdates);
+          }
+        }
+
+        await updateDoc(doc(db, "trips", activeTripId, "spots", spotId), {
+          townId,
+          order: sameDay.length,
+        });
+      });
+    });
+
+    pending.querySelectorAll(".pending-discard-btn").forEach(btn => {
+      btn.addEventListener("click", () =>
+        deleteDoc(doc(db, "trips", activeTripId, "spots", btn.dataset.spotid))
+      );
+    });
+
+    // Prepend so it always appears above the cities
+    container.prepend(pending);
   }
 
   // Ensure footer with both buttons exists — recreate if either button is missing
