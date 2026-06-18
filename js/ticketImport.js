@@ -28,7 +28,14 @@ export function triggerTicketImport() {
         _showDrawer({ error: "Unable to extract any transport information, try uploading another image." });
         return;
       }
-      _showDrawer({ legs: _tagLayovers(legs) });
+      // Normalise: ensure fromCity/toCity always have a value, falling back to the
+      // full station/airport name Gemini returns in from/to when city is missing.
+      const normalised = legs.map(l => ({
+        ...l,
+        fromCity: l.fromCity || l.from || null,
+        toCity:   l.toCity   || l.to   || null,
+      }));
+      _showDrawer({ legs: _tagLayovers(normalised) });
     } catch (err) {
       console.error("Ticket import:", err);
       _showDrawer({ error: "Something went wrong parsing the image. Please try again." });
@@ -464,7 +471,10 @@ async function _saveLegs(legs) {
       transportDirection = "departing";
     }
 
-    if (!townId) continue;
+    if (!townId) {
+      console.warn("Ticket import: skipping leg — could not resolve departure city", leg);
+      continue;
+    }
 
     const spotId = crypto.randomUUID();
     const myMemberId = currentUserMemberId();
