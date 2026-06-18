@@ -64,7 +64,8 @@ function _readAsBase64(file) {
    GEMINI VISION CALL
    ───────────────────────────────────────────────────────────── */
 async function _parseTicketImage(base64, mimeType) {
-  const prompt = `You are a travel assistant. Analyze this travel ticket or app screenshot and extract every transport leg.
+  const todayStr = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  const prompt = `You are a travel assistant. Today's date is ${todayStr}. Analyze this travel ticket or app screenshot and extract every transport leg.
 
 For each leg return a JSON object with these exact keys:
 - "subtype": lowercase string — "flight", "train", "ferry", "bus", or another transport type you identify
@@ -87,7 +88,7 @@ For each leg return a JSON object with these exact keys:
 Rules:
 - Return each leg separately even for connecting flights
 - Use null for any field not visible
-- For dates without a year, infer the most plausible upcoming year
+- For dates without a year, choose the closest future occurrence relative to today's date above
 - Convert all times to 24h format
 - fromCity/toCity should be the city, not airport or station name
 
