@@ -398,150 +398,18 @@ function _closeDrawer() {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   CITY NAME HELPERS
-   ───────────────────────────────────────────────────────────── */
-
-// Strip airport/station noise so "London Heathrow (LHR)" → "london"
-function _normCity(raw) {
-  if (!raw) return "";
-  return raw
-    .toLowerCase()
-    .replace(/\([a-z]{3}\)/g, "")
-    .replace(/\b[a-z]{3}\b/g, "")
-    .replace(/\b(international|intl|airport|arpt|terminal|gare|bahnhof|central|station|hauptbahnhof|hbf|centrale)\b/g, "")
-    .replace(/[,\/\-–—]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-// Fraction of significant (>3-char) words shared between two normalised strings
-function _wordSimilarity(a, b) {
-  const sig = s => new Set(s.split(/\s+/).filter(w => w.length > 3));
-  const wa = sig(a), wb = sig(b);
-  if (wa.size === 0 && wb.size === 0) return a === b ? 1 : 0;
-  if (wa.size === 0 || wb.size === 0) return 0;
-  let overlap = 0;
-  for (const w of wa) if (wb.has(w)) overlap++;
-  return overlap / Math.max(wa.size, wb.size);
-}
-
-/* ─────────────────────────────────────────────────────────────
-   TOWN RESOLUTION
-   ───────────────────────────────────────────────────────────── */
-// Cache keyed by "normCity::legDate" so the same city on two different
-// dates in one import (e.g. a return trip A→B→A) maps to separate records.
-const _sessionTownCache = new Map();
-
-function _nameMatches(a, b) {
-  if (!a || !b) return false;
-  return a === b || a.includes(b) || b.includes(a) || _wordSimilarity(a, b) >= 0.5;
-}
-
-async function _resolveOrCreateTown(cityName, leg, allLegs, role /* "from" | "to" */) {
-  if (!cityName) return null;
-  const normKey = _normCity(cityName);
-  const legDate = role === "from" ? leg.departureDate : leg.arrivalDate;
-  const cacheKey = `${normKey}::${legDate || ""}`;
-
-  if (_sessionTownCache.has(cacheKey)) return _sessionTownCache.get(cacheKey);
-
-  // ── 1. Name match AND leg date falls inside an existing visit ────────────────
-  // Safe to merge only when dates already cover this transport — no date
-  // modification needed or performed.
-  if (normKey) {
-    const byNameAndDate = state.towns.find(t => {
-      if (!_nameMatches(normKey, _normCity(t.name))) return false;
-      if (!legDate) return true;                         // no date → take first name match
-      if (!t.arrivalDate || !t.departureDate) return false;
-      return legDate >= t.arrivalDate && legDate <= t.departureDate;
-    });
-    if (byNameAndDate) {
-      _sessionTownCache.set(cacheKey, byNameAndDate.id);
-      return byNameAndDate.id;
-    }
-    // If the name matched but no visit covered this date → different visit.
-    // Fall through and create a separate town record for this stay.
-  }
-
-  // ── 2. IATA / 3-letter code — match by date alone ───────────────────────────
-  // When the extracted name has no word longer than 3 chars it's likely a code
-  // (LHR, CDG, AMS).  In that case a date-range match is reliable enough.
-  const hasLongWord = normKey.split(/\s+/).some(w => w.length > 3);
-  if (!hasLongWord && legDate) {
-    const byDate = state.towns.find(t =>
-      t.arrivalDate && t.departureDate &&
-      legDate >= t.arrivalDate && legDate <= t.departureDate
-    );
-    if (byDate) {
-      _sessionTownCache.set(cacheKey, byDate.id);
-      return byDate.id;
-    }
-  }
-
-  // ── 3. Create a new town for this visit ──────────────────────────────────────
-  // Deliberately does NOT merge with a same-name town whose dates don't overlap —
-  // that represents a separate visit (e.g. returning to the same city later).
-  const arrLegs = allLegs.filter(l => _normCity(l.toCity)   === normKey && l.arrivalDate);
-  const depLegs = allLegs.filter(l => _normCity(l.fromCity) === normKey && l.departureDate);
-  const arrivalDate   = arrLegs.length ? arrLegs.map(l => l.arrivalDate).sort()[0]   : null;
-  const departureDate = depLegs.length ? depLegs.map(l => l.departureDate).sort()[0] : null;
-  const effectiveArrival   = arrivalDate   || departureDate || null;
-  const effectiveDeparture = departureDate || arrivalDate   || null;
-
-  const maxOrder = state.towns.length > 0 ? Math.max(...state.towns.map(t => t.order ?? 0)) : -1;
-  const id = crypto.randomUUID();
-  await setDoc(doc(db, "trips", activeTripId, "towns", id), {
-    id,
-    name: cityName,
-    arrivalDate:   effectiveArrival,
-    departureDate: effectiveDeparture,
-    country: "",
-    order: maxOrder + 1,
-    createdAt: serverTimestamp(),
-  });
-
-  _sessionTownCache.set(cacheKey, id);
-  return id;
-}
-
-/* ─────────────────────────────────────────────────────────────
-   SAVE LEGS
+   SAVE LEGS  — spots saved unassigned (townId: null)
+   The itinerary shows unassigned spots in a "Pending imports"
+   section where the user explicitly assigns each one to a city.
    ───────────────────────────────────────────────────────────── */
 async function _saveLegs(legs) {
-  // Clear session cache at start of each save batch
-  _sessionTownCache.clear();
-
   const members = state.trip?.members || [];
 
   for (const leg of legs) {
-    let townId, arrivalTownId, transportDirection;
-
-    if (leg._fromIsLayover) {
-      // From-city has no town; store spot in the arrival town as "arriving"
-      townId = await _resolveOrCreateTown(leg.toCity, leg, legs, "to");
-      arrivalTownId = null;
-      transportDirection = "arriving";
-    } else {
-      townId = await _resolveOrCreateTown(leg.fromCity, leg, legs, "from");
-      if (leg._toIsLayover) {
-        // To-city is a layover — no arrival town
-        arrivalTownId = null;
-      } else {
-        arrivalTownId = await _resolveOrCreateTown(leg.toCity, leg, legs, "to");
-      }
-      transportDirection = "departing";
-    }
-
-    if (!townId) {
-      console.warn("Ticket import: skipping leg — could not resolve departure city", leg);
-      continue;
-    }
-
-    const spotId = crypto.randomUUID();
+    const spotId     = crypto.randomUUID();
     const myMemberId = currentUserMemberId();
-    const paidBy = leg.paidBy || myMemberId || null;
+    const paidBy     = leg.paidBy || myMemberId || null;
 
-    // Build splits — "solo" means payer owes everything
     let splits = null;
     if (paidBy && members.length >= 2 && leg.price) {
       splits = members.map(m => ({
@@ -550,42 +418,38 @@ async function _saveLegs(legs) {
       }));
     }
 
-    const sameDay = state.spots.filter(
-      s => s.townId === townId && s.scheduledDate === (leg.departureDate || null)
-    );
+    const transportDirection = leg._fromIsLayover ? "arriving" : "departing";
 
-    const spotData = {
+    await setDoc(doc(db, "trips", activeTripId, "spots", spotId), {
       id: spotId,
       type: "transport",
       name: _legTitle(leg),
-      townId,
-      transportSubtype:    leg.subtype    || "flight",
+      townId: null,                                    // unassigned — user picks city
+      transportSubtype:  leg.subtype      || "flight",
       transportDirection,
-      transportFrom:       leg.from       || leg.fromCity || null,
-      transportTo:         leg.to         || leg.toCity   || null,
-      scheduledDate:       leg.departureDate              || null,
-      departureTime:       leg.departureTime              || null,
-      arrivalTownId:       arrivalTownId                  || null,
-      arrivalDate:         leg.arrivalDate                || null,
-      arrivalTime:         leg.arrivalTime                || null,
-      carrier:             leg.carrier                    || null,
-      seat:                leg.seat                       || null,
-      bookingRef:          leg.reference                  || null,
-      price:               leg.price                      || null,
-      priceCurrency:       leg.priceCurrency              || null,
+      transportFrom:     leg.from         || leg.fromCity || null,
+      transportTo:       leg.to           || leg.toCity   || null,
+      scheduledDate:     leg.departureDate              || null,
+      departureTime:     leg.departureTime              || null,
+      arrivalTownId:     null,
+      arrivalDate:       leg.arrivalDate                || null,
+      arrivalTime:       leg.arrivalTime                || null,
+      carrier:           leg.carrier                    || null,
+      seat:              leg.seat                       || null,
+      bookingRef:        leg.reference                  || null,
+      price:             leg.price                      || null,
+      priceCurrency:     leg.priceCurrency              || null,
       paidBy,
-      splitType:           splits ? "solo" : null,
+      splitType:         splits ? "solo" : null,
       splits,
-      memberIds:           null,
-      notes:               null,
-      booked:              true,
-      visited:             false,
-      tags:                [],
-      expenses:            [],
-      order:               sameDay.length,
-      createdAt:           serverTimestamp(),
-    };
-
-    await setDoc(doc(db, "trips", activeTripId, "spots", spotId), spotData);
+      memberIds:         null,
+      notes:             null,
+      booked:            true,
+      visited:           false,
+      tags:              [],
+      expenses:          [],
+      order:             0,
+      createdAt:         serverTimestamp(),
+    });
   }
 }

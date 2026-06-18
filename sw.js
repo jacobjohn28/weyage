@@ -2,7 +2,7 @@
    Weyage Service Worker
    Deployed at: /weyage/ subdirectory on GitHub Pages
    ============================================================ */
-const CACHE_NAME = "weyage-v31";
+const CACHE_NAME = "weyage-v32";
 
 // Static assets that rarely change — cache-first
 const STATIC_ASSETS = [
