@@ -153,13 +153,7 @@ function getDaysForTown(town) {
 }
 
 export function getSpotsForTown(townId) {
-  const own = state.spots.filter(s => s.townId === townId);
-  const arrivals = state.spots
-    .filter(s => s.type === "transport" && s.arrivalTownId === townId && s.townId !== townId)
-    .map(s => ({ ...s, _arrivalView: true,
-      scheduledDate: s.arrivalDate || s.scheduledDate || null,
-      scheduledTime: s.arrivalTime || null }));
-  return [...own, ...arrivals];
+  return state.spots.filter(s => s.townId === townId);
 }
 
 const _townFingerprints = new Map(); // townId → fingerprint string
@@ -175,7 +169,7 @@ function _townFingerprint(town) {
   const spotsFP = spots.map(s =>
     [s.id, s.name, s.type, s.scheduledDate, s.scheduledTime,
      s.order ?? "", s.booked ?? "", s.isCancelled ?? "",
-     s.transportSubtype ?? "", s.groupId ?? "", s._arrivalView ?? ""].join("|")
+     s.transportSubtype ?? "", s.groupId ?? ""].join("|")
   ).join(";");
   return JSON.stringify(town) + "\0" + spotsFP + "\0" + collapseKeys;
 }
@@ -197,8 +191,6 @@ function _buildTownHTML(town) {
       if (aTime && bTime) return aTime.localeCompare(bTime);
       if (aTime) return -1;
       if (bTime) return 1;
-      if (a._arrivalView && !b._arrivalView) return -1;
-      if (!a._arrivalView && b._arrivalView) return 1;
       return (a.order ?? 9999) - (b.order ?? 9999);
     });
   }
@@ -474,42 +466,33 @@ function _membersBadgeHTML(memberIds) {
 }
 
 function transportCardHTML(spot) {
-  const isArrival = spot._arrivalView || spot.transportDirection === "arriving";
   const depTime = fmtTime12(spot.departureTime);
   const arrTime = fmtTime12(spot.arrivalTime);
   const subtype = spot.transportSubtype ? spot.transportSubtype.charAt(0).toUpperCase() + spot.transportSubtype.slice(1) : "Transport";
 
   const meta = [];
-  if (isArrival) {
-    if (arrTime) meta.push(`<span class="spot-time">arrives ${arrTime}</span>`);
-    const originLabel = spot.customOrigin || spot.transportFrom;
-    if (originLabel) meta.push(`<span class="spot-neighborhood">from ${escapeHtml(originLabel)}</span>`);
-  } else {
-    if (depTime) meta.push(`<span class="spot-time">departs ${depTime}</span>`);
-    const destLabel = spot.customDestination || spot.transportTo;
-    if (destLabel) meta.push(`<span class="spot-neighborhood">to ${escapeHtml(destLabel)}</span>`);
-  }
+  if (depTime) meta.push(`<span class="spot-time">departs ${depTime}</span>`);
+  const destLabel = spot.customDestination || spot.transportTo;
+  if (destLabel) meta.push(`<span class="spot-neighborhood">to ${escapeHtml(destLabel)}</span>`);
+  if (arrTime) meta.push(`<span class="spot-neighborhood">· arrives ${arrTime}</span>`);
   if (spot.carrier) meta.push(`<span class="spot-tag-pill">${escapeHtml(spot.carrier)}</span>`);
   const _tMemberBadge = _membersBadgeHTML(spot.memberIds);
   if (_tMemberBadge) meta.push(_tMemberBadge);
 
-  const draggable = spot._arrivalView ? ` data-draggable="false"` : "";
-  const arrivalClass = isArrival ? " arrival-view" : "";
   const cancelledClass = spot.isCancelled ? " cancelled" : "";
   const cancelledBadge = spot.isCancelled ? `<span class="spot-cancelled-badge">Cancelled</span>` : "";
   const rebookedBadge = spot.rebookedFromId ? `<span class="spot-rebooked-badge">Rebooked</span>` : "";
 
   return `
-    <div class="spot-card${arrivalClass}${cancelledClass}" data-spot-id="${spot.id}" data-type="transport"${draggable}>
+    <div class="spot-card${cancelledClass}" data-spot-id="${spot.id}" data-type="transport">
       <div class="spot-type-bar"></div>
       <div class="spot-card-body">
         <div class="spot-card-row1">
           ${typeIconSVG("transport")}
           <span class="spot-name">${escapeHtml(spot.name || subtype)}</span>
-          ${!isArrival && !spot.isCancelled && spot.booked ? `<span class="spot-booked-pill">Booked / paid</span>` : ""}
+          ${!spot.isCancelled && spot.booked ? `<span class="spot-booked-pill">Booked / paid</span>` : ""}
           ${rebookedBadge}
           ${cancelledBadge}
-          ${isArrival && !spot.isCancelled ? `<span class="spot-tag-pill" style="margin-left:auto;font-size:0.625rem;opacity:0.7">arrival</span>` : ""}
         </div>
         ${meta.length ? `<div class="spot-card-row2">${meta.join("")}</div>` : ""}
       </div>
@@ -1127,7 +1110,7 @@ export function openDrawer(spot) {
   }
 
   const cancelBtn = document.getElementById("drawer-cancel-transport-btn");
-  if (spot.type === "transport" && !spot._arrivalView) {
+  if (spot.type === "transport") {
     cancelBtn.style.display = "";
     if (spot.isCancelled) {
       cancelBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg> Restore transport`;
