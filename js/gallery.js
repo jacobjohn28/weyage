@@ -12,9 +12,12 @@ async function _acquireDriveToken() {
   if (_driveToken && Date.now() < _driveTokenExpiry - 60_000) return _driveToken;
   const provider = new GoogleAuthProvider();
   provider.addScope("https://www.googleapis.com/auth/drive.file");
+  // Force the Google consent screen so the drive.file scope is always granted —
+  // without this Firebase reuses a cached session that may lack the Drive scope.
+  provider.setCustomParameters({ prompt: "consent", access_type: "online" });
   const result = await signInWithPopup(auth, provider);
   const credential = GoogleAuthProvider.credentialFromResult(result);
-  if (!credential?.accessToken) throw new Error("Could not get Drive access token.");
+  if (!credential?.accessToken) throw new Error("Could not get Drive access token — sign-in returned no credential.");
   _driveToken = credential.accessToken;
   _driveTokenExpiry = Date.now() + 3_600_000;
   return _driveToken;
@@ -46,16 +49,35 @@ function _resizeImage(file, maxPx = 2000, quality = 0.85) {
    DRIVE UPLOAD
    ───────────────────────────────────────────────────────────── */
 async function _uploadFileToDrive(blob, name, token) {
-  const meta = { name, mimeType: "image/jpeg" };
-  const form = new FormData();
-  form.append("metadata", new Blob([JSON.stringify(meta)], { type: "application/json" }));
-  form.append("file", blob);
+  // Drive API requires multipart/related — NOT multipart/form-data.
+  const boundary = "weyage_" + Math.random().toString(36).slice(2);
+  const metaJson = JSON.stringify({ name, mimeType: "image/jpeg" });
+  const enc = new TextEncoder();
+
+  const head   = enc.encode(`--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${metaJson}\r\n--${boundary}\r\nContent-Type: image/jpeg\r\n\r\n`);
+  const tail   = enc.encode(`\r\n--${boundary}--`);
+  const fileBuf = await blob.arrayBuffer();
+
+  const body = new Uint8Array(head.byteLength + fileBuf.byteLength + tail.byteLength);
+  body.set(head, 0);
+  body.set(new Uint8Array(fileBuf), head.byteLength);
+  body.set(tail, head.byteLength + fileBuf.byteLength);
 
   const res = await fetch(
     "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id",
-    { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: form }
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": `multipart/related; boundary=${boundary}`,
+      },
+      body,
+    }
   );
-  if (!res.ok) throw new Error(`Drive upload failed (${res.status})`);
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new Error(`Drive upload failed (${res.status}): ${detail}`);
+  }
   const { id } = await res.json();
 
   // Make publicly readable so view users can access without auth
@@ -64,7 +86,10 @@ async function _uploadFileToDrive(blob, name, token) {
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify({ role: "reader", type: "anyone" }),
   });
-  if (!permRes.ok) throw new Error(`Drive permission set failed (${permRes.status})`);
+  if (!permRes.ok) {
+    const detail = await permRes.text().catch(() => "");
+    throw new Error(`Drive permission set failed (${permRes.status}): ${detail}`);
+  }
 
   return id;
 }
@@ -78,7 +103,7 @@ export async function uploadPhotosForCity(cityId, files, statusCallback) {
   try {
     token = await _acquireDriveToken();
   } catch (err) {
-    throw new Error("Drive access not granted — please try again.");
+    throw new Error("Drive access not granted: " + (err.message || err.code || err));
   }
 
   const tripId = activeTripId;
