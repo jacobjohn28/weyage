@@ -2640,6 +2640,7 @@ export function openTownEditModal(town = null) {
   document.getElementById("town-hide-photo-switch").classList.toggle("on", townHidePhotoState);
   document.getElementById("town-edit-delete-btn").style.display = town ? "" : "none";
   document.getElementById("town-edit-delete-btn").disabled = false;
+  document.getElementById("town-edit-delete-confirm-btn").disabled = false;
   document.getElementById("town-edit-footer-main").style.display = "";
   document.getElementById("town-edit-footer-confirm").style.display = "none";
   document.getElementById("town-edit-overlay").classList.add("visible");

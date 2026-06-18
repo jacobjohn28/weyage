@@ -398,41 +398,92 @@ function _closeDrawer() {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   TOWN RESOLUTION
+   CITY NAME HELPERS
    ───────────────────────────────────────────────────────────── */
-// Cache new towns created during a single import session so we don't
-// double-create if the same city appears in multiple legs.
-const _sessionTownCache = new Map(); // cityName.lower → townId
 
-async function _resolveOrCreateTown(cityName, allLegs) {
+// Strip airport/station noise so "London Heathrow (LHR)" → "london"
+function _normCity(raw) {
+  if (!raw) return "";
+  return raw
+    .toLowerCase()
+    .replace(/\([a-z]{3}\)/g, "")
+    .replace(/\b[a-z]{3}\b/g, "")
+    .replace(/\b(international|intl|airport|arpt|terminal|gare|bahnhof|central|station|hauptbahnhof|hbf|centrale)\b/g, "")
+    .replace(/[,\/\-–—]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// Fraction of significant (>3-char) words shared between two normalised strings
+function _wordSimilarity(a, b) {
+  const sig = s => new Set(s.split(/\s+/).filter(w => w.length > 3));
+  const wa = sig(a), wb = sig(b);
+  if (wa.size === 0 && wb.size === 0) return a === b ? 1 : 0;
+  if (wa.size === 0 || wb.size === 0) return 0;
+  let overlap = 0;
+  for (const w of wa) if (wb.has(w)) overlap++;
+  return overlap / Math.max(wa.size, wb.size);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   TOWN RESOLUTION
+   Three-tier matching:
+   1. Date-range  — if this leg's date falls inside an existing town's stay
+                    it is almost certainly the same city
+   2. Norm-name   — normalized substring / word-overlap comparison
+   3. Create new  — infer dates from all legs, write a new town doc
+   ───────────────────────────────────────────────────────────── */
+const _sessionTownCache = new Map(); // normCity → townId
+
+async function _resolveOrCreateTown(cityName, leg, allLegs, role /* "from" | "to" */) {
   if (!cityName) return null;
-  const key = cityName.toLowerCase().trim();
+  const normKey = _normCity(cityName);
 
-  if (_sessionTownCache.has(key)) return _sessionTownCache.get(key);
+  if (_sessionTownCache.has(normKey)) return _sessionTownCache.get(normKey);
 
-  // Match against existing towns (substring both ways)
+  // ── 1. Date-range matching ───────────────────────────────────────────────────
+  const legDate = role === "from" ? leg.departureDate : leg.arrivalDate;
+  if (legDate) {
+    const byDate = state.towns.find(t =>
+      t.arrivalDate && t.departureDate &&
+      legDate >= t.arrivalDate && legDate <= t.departureDate
+    );
+    if (byDate) {
+      const tn = _normCity(byDate.name);
+      // Accept if names are compatible (no strong conflict)
+      const nameOk = !normKey || !tn
+        || tn.includes(normKey) || normKey.includes(tn)
+        || _wordSimilarity(normKey, tn) >= 0.5;
+      if (nameOk) {
+        _sessionTownCache.set(normKey, byDate.id);
+        return byDate.id;
+      }
+    }
+  }
+
+  // ── 2. Normalized-name matching ──────────────────────────────────────────────
   const existing = state.towns.find(t => {
-    const tn = t.name.toLowerCase().trim();
-    return tn === key || tn.includes(key) || key.includes(tn);
+    const tn = _normCity(t.name);
+    if (!tn || !normKey) return false;
+    return tn === normKey
+      || tn.includes(normKey) || normKey.includes(tn)
+      || _wordSimilarity(normKey, tn) >= 0.5;
   });
   if (existing) {
-    _sessionTownCache.set(key, existing.id);
+    _sessionTownCache.set(normKey, existing.id);
     return existing.id;
   }
 
-  // Infer dates from the full leg list
-  const arrLegs = allLegs.filter(l => l.toCity?.toLowerCase() === key && l.arrivalDate);
-  const depLegs = allLegs.filter(l => l.fromCity?.toLowerCase() === key && l.departureDate);
+  // ── 3. Create new town ───────────────────────────────────────────────────────
+  const arrLegs = allLegs.filter(l => _normCity(l.toCity)   === normKey && l.arrivalDate);
+  const depLegs = allLegs.filter(l => _normCity(l.fromCity) === normKey && l.departureDate);
   const arrivalDate   = arrLegs.length ? arrLegs.map(l => l.arrivalDate).sort()[0]   : null;
   const departureDate = depLegs.length ? depLegs.map(l => l.departureDate).sort()[0] : null;
-
-  const maxOrder = state.towns.length > 0 ? Math.max(...state.towns.map(t => t.order ?? 0)) : -1;
-  const id = crypto.randomUUID();
-
-  // If only one direction is known, use it for both so getDaysForTown returns ≥1 day
   const effectiveArrival   = arrivalDate   || departureDate || null;
   const effectiveDeparture = departureDate || arrivalDate   || null;
 
+  const maxOrder = state.towns.length > 0 ? Math.max(...state.towns.map(t => t.order ?? 0)) : -1;
+  const id = crypto.randomUUID();
   await setDoc(doc(db, "trips", activeTripId, "towns", id), {
     id,
     name: cityName,
@@ -443,7 +494,7 @@ async function _resolveOrCreateTown(cityName, allLegs) {
     createdAt: serverTimestamp(),
   });
 
-  _sessionTownCache.set(key, id);
+  _sessionTownCache.set(normKey, id);
   return id;
 }
 
@@ -461,16 +512,16 @@ async function _saveLegs(legs) {
 
     if (leg._fromIsLayover) {
       // From-city has no town; store spot in the arrival town as "arriving"
-      townId = await _resolveOrCreateTown(leg.toCity, legs);
+      townId = await _resolveOrCreateTown(leg.toCity, leg, legs, "to");
       arrivalTownId = null;
       transportDirection = "arriving";
     } else {
-      townId = await _resolveOrCreateTown(leg.fromCity, legs);
+      townId = await _resolveOrCreateTown(leg.fromCity, leg, legs, "from");
       if (leg._toIsLayover) {
         // To-city is a layover — no arrival town
         arrivalTownId = null;
       } else {
-        arrivalTownId = await _resolveOrCreateTown(leg.toCity, legs);
+        arrivalTownId = await _resolveOrCreateTown(leg.toCity, leg, legs, "to");
       }
       transportDirection = "departing";
     }
