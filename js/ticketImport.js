@@ -504,19 +504,25 @@ async function _resolveOrCreateTown(cityName, leg, allLegs, role /* "from" | "to
 // Stretch an existing town's date range so `date` is covered.
 // Must run BEFORE writing the spot so getDaysForTown includes the date
 // when the Firestore listener re-renders the itinerary.
-async function _ensureTownCoversDate(townId, date) {
+async function _ensureTownCoversDate(townId, date, direction /* "depart" | "arrive" */) {
   if (!townId || !date) return;
   const town = state.towns.find(t => t.id === townId);
   if (!town) return;
 
-  const newArrival   = !town.arrivalDate   || date < town.arrivalDate   ? date : town.arrivalDate;
-  const newDeparture = !town.departureDate || date > town.departureDate ? date : town.departureDate;
+  const updates = {};
 
-  if (newArrival !== town.arrivalDate || newDeparture !== town.departureDate) {
-    await updateDoc(doc(db, "trips", activeTripId, "towns", townId), {
-      arrivalDate:   newArrival,
-      departureDate: newDeparture,
-    });
+  if (direction === "depart") {
+    // Transport leaves from here — only push departureDate forward, never touch arrivalDate
+    if (!town.arrivalDate)                       updates.arrivalDate   = date;
+    if (!town.departureDate || date > town.departureDate) updates.departureDate = date;
+  } else {
+    // Transport arrives here — only pull arrivalDate back, never touch departureDate
+    if (!town.departureDate)                      updates.departureDate = date;
+    if (!town.arrivalDate   || date < town.arrivalDate)   updates.arrivalDate   = date;
+  }
+
+  if (Object.keys(updates).length > 0) {
+    await updateDoc(doc(db, "trips", activeTripId, "towns", townId), updates);
   }
 }
 
@@ -553,9 +559,11 @@ async function _saveLegs(legs) {
       continue;
     }
 
-    // Extend existing town date ranges so the spot's date is always visible
-    await _ensureTownCoversDate(townId, leg.departureDate);
-    await _ensureTownCoversDate(arrivalTownId, leg.arrivalDate);
+    // Extend existing town date ranges so the spot's date is always visible.
+    // Departure city: only push its end date forward.
+    // Arrival city: only pull its start date backward.
+    await _ensureTownCoversDate(townId,        leg.departureDate, "depart");
+    await _ensureTownCoversDate(arrivalTownId, leg.arrivalDate,   "arrive");
 
     const spotId = crypto.randomUUID();
     const myMemberId = currentUserMemberId();
