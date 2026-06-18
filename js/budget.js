@@ -194,12 +194,17 @@ export function showTransitSheet(townId, date, existingEntry = null) {
         ? [..._transitMemberIds]
         : null;
       btnLoading(saveBtn, "Saving…");
-      if (existingEntry) {
-        await updateTransitExpense(townId, entry);
-      } else {
-        await addTransitExpense(townId, entry);
+      try {
+        if (existingEntry) {
+          await updateTransitExpense(townId, entry);
+        } else {
+          await addTransitExpense(townId, entry);
+        }
+        close(entry);
+      } catch (err) {
+        console.error("Transit save error:", err);
+        btnReset(saveBtn);
       }
-      close(entry);
     };
 
     document.getElementById("transit-cancel").onclick = () => close(null);
@@ -727,7 +732,7 @@ export async function saveExpense() {
       if (Math.abs(splitTotal - amount) > 0.05) {
         errEl.textContent = `Custom splits total ${splitTotal.toFixed(2)} but expense is ${amount.toFixed(2)} — please adjust.`;
         errEl.style.display = "block";
-        saveBtn.disabled = false;
+        btnReset(saveBtn);
         return;
       }
     } else {
@@ -2720,6 +2725,7 @@ async function confirmDeleteTown() {
     const remainingNames = state.towns.filter(t => t.id !== editingTownId).map(t => t.name);
     batch.update(doc(db, "trips", activeTripId), { cityNames: remainingNames });
     await batch.commit();
+    btnReset(confirmBtn);
     closeTownEditModal();
   } catch (err) {
     console.error("Town delete error:", err);

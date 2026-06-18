@@ -1388,9 +1388,14 @@ async function saveAccommodation() {
   btnLoading(btn, "Saving…");
 
   const townId = accomTownId;
-  closeAccomModal();
   const townRef = doc(db, "trips", activeTripId, "towns", townId);
-  updateDoc(townRef, { accommodation: data }).catch(err => console.error("saveAccommodation:", err));
+  try {
+    await updateDoc(townRef, { accommodation: data });
+    closeAccomModal();
+  } catch (err) {
+    console.error("saveAccommodation:", err);
+    btnReset(btn);
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────
