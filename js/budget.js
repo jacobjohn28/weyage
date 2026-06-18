@@ -2,13 +2,14 @@ import { state, activeTripId, setState } from "./state.js";
 import { db, doc, updateDoc, deleteDoc, addDoc, collection,
          serverTimestamp, writeBatch, arrayUnion, deleteField } from "./firebase.js";
 import { escapeHtml, localDateStr } from "./utils.js";
+import { PEXELS_CONFIG } from "./config.js";
 
 /* ─────────────────────────────────────────────────────────────
    CALLBACK REGISTRATION
    ───────────────────────────────────────────────────────────── */
 const cb = {};
-export function registerBudgetCallbacks({ pushModalHistory, popModalHistory, getDrawerBudgetMode, setDrawerBudgetMode, clearDrawerContext, openModal, openAccomModal }) {
-  Object.assign(cb, { pushModalHistory, popModalHistory, getDrawerBudgetMode, setDrawerBudgetMode, clearDrawerContext, openModal, openAccomModal });
+export function registerBudgetCallbacks({ pushModalHistory, popModalHistory, getDrawerBudgetMode, setDrawerBudgetMode, clearDrawerContext, openModal, openAccomModal, openPhotoPicker }) {
+  Object.assign(cb, { pushModalHistory, popModalHistory, getDrawerBudgetMode, setDrawerBudgetMode, clearDrawerContext, openModal, openAccomModal, openPhotoPicker });
 }
 
 /* Refresh the budget drawer after external data change (e.g. Firestore snapshot) */
@@ -2685,13 +2686,14 @@ async function saveTownEdit() {
       await reorderTownsByDate(newTown);
       closeTownEditModal();
       if (PEXELS_CONFIG.apiKey) {
-        openPhotoPicker(newId, name);
+        cb.openPhotoPicker?.(newId, name);
       }
       return;
     }
     closeTownEditModal();
   } catch (err) {
     console.error("Town save error:", err);
+    alert(`Could not save city: ${err.message}`);
   } finally {
     saveBtn.disabled = false;
   }

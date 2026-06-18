@@ -386,6 +386,7 @@ registerBudgetCallbacks({
   clearDrawerContext: () => { setCurrentDrawerSpot(null); setCurrentDrawerAccomTownId(null); },
   openModal,
   openAccomModal,
+  openPhotoPicker,
 });
 registerItineraryCallbacks({
   pushModalHistory,
