@@ -34,6 +34,7 @@ import {
   renderSharePage, showInvalidShareLink, refreshShareCityDrawer,
 } from "./share.js";
 import { registerGalleryNavCallback, renderGallery, openGalleryForCity } from "./gallery.js";
+import { initContactsPanel, renderContactsPanel } from "./contacts.js";
 import {
   registerSettingsCallbacks, initSettings,
   openTripSettings, closeTripSettings, saveTripSettings,
@@ -63,6 +64,7 @@ import {
 let _tripUnsub = null, _townsUnsub = null, _spotsUnsub = null, _expensesUnsub = null, _galleryUnsub = null;
 let _allTripsUnsub = null;
 let _sharedTripsUnsub = null;
+let _contactsUnsub = null;
 let _myOwnedTrips = [], _mySharedTrips = [];
 // Tracks trips that have already had the one-time cityPhotos migration run this session
 const _migratedCityPhotos = new Set();
@@ -457,7 +459,8 @@ async function init() {
       _myOwnedTrips = [];
       _mySharedTrips = [];
       setActiveTripId(null);
-      setState({ user: null, trip: null, towns: [], spots: [], allTrips: [] });
+      setState({ user: null, trip: null, towns: [], spots: [], allTrips: [], contacts: [] });
+      _contactsUnsub?.(); _contactsUnsub = null;
       showAuthScreen();
       return;
     }
@@ -480,6 +483,17 @@ async function init() {
     // listenToAllTrips fires first snapshot quickly (IndexedDB cache).
     // On first snapshot it routes to last trip or trip list automatically.
     listenToAllTrips(user.email);
+    _contactsUnsub = onSnapshot(
+      collection(db, "contacts", user.email.toLowerCase(), "people"),
+      (snap) => {
+        const contacts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        contacts.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+        setState({ contacts });
+        renderContactsPanel();
+        if (!activeTripId) { renderSidebarTripList(); renderTripCards(); }
+      },
+      (err) => console.warn("Contacts listener:", err.code)
+    );
   });
 }
 

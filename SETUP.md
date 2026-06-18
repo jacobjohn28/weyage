@@ -162,6 +162,12 @@ service cloud.firestore {
             get(/databases/$(database)/documents/trips/$(tripId)).data.allowedUsers;
       }
     }
+
+    // Friends & Family contacts — each user owns their own contact book
+    match /contacts/{ownerEmail}/people/{contactId} {
+      allow read, write: if request.auth != null &&
+        request.auth.token.email.lower() == ownerEmail;
+    }
   }
 }
 ```

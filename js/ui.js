@@ -15,6 +15,7 @@ import { renderDocuments } from "./documents.js";
 import { renderDisruption } from "./disruption.js";
 import { renderGallery, initGalleryLightbox, initUploadModal, openUploadModal, closeUploadModal } from "./gallery.js";
 import { openTripSettings } from "./settings.js";
+import { contactNameForEmail, initContactsPanel, renderContactsPanel } from "./contacts.js";
 import { closePhotoPicker, startBackfillForTrip } from "./photos.js";
 import { generateAndCopyShareLink } from "./share.js";
 
@@ -193,6 +194,7 @@ export function openSiteSettings() {
   document.getElementById("site-settings-backfill-section").style.display =
     PEXELS_CONFIG.apiKey ? "" : "none";
 
+  renderContactsPanel();
   document.getElementById("site-settings-overlay").classList.add("visible");
   document.body.style.overflow = "hidden";
   cb.pushModalHistory();
@@ -235,11 +237,15 @@ export function renderSidebarTripList() {
     return;
   }
 
-  const itemHTML = (t, role) => `
+  const itemHTML = (t, role) => {
+    const sharedBy = role === "shared" ? (contactNameForEmail(t.createdBy) || t.createdBy || "") : "";
+    return `
     <button class="trips-sidebar-item" data-trip-id="${escapeHtml(t.id)}" data-role="${role}">
       <div class="trips-sidebar-item-name">${escapeHtml(t.name)}</div>
       <div class="trips-sidebar-item-dates">${t.startDate ? fmtDateRange(t.startDate, t.endDate) : "Dates TBD"}</div>
+      ${sharedBy ? `<div class="trips-sidebar-item-sharedby">Shared by ${escapeHtml(sharedBy)}</div>` : ""}
     </button>`;
+  };
 
   let html = "";
   if (ownedTrips.length) {
@@ -302,6 +308,7 @@ export function renderTripCards() {
         <div class="trip-card-name">${escapeHtml(t.name)}</div>
         <div class="trip-card-dates">${t.startDate ? fmtDateRange(t.startDate, t.endDate) : "Dates TBD"}</div>
         ${t.cityNames?.length ? `<div class="trip-card-cities">${t.cityNames.map(escapeHtml).join(" | ")}</div>` : ""}
+        ${t._role === "shared" && t.createdBy ? `<div class="trip-card-sharedby">Shared by ${escapeHtml(contactNameForEmail(t.createdBy) || t.createdBy)}</div>` : ""}
         <div class="trip-card-meta"><span>${escapeHtml(t.currency || "")}</span></div>
       </div>
     </div>`;
@@ -618,6 +625,7 @@ export function initUI() {
   // Gallery lightbox + upload modal
   try { initGalleryLightbox(); } catch (e) { console.error("Gallery lightbox init:", e); }
   try { initUploadModal(); } catch (e) { console.error("Gallery upload modal init:", e); }
+  initContactsPanel();
   document.getElementById("upload-cancel-btn")?.addEventListener("click", closeUploadModal);
 
   // Online / offline status

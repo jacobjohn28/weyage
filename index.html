@@ -1702,6 +1702,34 @@ if ("serviceWorker" in navigator) {
       </div>
 
       <div id="site-settings-error" style="display:none;margin-top:12px;padding:8px 12px;background:rgba(184,83,66,0.08);border:1px solid rgba(184,83,66,0.2);color:var(--danger);border-radius:var(--radius-sm);font-size:0.8125rem"></div>
+
+      <!-- Friends & Family -->
+      <div style="margin-top:28px">
+        <div style="font-size:0.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-3);margin-bottom:14px">Friends &amp; Family</div>
+        <p style="font-size:0.8125rem;color:var(--text-2);margin:0 0 14px">Add people you share trips with so shared trips show who shared them with you.</p>
+
+        <!-- Add form -->
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
+          <div style="display:flex;gap:8px">
+            <input class="field-input" id="ff-add-name"  placeholder="Name" style="flex:1;min-width:0" autocomplete="off" />
+            <select class="field-input" id="ff-add-group" style="width:110px;flex-shrink:0">
+              <option value="friends">Friends</option>
+              <option value="family">Family</option>
+              <option value="">Other</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:8px">
+            <input class="field-input" id="ff-add-email" placeholder="Email address" type="email" style="flex:1;min-width:0" autocomplete="off" />
+            <button class="btn-primary" id="ff-add-btn" style="white-space:nowrap;flex-shrink:0">Add</button>
+          </div>
+          <div id="ff-add-error" style="display:none;font-size:0.8125rem;color:var(--danger)"></div>
+        </div>
+
+        <!-- Contact list -->
+        <div id="ff-contacts-list"></div>
+        <div id="ff-empty" style="font-size:0.8125rem;color:var(--text-3);font-style:italic;padding:4px 0">No contacts yet.</div>
+      </div>
+
     </div>
     <div class="modal-footer">
       <button class="modal-btn-secondary" id="site-settings-cancel-btn">Cancel</button>
