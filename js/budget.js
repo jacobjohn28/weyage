@@ -1320,7 +1320,7 @@ export function buildSettleUpHTML() {
       <div class="budget-settleup-header">
         <span class="budget-settleup-title">Settle up</span>
         <span class="budget-settleup-count">${countLabel}</span>
-        <svg class="budget-settleup-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="18 15 12 9 6 15"/></svg>
+        <svg class="budget-settleup-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
       <div class="budget-settleup-body">${rowsHTML}</div>
     </div>`;
@@ -1433,6 +1433,7 @@ export function renderExpenses() {
           <button class="exp-sort-btn${_expTabSort === "date"  ? " active" : ""}" data-expsort="date">Date${_expTabSort === "date"  ? (_expTabDir === "desc" ? " ↓" : " ↑") : ""}</button>
           <button class="exp-sort-btn${_expTabSort === "value" ? " active" : ""}" data-expsort="value">Amount${_expTabSort === "value" ? (_expTabDir === "desc" ? " ↓" : " ↑") : ""}</button>
         </div>
+        <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
         <button class="exp-filter-toggle${_expFiltersOpen || filterCount > 0 ? " active" : ""}" id="exp-filter-toggle-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="13" height="13"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
           Filters${filterCount > 0 ? ` <span class="exp-filter-badge">${filterCount}</span>` : ""}
@@ -1441,6 +1442,7 @@ export function renderExpenses() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="13" height="13"><rect x="3" y="5" width="4" height="4" rx="1"/><line x1="10" y1="7" x2="21" y2="7"/><rect x="3" y="11" width="4" height="4" rx="1"/><line x1="10" y1="13" x2="21" y2="13"/><rect x="3" y="17" width="4" height="4" rx="1"/><line x1="10" y1="19" x2="21" y2="19"/></svg>
           Select
         </button>
+        </div>
       </div>
       ${_expFiltersOpen ? `
       <div class="exp-filter-panel">

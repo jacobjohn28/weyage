@@ -17,7 +17,7 @@ export function registerShareCallbacks({ showShareSection, listenToTrip, waitFor
    SHARE LINK UTILITIES
    ───────────────────────────────────────────────────────────── */
 export async function generateAndCopyShareLink(btn) {
-  const original = btn.textContent;
+  const originalHTML = btn.innerHTML;
   btn.textContent = "Generating…";
   btn.disabled = true;
   try {
@@ -29,9 +29,9 @@ export async function generateAndCopyShareLink(btn) {
     const url = `${location.origin}${location.pathname}?share=${token}`;
     await navigator.clipboard.writeText(url);
     btn.textContent = "✓ Link copied!";
-    setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 2500);
+    setTimeout(() => { btn.innerHTML = originalHTML; btn.disabled = false; }, 2500);
   } catch (err) {
-    btn.textContent = "Failed — retry";
+    btn.innerHTML = originalHTML;
     btn.disabled = false;
     console.error("Share link error:", err);
   }
