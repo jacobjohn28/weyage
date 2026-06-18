@@ -1,6 +1,6 @@
 import { GEMINI_CONFIG } from "./config.js";
 import { state, activeTripId } from "./state.js";
-import { db, doc, setDoc, serverTimestamp } from "./firebase.js";
+import { db, doc, setDoc, updateDoc, serverTimestamp } from "./firebase.js";
 import { escapeHtml } from "./utils.js";
 import { currentUserMemberId } from "./budget.js";
 
@@ -499,6 +499,28 @@ async function _resolveOrCreateTown(cityName, leg, allLegs, role /* "from" | "to
 }
 
 /* ─────────────────────────────────────────────────────────────
+   DATE RANGE EXTENSION
+   ───────────────────────────────────────────────────────────── */
+// Stretch an existing town's date range so `date` is covered.
+// Must run BEFORE writing the spot so getDaysForTown includes the date
+// when the Firestore listener re-renders the itinerary.
+async function _ensureTownCoversDate(townId, date) {
+  if (!townId || !date) return;
+  const town = state.towns.find(t => t.id === townId);
+  if (!town) return;
+
+  const newArrival   = !town.arrivalDate   || date < town.arrivalDate   ? date : town.arrivalDate;
+  const newDeparture = !town.departureDate || date > town.departureDate ? date : town.departureDate;
+
+  if (newArrival !== town.arrivalDate || newDeparture !== town.departureDate) {
+    await updateDoc(doc(db, "trips", activeTripId, "towns", townId), {
+      arrivalDate:   newArrival,
+      departureDate: newDeparture,
+    });
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
    SAVE LEGS
    ───────────────────────────────────────────────────────────── */
 async function _saveLegs(legs) {
@@ -530,6 +552,10 @@ async function _saveLegs(legs) {
       console.warn("Ticket import: skipping leg — could not resolve departure city", leg);
       continue;
     }
+
+    // Extend existing town date ranges so the spot's date is always visible
+    await _ensureTownCoversDate(townId, leg.departureDate);
+    await _ensureTownCoversDate(arrivalTownId, leg.arrivalDate);
 
     const spotId = crypto.randomUUID();
     const myMemberId = currentUserMemberId();
