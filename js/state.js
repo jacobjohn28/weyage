@@ -7,6 +7,7 @@ export const state = {
   towns: [],
   spots: [],
   expenses: [],
+  cityGallery: [],
   allTrips: [],
   currentView: "itinerary",
   focusTownId: null,

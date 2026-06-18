@@ -22,6 +22,7 @@ import {
 import { renderDisruption, updateDisruptionBadge } from "./disruption.js";
 import { triggerTicketImport } from "./ticketImport.js";
 import { addAttachment, deleteAttachment, toggleAttachmentPin, openLightbox } from "./documents.js";
+import { buildCityPhotoStrip, wireCityPhotoStrip, openUploadModal, openGalleryForCity } from "./gallery.js";
 
 /* ─────────────────────────────────────────────────────────────
    CALLBACK REGISTRATION
@@ -171,7 +172,8 @@ function _townFingerprint(town) {
      s.order ?? "", s.booked ?? "", s.isCancelled ?? "",
      s.transportSubtype ?? "", s.groupId ?? ""].join("|")
   ).join(";");
-  return JSON.stringify(town) + "\0" + spotsFP + "\0" + collapseKeys;
+  const photoCount = (state.cityGallery || []).filter(p => p.cityId === town.id).length;
+  return JSON.stringify(town) + "\0" + spotsFP + "\0" + collapseKeys + "\0" + photoCount;
 }
 
 function _buildTownHTML(town) {
@@ -230,6 +232,12 @@ function _buildTownHTML(town) {
           ${showPhoto ? "" : editBtn}
         </div>
         ${renderAccomCard(town)}
+        ${buildCityPhotoStrip(town.id)}
+        ${!state.shareMode ? `<div class="city-photo-actions" data-photocity="${escapeHtml(town.id)}">
+          <button class="btn-ghost city-add-photos-btn" data-cityid="${escapeHtml(town.id)}" style="font-size:0.75rem;padding:4px 10px;opacity:0.7">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" style="margin-right:4px;vertical-align:-1px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add photos
+          </button>
+        </div>` : ""}
         ${(() => {
           const todayKey = localDateStr(new Date());
           return days.map(dk => {
@@ -318,6 +326,14 @@ function _wireTownElement(el) {
       if (town) openPhotoPicker(town.id, town.name);
     });
   });
+  // Photo strip
+  el.querySelectorAll(".city-photo-strip").forEach(strip => {
+    wireCityPhotoStrip(strip, strip.dataset.stripfor);
+  });
+  el.querySelectorAll(".city-add-photos-btn").forEach(btn => {
+    btn.addEventListener("click", e => { e.stopPropagation(); openUploadModal(btn.dataset.cityid); });
+  });
+
   el.querySelectorAll(".day-ai-btn").forEach(btn => {
     btn.addEventListener("click", e => {
       e.stopPropagation();

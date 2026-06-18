@@ -33,6 +33,7 @@ import {
   registerShareCallbacks, initSharedView, generateAndCopyShareLink,
   renderSharePage, showInvalidShareLink,
 } from "./share.js";
+import { registerGalleryNavCallback, renderGallery, openGalleryForCity } from "./gallery.js";
 import {
   registerSettingsCallbacks, initSettings,
   openTripSettings, closeTripSettings, saveTripSettings,
@@ -59,7 +60,7 @@ import {
    ───────────────────────────────────────────────────────────── */
 
 // Listener unsubscribe handles — stored so we can detach when switching trips
-let _tripUnsub = null, _townsUnsub = null, _spotsUnsub = null, _expensesUnsub = null;
+let _tripUnsub = null, _townsUnsub = null, _spotsUnsub = null, _expensesUnsub = null, _galleryUnsub = null;
 let _allTripsUnsub = null;
 let _sharedTripsUnsub = null;
 let _myOwnedTrips = [], _mySharedTrips = [];
@@ -67,8 +68,8 @@ let _myOwnedTrips = [], _mySharedTrips = [];
 const _migratedCityPhotos = new Set();
 
 function detachTripListeners() {
-  _tripUnsub?.(); _townsUnsub?.(); _spotsUnsub?.(); _expensesUnsub?.();
-  _tripUnsub = _townsUnsub = _spotsUnsub = _expensesUnsub = null;
+  _tripUnsub?.(); _townsUnsub?.(); _spotsUnsub?.(); _expensesUnsub?.(); _galleryUnsub?.();
+  _tripUnsub = _townsUnsub = _spotsUnsub = _expensesUnsub = _galleryUnsub = null;
   setState({ expenses: [] });
 }
 
@@ -163,6 +164,20 @@ function listenToTrip(tripId) {
     },
     (err) => {
       console.error("Expenses listener error:", err.code);
+    }
+  );
+  // City gallery subcollection
+  _galleryUnsub = onSnapshot(
+    collection(db, "trips", tripId, "cityGallery"),
+    (snap) => {
+      const cityGallery = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      cityGallery.sort((a, b) => (a.takenDate || "").localeCompare(b.takenDate || ""));
+      setState({ cityGallery });
+      if (state.currentView === "gallery") renderGallery();
+      if (state.currentView === "itinerary") renderItinerary();
+    },
+    (err) => {
+      console.error("Gallery listener error:", err.code);
     }
   );
 }
@@ -400,6 +415,7 @@ registerShareCallbacks({
   waitForShareData: _waitForShareData,
 });
 registerUiCallbacks({ pushModalHistory, switchTrip, openSharedTrip, detachTripListeners });
+registerGalleryNavCallback((cityId) => { setView("gallery"); setTimeout(() => renderGallery(cityId), 50); });
 registerSettingsCallbacks({ exitToTripList });
 initLightbox();
 initBudget();

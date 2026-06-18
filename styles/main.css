@@ -4208,3 +4208,105 @@ body.share-mode .transit-entry-del { display: none !important; }
     margin-right: 6px;
     flex-shrink: 0;
   }
+
+  /* ── Gallery view ────────────────────────────────────────────── */
+  .gallery-city-section { margin-bottom: 32px; }
+  .gallery-city-header {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 12px;
+  }
+  .gallery-city-name { font-size: 1rem; font-weight: 600; color: var(--text); }
+  .gallery-city-count { font-size: 0.8125rem; color: var(--text-3); }
+  .gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+  }
+  @media (min-width: 600px) { .gallery-grid { grid-template-columns: repeat(4, 1fr); gap: 6px; } }
+  @media (min-width: 900px) { .gallery-grid { grid-template-columns: repeat(5, 1fr); gap: 8px; } }
+  .gallery-thumb {
+    position: relative; aspect-ratio: 1; overflow: hidden;
+    border-radius: 8px; background: var(--surface-2);
+    border: none; padding: 0; cursor: pointer;
+    transition: opacity 120ms;
+  }
+  .gallery-thumb:active { opacity: 0.8; }
+  .gallery-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .gallery-thumb-date {
+    position: absolute; bottom: 4px; left: 4px;
+    font-size: 0.625rem; color: #fff;
+    background: rgba(0,0,0,0.52); backdrop-filter: blur(4px);
+    padding: 1px 5px; border-radius: 4px;
+    pointer-events: none;
+  }
+
+  /* ── City photo strip (in itinerary city cards) ─────────────── */
+  .city-photo-strip {
+    display: flex; gap: 6px; padding: 10px 16px 2px;
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .city-photo-strip::-webkit-scrollbar { display: none; }
+  .city-strip-thumb {
+    flex-shrink: 0; width: 68px; height: 68px;
+    border-radius: 8px; overflow: hidden;
+    border: none; padding: 0; cursor: pointer;
+    background: var(--surface-2);
+    transition: opacity 120ms;
+  }
+  .city-strip-thumb:active { opacity: 0.75; }
+  .city-strip-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .city-strip-more {
+    flex-shrink: 0; width: 68px; height: 68px;
+    border-radius: 8px; border: 1.5px dashed var(--border);
+    background: var(--surface-2); color: var(--text-2);
+    font-size: 0.875rem; font-weight: 600; cursor: pointer;
+  }
+  .city-photo-actions {
+    padding: 4px 16px 8px;
+  }
+
+  /* ── Gallery lightbox ────────────────────────────────────────── */
+  #gallery-lightbox {
+    display: none; position: fixed; inset: 0; z-index: 9000;
+    background: rgba(0,0,0,0.95);
+    flex-direction: column; align-items: center; justify-content: center;
+  }
+  #gallery-lightbox.visible { display: flex; }
+  #lb-image-wrap {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    width: 100%; overflow: hidden; padding: 48px 60px 0;
+    box-sizing: border-box;
+  }
+  #lb-img {
+    max-width: 100%; max-height: 100%;
+    object-fit: contain; border-radius: 6px;
+    user-select: none; -webkit-user-drag: none;
+  }
+  #lb-close {
+    position: absolute; top: 14px; right: 16px; z-index: 1;
+    background: rgba(255,255,255,0.12); border: none;
+    color: #fff; width: 40px; height: 40px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+  }
+  #lb-prev, #lb-next {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    background: rgba(255,255,255,0.12); border: none;
+    color: #fff; width: 44px; height: 44px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; z-index: 1;
+  }
+  #lb-prev { left: 12px; }
+  #lb-next { right: 12px; }
+  #lb-info {
+    width: 100%; padding: 14px 20px 24px;
+    text-align: center; color: rgba(255,255,255,0.85);
+  }
+  #lb-counter { font-size: 0.75rem; color: rgba(255,255,255,0.5); margin-bottom: 4px; }
+  #lb-meta { font-size: 0.8125rem; color: rgba(255,255,255,0.6); }
+  #lb-caption { font-size: 0.9375rem; margin-top: 4px; }
+
+  /* ── Gallery upload modal ────────────────────────────────────── */
+  #gallery-upload-modal { display: none; }
+  #gallery-upload-modal.visible { display: flex; }

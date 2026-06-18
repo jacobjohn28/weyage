@@ -13,6 +13,7 @@ import { renderGuides, generateAllGuides } from "./guides.js";
 import { renderBudget, renderExpenses, CURRENCY_LIST } from "./budget.js";
 import { renderDocuments } from "./documents.js";
 import { renderDisruption } from "./disruption.js";
+import { renderGallery, initGalleryLightbox, initUploadModal, openUploadModal, closeUploadModal } from "./gallery.js";
 import { openTripSettings } from "./settings.js";
 import { closePhotoPicker, startBackfillForTrip } from "./photos.js";
 import { generateAndCopyShareLink } from "./share.js";
@@ -59,7 +60,7 @@ export function setView(viewName) {
   document.querySelectorAll(".nav-item, .bottom-nav-item").forEach(b => {
     b.classList.toggle("active", b.dataset.view === viewName);
   });
-  const titles = { dashboard: "Overview", itinerary: "Itinerary", guides: "Guides", budget: "Budget", expenses: "Expenses", documents: "Documents", disruption: "Disruptions" };
+  const titles = { dashboard: "Overview", itinerary: "Itinerary", guides: "Guides", budget: "Budget", expenses: "Expenses", documents: "Documents", disruption: "Disruptions", gallery: "Gallery" };
   document.getElementById("topbar-title").textContent = titles[viewName] || "Dashboard";
   if (viewName === "itinerary") {
     if (!pendingScrollTownId) {
@@ -76,6 +77,7 @@ export function setView(viewName) {
   if (viewName === "expenses") renderExpenses();
   if (viewName === "documents") renderDocuments();
   if (viewName === "disruption") renderDisruption();
+  if (viewName === "gallery") renderGallery();
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -585,6 +587,15 @@ export function initUI() {
     moreSheet.style.display = "none";
     setView("disruption");
   });
+  document.getElementById("sheet-gallery-btn")?.addEventListener("click", () => {
+    moreSheet.style.display = "none";
+    setView("gallery");
+  });
+
+  // Gallery lightbox + upload modal
+  initGalleryLightbox();
+  initUploadModal();
+  document.getElementById("upload-cancel-btn")?.addEventListener("click", closeUploadModal);
 
   // Online / offline status
   window.addEventListener("online", () => { state.online = true; _setStatusOnline(); });
