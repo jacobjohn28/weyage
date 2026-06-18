@@ -3,6 +3,7 @@ import { db, doc, updateDoc, deleteDoc, addDoc, collection,
          serverTimestamp, writeBatch, arrayUnion, deleteField } from "./firebase.js";
 import { escapeHtml, localDateStr } from "./utils.js";
 import { PEXELS_CONFIG } from "./config.js";
+import { extractTripDestination } from "./photos.js";
 
 /* ─────────────────────────────────────────────────────────────
    CALLBACK REGISTRATION
