@@ -1262,11 +1262,16 @@
         <div class="toggle-switch" id="town-hide-photo-switch"></div>
       </div>
     </div>
-    <div class="modal-footer">
+    <div class="modal-footer" id="town-edit-footer-main">
       <button class="btn-ghost" id="town-edit-delete-btn" style="color:var(--danger,#c0392b);display:none">Delete city</button>
       <div style="flex:1"></div>
       <button class="btn-ghost" id="town-edit-cancel-btn">Cancel</button>
       <button class="btn-primary" id="town-edit-save-btn">Save</button>
+    </div>
+    <div class="modal-footer" id="town-edit-footer-confirm" style="display:none">
+      <span style="font-size:0.875rem;color:var(--text-2,#666);flex:1">Delete this city and all its spots?</span>
+      <button class="btn-ghost" id="town-edit-delete-cancel-btn">Cancel</button>
+      <button class="btn-primary" id="town-edit-delete-confirm-btn" style="background:var(--danger,#c0392b);border-color:var(--danger,#c0392b)">Delete forever</button>
     </div>
   </div>
 </div>

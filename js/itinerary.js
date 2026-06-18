@@ -675,8 +675,9 @@ export function renderItinerary() {
     prevEl = el;
   }
 
-  // Ensure "Add city" footer exists once at the end
-  if (!state.shareMode && !container.querySelector("#itinerary-add-city-footer-btn")) {
+  // Ensure footer with both buttons exists — recreate if either button is missing
+  if (!state.shareMode && !(container.querySelector("#itinerary-add-city-footer-btn") && container.querySelector("#itinerary-import-ticket-btn"))) {
+    container.querySelector("#itinerary-add-city-footer-btn")?.closest("div")?.remove();
     const footer = document.createElement("div");
     footer.style.cssText = "padding:8px 0 32px;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap";
     footer.innerHTML = `

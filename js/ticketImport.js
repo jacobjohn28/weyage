@@ -191,7 +191,7 @@ function _renderLegCard(leg, idx, members, myMemberId) {
     `<option value="${escapeHtml(m.id)}"${m.id === myMemberId ? " selected" : ""}>${escapeHtml(m.name)}</option>`
   ).join("");
 
-  const paidByRow = members.length >= 2 ? `
+  const paidByRow = members.length >= 1 ? `
     <div class="ticket-field">
       <label class="ticket-label">Paid by</label>
       <select class="form-input ticket-input" data-field="paidBy" data-idx="${idx}">
@@ -429,11 +429,15 @@ async function _resolveOrCreateTown(cityName, allLegs) {
   const maxOrder = state.towns.length > 0 ? Math.max(...state.towns.map(t => t.order ?? 0)) : -1;
   const id = crypto.randomUUID();
 
+  // If only one direction is known, use it for both so getDaysForTown returns ≥1 day
+  const effectiveArrival   = arrivalDate   || departureDate || null;
+  const effectiveDeparture = departureDate || arrivalDate   || null;
+
   await setDoc(doc(db, "trips", activeTripId, "towns", id), {
     id,
     name: cityName,
-    arrivalDate:   arrivalDate   || null,
-    departureDate: departureDate || null,
+    arrivalDate:   effectiveArrival,
+    departureDate: effectiveDeparture,
     country: "",
     order: maxOrder + 1,
     createdAt: serverTimestamp(),

@@ -2639,6 +2639,9 @@ export function openTownEditModal(town = null) {
   document.getElementById("town-edit-departure").value = town?.departureDate || "";
   document.getElementById("town-hide-photo-switch").classList.toggle("on", townHidePhotoState);
   document.getElementById("town-edit-delete-btn").style.display = town ? "" : "none";
+  document.getElementById("town-edit-delete-btn").disabled = false;
+  document.getElementById("town-edit-footer-main").style.display = "";
+  document.getElementById("town-edit-footer-confirm").style.display = "none";
   document.getElementById("town-edit-overlay").classList.add("visible");
   document.getElementById("town-edit-name").focus();
 }
@@ -2700,23 +2703,19 @@ async function saveTownEdit() {
   }
 }
 
-async function deleteTownEdit() {
+function deleteTownEdit() {
   if (!editingTownId) return;
-  const town = state.towns.find(t => t.id === editingTownId);
-  const spotCount = state.spots.filter(s => s.townId === editingTownId).length;
-  const msg = spotCount > 0
-    ? `Delete ${town?.name || "this city"} and its ${spotCount} spot${spotCount > 1 ? "s" : ""}? This cannot be undone.`
-    : `Delete ${town?.name || "this city"}? This cannot be undone.`;
-  if (!confirm(msg)) return;
+  document.getElementById("town-edit-footer-main").style.display = "none";
+  document.getElementById("town-edit-footer-confirm").style.display = "";
+}
 
-  const deleteBtn = document.getElementById("town-edit-delete-btn");
-  deleteBtn.disabled = true;
+async function confirmDeleteTown() {
+  const confirmBtn = document.getElementById("town-edit-delete-confirm-btn");
+  confirmBtn.disabled = true;
   try {
     const batch = writeBatch(db);
-    // Delete all spots belonging to this town
     state.spots.filter(s => s.townId === editingTownId)
       .forEach(s => batch.delete(doc(db, "trips", activeTripId, "spots", s.id)));
-    // Delete the town doc
     batch.delete(doc(db, "trips", activeTripId, "towns", editingTownId));
     const remainingNames = state.towns.filter(t => t.id !== editingTownId).map(t => t.name);
     batch.update(doc(db, "trips", activeTripId), { cityNames: remainingNames });
@@ -2724,7 +2723,9 @@ async function deleteTownEdit() {
     closeTownEditModal();
   } catch (err) {
     console.error("Town delete error:", err);
-    deleteBtn.disabled = false;
+    confirmBtn.disabled = false;
+    document.getElementById("town-edit-footer-main").style.display = "";
+    document.getElementById("town-edit-footer-confirm").style.display = "none";
   }
 }
 
@@ -2736,6 +2737,11 @@ document.getElementById("town-hide-photo-toggle").addEventListener("click", () =
   document.getElementById("town-hide-photo-switch").classList.toggle("on", townHidePhotoState);
 });
 document.getElementById("town-edit-delete-btn").addEventListener("click", deleteTownEdit);
+document.getElementById("town-edit-delete-cancel-btn").addEventListener("click", () => {
+  document.getElementById("town-edit-footer-main").style.display = "";
+  document.getElementById("town-edit-footer-confirm").style.display = "none";
+});
+document.getElementById("town-edit-delete-confirm-btn").addEventListener("click", confirmDeleteTown);
 document.getElementById("town-edit-overlay").addEventListener("click", e => {
   if (e.target === document.getElementById("town-edit-overlay")) closeTownEditModal();
 });
