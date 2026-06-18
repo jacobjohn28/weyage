@@ -742,28 +742,52 @@ export function initUI() {
     openMobileTripOverlay();
   });
 
-  // Contacts page (desktop sidebar button + mobile toggle)
+  // Contacts page (desktop sidebar nav + mobile heading drawer)
+  function _closeTopDrawer() {
+    const drawer = document.getElementById("trips-top-drawer");
+    if (drawer) drawer.style.display = "none";
+    document.getElementById("trips-heading-dropdown-btn")?.setAttribute("aria-expanded", "false");
+  }
+
+  function _setTripsPageActive(isContacts) {
+    _closeTopDrawer();
+    document.getElementById("trips-contacts-nav-btn")?.classList.toggle("trips-sidebar-page-btn-active", isContacts);
+    document.getElementById("trips-nav-trips-btn")?.classList.toggle("trips-sidebar-page-btn-active", !isContacts);
+    document.getElementById("ttd-contacts")?.classList.toggle("ttd-active", isContacts);
+    document.getElementById("ttd-trips")?.classList.toggle("ttd-active", !isContacts);
+    const lbl = document.getElementById("trips-heading-label");
+    if (lbl) lbl.textContent = isContacts ? "Contacts" : "My Trips";
+  }
+
   function openContactsPage() {
     renderContactsPanel();
+    _setTripsPageActive(true);
     document.getElementById("trips-contacts-page").style.display = "flex";
     document.getElementById("trips-main").style.display = "none";
-    document.getElementById("trips-contacts-nav-btn")?.classList.add("active");
-    const tvtTrips = document.getElementById("tvt-trips");
-    const tvtContacts = document.getElementById("tvt-contacts");
-    if (tvtTrips) { tvtTrips.classList.remove("tvt-active"); tvtContacts.classList.add("tvt-active"); }
   }
   function closeContactsPage() {
+    _setTripsPageActive(false);
     document.getElementById("trips-contacts-page").style.display = "none";
     document.getElementById("trips-main").style.display = "";
-    document.getElementById("trips-contacts-nav-btn")?.classList.remove("active");
-    const tvtTrips = document.getElementById("tvt-trips");
-    const tvtContacts = document.getElementById("tvt-contacts");
-    if (tvtTrips) { tvtTrips.classList.add("tvt-active"); tvtContacts.classList.remove("tvt-active"); }
   }
+
+  // Heading dropdown toggle
+  document.getElementById("trips-heading-dropdown-btn")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const drawer = document.getElementById("trips-top-drawer");
+    const isOpen = drawer.style.display !== "none";
+    drawer.style.display = isOpen ? "none" : "";
+    document.getElementById("trips-heading-dropdown-btn").setAttribute("aria-expanded", String(!isOpen));
+  });
+  document.addEventListener("click", (e) => {
+    if (!document.getElementById("trips-mobile-heading-wrap")?.contains(e.target)) _closeTopDrawer();
+  });
+
+  document.getElementById("trips-nav-trips-btn")?.addEventListener("click", closeContactsPage);
   document.getElementById("trips-contacts-nav-btn")?.addEventListener("click", openContactsPage);
   document.getElementById("tcp-back-btn")?.addEventListener("click", closeContactsPage);
-  document.getElementById("tvt-trips")?.addEventListener("click", closeContactsPage);
-  document.getElementById("tvt-contacts")?.addEventListener("click", openContactsPage);
+  document.getElementById("ttd-trips")?.addEventListener("click", closeContactsPage);
+  document.getElementById("ttd-contacts")?.addEventListener("click", openContactsPage);
 
   // Trips screen buttons
   document.getElementById("trips-new-btn-sidebar")?.addEventListener("click", () => { closeContactsPage(); openCreateTripModal(); });

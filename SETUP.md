@@ -166,7 +166,7 @@ service cloud.firestore {
     // Friends & Family contacts — each user owns their own contact book
     match /contacts/{ownerEmail}/people/{contactId} {
       allow read, write: if request.auth != null &&
-        request.auth.token.email.lower() == ownerEmail;
+        request.auth.token.email.lower() == ownerEmail.lower();
     }
   }
 }

@@ -138,11 +138,11 @@
       <!-- Rendered by renderSidebarTripList() -->
     </div>
     <div class="trips-sidebar-foot">
-      <button class="nav-item" id="trips-new-btn-sidebar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-        New trip
+      <button class="nav-item trips-sidebar-page-btn trips-sidebar-page-btn-active" id="trips-nav-trips-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="16" height="16"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        My Trips
       </button>
-      <button class="nav-item" id="trips-contacts-nav-btn">
+      <button class="nav-item trips-sidebar-page-btn" id="trips-contacts-nav-btn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="16" height="16"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         Contacts
       </button>
@@ -163,12 +163,24 @@
   <!-- Main area: trip cards grid -->
   <main class="trips-main" id="trips-main">
     <header class="trips-header">
-      <!-- Desktop heading -->
+      <!-- Desktop heading (static) -->
       <h2 class="trips-heading trips-desktop-heading" id="trips-heading-text">My trips</h2>
-      <!-- Mobile segmented toggle: Trips / Contacts -->
-      <div class="trips-view-toggle" id="trips-view-toggle">
-        <button class="tvt-btn tvt-active" id="tvt-trips">My Trips</button>
-        <button class="tvt-btn" id="tvt-contacts">Contacts</button>
+      <!-- Mobile heading: tap to open page-switcher drawer -->
+      <div class="trips-mobile-heading-wrap" id="trips-mobile-heading-wrap">
+        <button class="trips-heading-dropdown-btn" id="trips-heading-dropdown-btn" aria-expanded="false">
+          <span class="trips-heading" id="trips-heading-label">My Trips</span>
+          <svg class="trips-heading-chevron" id="trips-heading-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="trips-top-drawer" id="trips-top-drawer" style="display:none">
+          <button class="ttd-item ttd-active" id="ttd-trips">
+            My Trips
+            <svg class="ttd-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+          <button class="ttd-item" id="ttd-contacts">
+            Contacts
+            <svg class="ttd-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+        </div>
       </div>
       <div style="display:flex;align-items:center;gap:10px">
         <!-- Sign-out button: only shown on mobile where the sidebar (and its sign-out) is hidden -->

@@ -267,11 +267,37 @@
   .trips-sidebar-section-label { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-3); padding: 12px 12px 4px; }
   .trips-sidebar-item-sharedby { font-size: 0.7rem; color: var(--accent); margin-top: 1px; }
 
-  /* Mobile view toggle (Trips / Contacts) — hidden on desktop */
+  /* Desktop heading (always visible on desktop) */
   .trips-desktop-heading { display: block; }
-  .trips-view-toggle { display: none; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 3px; gap: 2px; }
-  .tvt-btn { padding: 6px 16px; border-radius: 6px; font-size: 0.875rem; font-weight: 500; color: var(--text-2); transition: all 120ms var(--ease); }
-  .tvt-btn.tvt-active { background: var(--accent); color: #fff; }
+  /* Mobile heading dropdown — hidden on desktop */
+  .trips-mobile-heading-wrap { display: none; position: relative; }
+  .trips-heading-dropdown-btn {
+    display: flex; align-items: center; gap: 8px;
+    background: none; border: none; padding: 0; cursor: pointer; text-align: left;
+  }
+  .trips-heading-dropdown-btn .trips-heading { margin: 0; }
+  .trips-heading-chevron { color: var(--text-3); flex-shrink: 0; transition: transform 200ms var(--ease); }
+  .trips-heading-dropdown-btn[aria-expanded="true"] .trips-heading-chevron { transform: rotate(180deg); }
+  /* Top drawer */
+  .trips-top-drawer {
+    position: absolute; top: calc(100% + 8px); left: 0;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); box-shadow: var(--shadow-lg);
+    min-width: 200px; z-index: 80;
+    overflow: hidden;
+  }
+  .ttd-item {
+    display: flex; align-items: center; justify-content: space-between;
+    width: 100%; padding: 13px 16px;
+    font-size: 1rem; font-weight: 500; color: var(--text-2);
+    text-align: left; transition: background 120ms var(--ease);
+  }
+  .ttd-item:hover { background: var(--surface-2); color: var(--text); }
+  .ttd-item.ttd-active { color: var(--accent); }
+  .ttd-check { color: var(--accent); display: none; }
+  .ttd-item.ttd-active .ttd-check { display: block; }
+  /* Sidebar page-nav active state */
+  .trips-sidebar-page-btn.trips-sidebar-page-btn-active { color: var(--accent); background: rgba(var(--accent-rgb, 184,83,66), 0.08); }
 
   /* Contacts page — desktop: flex sibling filling remaining width */
   #trips-contacts-page {
@@ -533,9 +559,9 @@
     .trips-header { margin-bottom: 20px; }
     .trips-heading { font-size: 1.5rem; }
     .trips-mobile-signout-btn { display: inline-flex; }
-    /* Show mobile toggle, hide desktop heading */
+    /* Show mobile heading dropdown, hide desktop heading */
     .trips-desktop-heading { display: none; }
-    .trips-view-toggle { display: flex; }
+    .trips-mobile-heading-wrap { display: block; }
     /* Contacts page: fixed full-screen overlay on mobile */
     #trips-contacts-page {
       position: fixed; inset: 0; z-index: 60;
