@@ -194,7 +194,6 @@ export function openSiteSettings() {
   document.getElementById("site-settings-backfill-section").style.display =
     PEXELS_CONFIG.apiKey ? "" : "none";
 
-  renderContactsPanel();
   document.getElementById("site-settings-overlay").classList.add("visible");
   document.body.style.overflow = "hidden";
   cb.pushModalHistory();
@@ -743,8 +742,31 @@ export function initUI() {
     openMobileTripOverlay();
   });
 
+  // Contacts page (desktop sidebar button + mobile toggle)
+  function openContactsPage() {
+    renderContactsPanel();
+    document.getElementById("trips-contacts-page").style.display = "flex";
+    document.getElementById("trips-main").style.display = "none";
+    document.getElementById("trips-contacts-nav-btn")?.classList.add("active");
+    const tvtTrips = document.getElementById("tvt-trips");
+    const tvtContacts = document.getElementById("tvt-contacts");
+    if (tvtTrips) { tvtTrips.classList.remove("tvt-active"); tvtContacts.classList.add("tvt-active"); }
+  }
+  function closeContactsPage() {
+    document.getElementById("trips-contacts-page").style.display = "none";
+    document.getElementById("trips-main").style.display = "";
+    document.getElementById("trips-contacts-nav-btn")?.classList.remove("active");
+    const tvtTrips = document.getElementById("tvt-trips");
+    const tvtContacts = document.getElementById("tvt-contacts");
+    if (tvtTrips) { tvtTrips.classList.add("tvt-active"); tvtContacts.classList.remove("tvt-active"); }
+  }
+  document.getElementById("trips-contacts-nav-btn")?.addEventListener("click", openContactsPage);
+  document.getElementById("tcp-back-btn")?.addEventListener("click", closeContactsPage);
+  document.getElementById("tvt-trips")?.addEventListener("click", closeContactsPage);
+  document.getElementById("tvt-contacts")?.addEventListener("click", openContactsPage);
+
   // Trips screen buttons
-  document.getElementById("trips-new-btn-sidebar")?.addEventListener("click", openCreateTripModal);
+  document.getElementById("trips-new-btn-sidebar")?.addEventListener("click", () => { closeContactsPage(); openCreateTripModal(); });
   document.getElementById("trips-new-btn-main")?.addEventListener("click", openCreateTripModal);
   document.getElementById("trips-signout-btn")?.addEventListener("click", () => signOut(auth));
   document.getElementById("trips-main-signout-btn")?.addEventListener("click", () => signOut(auth));

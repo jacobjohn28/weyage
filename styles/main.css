@@ -267,6 +267,28 @@
   .trips-sidebar-section-label { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-3); padding: 12px 12px 4px; }
   .trips-sidebar-item-sharedby { font-size: 0.7rem; color: var(--accent); margin-top: 1px; }
 
+  /* Mobile view toggle (Trips / Contacts) — hidden on desktop */
+  .trips-desktop-heading { display: block; }
+  .trips-view-toggle { display: none; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 3px; gap: 2px; }
+  .tvt-btn { padding: 6px 16px; border-radius: 6px; font-size: 0.875rem; font-weight: 500; color: var(--text-2); transition: all 120ms var(--ease); }
+  .tvt-btn.tvt-active { background: var(--accent); color: #fff; }
+
+  /* Contacts page — desktop: flex sibling filling remaining width */
+  #trips-contacts-page {
+    flex: 1; overflow-y: auto;
+    padding: 40px 40px;
+    display: flex; flex-direction: column;
+  }
+  .tcp-header { display: none; }
+  .tcp-title-desktop {
+    font-family: var(--font-display);
+    font-size: 2rem; font-weight: 400;
+    letter-spacing: -0.03em;
+    margin-bottom: 6px;
+  }
+  .tcp-desc { font-size: 0.875rem; color: var(--text-2); margin: 0 0 24px; max-width: 480px; }
+  .tcp-add-form { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; max-width: 480px; }
+
   /* Friends & Family contacts panel */
   .ff-group-label { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-3); padding: 10px 0 5px; }
   .ff-contact-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
@@ -511,6 +533,28 @@
     .trips-header { margin-bottom: 20px; }
     .trips-heading { font-size: 1.5rem; }
     .trips-mobile-signout-btn { display: inline-flex; }
+    /* Show mobile toggle, hide desktop heading */
+    .trips-desktop-heading { display: none; }
+    .trips-view-toggle { display: flex; }
+    /* Contacts page: fixed full-screen overlay on mobile */
+    #trips-contacts-page {
+      position: fixed; inset: 0; z-index: 60;
+      background: var(--bg);
+      padding: 0;
+      overflow-y: auto;
+    }
+    .tcp-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; background: var(--bg); z-index: 1;
+    }
+    .tcp-back { display: inline-flex; align-items: center; gap: 6px; font-size: 0.8125rem; color: var(--accent); }
+    .tcp-title { font-family: var(--font-display); font-size: 1.25rem; font-weight: 500; flex: 1; }
+    .tcp-title-desktop { display: none; }
+    .tcp-desc { padding: 0 20px; margin-bottom: 16px; }
+    .tcp-add-form { padding: 16px 20px 0; max-width: none; margin-bottom: 8px; }
+    #ff-contacts-list, #ff-empty { padding-left: 20px; padding-right: 20px; }
   }
 
   /* Mobile trips overlay (opened from the "more" sheet) */

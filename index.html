@@ -142,6 +142,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
         New trip
       </button>
+      <button class="nav-item" id="trips-contacts-nav-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="16" height="16"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Contacts
+      </button>
       <button class="nav-item" id="trips-site-settings-btn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="16" height="16"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         Site Settings
@@ -157,9 +161,15 @@
   </aside>
 
   <!-- Main area: trip cards grid -->
-  <main class="trips-main">
+  <main class="trips-main" id="trips-main">
     <header class="trips-header">
-      <h2 class="trips-heading">My trips</h2>
+      <!-- Desktop heading -->
+      <h2 class="trips-heading trips-desktop-heading" id="trips-heading-text">My trips</h2>
+      <!-- Mobile segmented toggle: Trips / Contacts -->
+      <div class="trips-view-toggle" id="trips-view-toggle">
+        <button class="tvt-btn tvt-active" id="tvt-trips">My Trips</button>
+        <button class="tvt-btn" id="tvt-contacts">Contacts</button>
+      </div>
       <div style="display:flex;align-items:center;gap:10px">
         <!-- Sign-out button: only shown on mobile where the sidebar (and its sign-out) is hidden -->
         <button class="icon-btn" id="trips-site-settings-btn-mobile" title="Site settings" aria-label="Site settings">
@@ -174,7 +184,7 @@
         </button>
       </div>
     </header>
-    <div class="trips-search-wrap">
+    <div class="trips-search-wrap" id="trips-search-wrap">
       <svg class="trips-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="15" height="15"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input class="trips-search-input" id="trips-search-input" type="search" placeholder="Search trips…" autocomplete="off">
     </div>
@@ -182,6 +192,40 @@
       <!-- Rendered by renderTripCards() -->
     </div>
   </main>
+
+  <!-- Contacts page — shown as desktop flex panel or mobile fixed overlay -->
+  <div id="trips-contacts-page" style="display:none">
+    <div class="tcp-header">
+      <button class="tcp-back icon-btn" id="tcp-back-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="15 18 9 12 15 6"/></svg>
+        Trips
+      </button>
+      <h2 class="tcp-title">Contacts</h2>
+    </div>
+    <h2 class="tcp-title-desktop">Contacts</h2>
+    <p class="tcp-desc">Add people whose shared trips you receive, so you always know who shared each trip with you.</p>
+
+    <!-- Add form -->
+    <div class="tcp-add-form">
+      <div style="display:flex;gap:8px">
+        <input class="field-input" id="ff-add-name" placeholder="Name" style="flex:1;min-width:0" autocomplete="off" />
+        <select class="field-input" id="ff-add-group" style="width:110px;flex-shrink:0">
+          <option value="friends">Friends</option>
+          <option value="family">Family</option>
+          <option value="">Other</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:8px">
+        <input class="field-input" id="ff-add-email" placeholder="Email address" type="email" style="flex:1;min-width:0" autocomplete="off" />
+        <button class="btn-primary" id="ff-add-btn" style="white-space:nowrap;flex-shrink:0">Add</button>
+      </div>
+      <div id="ff-add-error" style="display:none;font-size:0.8125rem;color:var(--danger)"></div>
+    </div>
+
+    <!-- Contact list -->
+    <div id="ff-contacts-list"></div>
+    <div id="ff-empty" style="font-size:0.8125rem;color:var(--text-3);font-style:italic;padding:4px 0">No contacts yet.</div>
+  </div>
 
 </div>
 
@@ -1702,33 +1746,6 @@ if ("serviceWorker" in navigator) {
       </div>
 
       <div id="site-settings-error" style="display:none;margin-top:12px;padding:8px 12px;background:rgba(184,83,66,0.08);border:1px solid rgba(184,83,66,0.2);color:var(--danger);border-radius:var(--radius-sm);font-size:0.8125rem"></div>
-
-      <!-- Friends & Family -->
-      <div style="margin-top:28px">
-        <div style="font-size:0.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-3);margin-bottom:14px">Friends &amp; Family</div>
-        <p style="font-size:0.8125rem;color:var(--text-2);margin:0 0 14px">Add people you share trips with so shared trips show who shared them with you.</p>
-
-        <!-- Add form -->
-        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
-          <div style="display:flex;gap:8px">
-            <input class="field-input" id="ff-add-name"  placeholder="Name" style="flex:1;min-width:0" autocomplete="off" />
-            <select class="field-input" id="ff-add-group" style="width:110px;flex-shrink:0">
-              <option value="friends">Friends</option>
-              <option value="family">Family</option>
-              <option value="">Other</option>
-            </select>
-          </div>
-          <div style="display:flex;gap:8px">
-            <input class="field-input" id="ff-add-email" placeholder="Email address" type="email" style="flex:1;min-width:0" autocomplete="off" />
-            <button class="btn-primary" id="ff-add-btn" style="white-space:nowrap;flex-shrink:0">Add</button>
-          </div>
-          <div id="ff-add-error" style="display:none;font-size:0.8125rem;color:var(--danger)"></div>
-        </div>
-
-        <!-- Contact list -->
-        <div id="ff-contacts-list"></div>
-        <div id="ff-empty" style="font-size:0.8125rem;color:var(--text-3);font-style:italic;padding:4px 0">No contacts yet.</div>
-      </div>
 
     </div>
     <div class="modal-footer">
