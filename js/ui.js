@@ -241,7 +241,11 @@ export function renderSidebarTripList() {
       <div class="trips-sidebar-item-dates">${t.startDate ? fmtDateRange(t.startDate, t.endDate) : "Dates TBD"}</div>
     </button>`;
 
-  let html = ownedTrips.map(t => itemHTML(t, "owner")).join("");
+  let html = "";
+  if (ownedTrips.length) {
+    html += `<div class="trips-sidebar-section-label">My Trips</div>`;
+    html += ownedTrips.map(t => itemHTML(t, "owner")).join("");
+  }
 
   if (sharedTrips.length) {
     html += `<div class="trips-sidebar-section-label">Shared with me</div>`;
@@ -337,7 +341,11 @@ export function renderTripCards() {
       <div class="trips-year-cards">${filteredShared.map(cardHTML).join("")}</div>`;
   }
 
-  grid.innerHTML = myHTML + sharedHTML;
+  const myHeader = filteredMy.length && filteredShared.length
+    ? `<div class="trips-section-header">My Trips</div>`
+    : "";
+
+  grid.innerHTML = myHeader + myHTML + sharedHTML;
 
   grid.querySelectorAll(".trips-year-header").forEach(header => {
     header.addEventListener("click", () => {
