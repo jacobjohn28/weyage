@@ -634,21 +634,13 @@ export function initUploadModal() {
   // ── Upload a single item by index ────────────────────────────
   async function runOne(idx) {
     const file = _uploadFiles[idx];
-    if (!file || !_uploadCityId) {
-      // Show the reason in the status bar so it's visible on mobile
-      statusEl.textContent = !file
-        ? `Error: file ${idx} missing — please close and reopen the modal.`
-        : `Error: city context lost — please close and reopen the modal.`;
-      return;
-    }
+    if (!file || !_uploadCityId) return;
     const caption = preview.querySelector(`.upload-caption-input[data-idx="${idx}"]`)?.value.trim() || null;
     setItemStatus(idx, "uploading");
     try {
       await _uploadSinglePhoto(_uploadCityId, file, caption);
       setItemStatus(idx, "done");
-    } catch (err) {
-      // Show the error reason under the preview strip so it's visible on mobile
-      statusEl.textContent = `Failed: ${err?.message || "unknown error"}`;
+    } catch {
       setItemStatus(idx, "error");
     }
   }
