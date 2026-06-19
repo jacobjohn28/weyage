@@ -347,10 +347,12 @@ function _showMoveModal() {
   const towns = state.towns || [];
   if (!towns.length) return;
   const overlay = document.createElement("div");
-  overlay.className = "modal-overlay";
-  // z-index must sit above the select bar (8500), otherwise the bottom-aligned
-  // sheet renders behind it and appears not to open at all.
-  overlay.style.cssText = "position:fixed;inset:0;z-index:9100;display:flex;align-items:flex-end;background:rgba(0,0,0,0.5)";
+  // NB: do NOT use the .modal-overlay class here — it sets opacity:0 and
+  // pointer-events:none until a .visible class is added, which made this sheet
+  // render invisible and unclickable. All styles are inline instead.
+  // z-index must also sit above the select bar (8500), otherwise the
+  // bottom-aligned sheet renders behind it.
+  overlay.style.cssText = "position:fixed;inset:0;z-index:9100;display:flex;align-items:flex-end;background:rgba(0,0,0,0.5);opacity:1;pointer-events:auto";
   overlay.innerHTML = `
     <div id="gsc-move-sheet" style="background:var(--surface);border-radius:var(--radius-lg) var(--radius-lg) 0 0;width:100%;max-height:60vh;overflow-y:auto;padding:20px">
       <div style="font-size:0.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);margin-bottom:12px">Move ${_selectedIds.size} photo${_selectedIds.size > 1 ? "s" : ""} to…</div>
