@@ -506,7 +506,14 @@ async function _uploadSinglePhoto(cityId, file, caption) {
   const folder = `weyage/${tripId}/${cityId}`;
   const today  = new Date();
 
-  const { blob, w, h } = await _resizeImage(file);
+  // Resize to 50% — fall back to original if canvas fails (e.g. HEIC on mobile Safari)
+  let blob, w, h;
+  try {
+    ({ blob, w, h } = await _resizeImage(file));
+  } catch {
+    blob = file;
+    w = 0; h = 0;
+  }
   const { publicId, secureUrl } = await _uploadWithRetry(blob, folder);
 
   const modDate = new Date(file.lastModified);
