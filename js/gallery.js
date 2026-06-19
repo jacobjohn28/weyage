@@ -5,21 +5,72 @@ import { escapeHtml, localDateStr, btnLoading, btnReset } from "./utils.js";
 
 /* ─────────────────────────────────────────────────────────────
    IMAGE RESIZE
+
+   Two decode strategies. createImageBitmap() decodes straight from the
+   file bytes, respects EXIF orientation, and succeeds on many files the
+   <img> element path fails on (large dimensions, certain Android JPEGs,
+   files handed over by Google Photos that aren't fully materialised).
+   We try it first and fall back to the classic <img> path.
    ───────────────────────────────────────────────────────────── */
-function _resizeImage(file, scale = 0.5, quality = 0.80) {
+function _fileDiag(file) {
+  return `${file.type || "unknown type"}, ${Math.round((file.size || 0) / 1024)}KB`;
+}
+
+function _canvasToJpeg(source, scale, quality) {
+  const sw = source.width || source.naturalWidth;
+  const sh = source.height || source.naturalHeight;
+  const w = Math.max(1, Math.round(sw * scale));
+  const h = Math.max(1, Math.round(sh * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = w; canvas.height = h;
+  canvas.getContext("2d").drawImage(source, 0, 0, w, h);
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      blob => blob ? resolve({ blob, w, h }) : reject(new Error("Canvas produced no image data")),
+      "image/jpeg", quality
+    );
+  });
+}
+
+async function _resizeImage(file, scale = 0.5, quality = 0.80) {
+  // Strategy 1: createImageBitmap — fastest and most tolerant decoder.
+  if (typeof createImageBitmap === "function") {
+    let bmp;
+    try {
+      bmp = await createImageBitmap(file, { imageOrientation: "from-image" });
+    } catch {
+      try { bmp = await createImageBitmap(file); } catch { /* fall through */ }
+    }
+    if (bmp) {
+      try {
+        const out = await _canvasToJpeg(bmp, scale, quality);
+        bmp.close?.();
+        return out;
+      } catch {
+        bmp.close?.();
+        // fall through to <img> path
+      }
+    }
+  }
+
+  // Strategy 2: classic <img> element decode.
   return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
-    img.onload = () => {
-      const w = Math.max(1, Math.round(img.width * scale));
-      const h = Math.max(1, Math.round(img.height * scale));
-      const canvas = document.createElement("canvas");
-      canvas.width = w; canvas.height = h;
-      canvas.getContext("2d").drawImage(img, 0, 0, w, h);
-      URL.revokeObjectURL(url);
-      canvas.toBlob(blob => blob ? resolve({ blob, w, h }) : reject(new Error("Canvas toBlob failed")), "image/jpeg", quality);
+    img.onload = async () => {
+      try {
+        const out = await _canvasToJpeg(img, scale, quality);
+        URL.revokeObjectURL(url);
+        resolve(out);
+      } catch (e) {
+        URL.revokeObjectURL(url);
+        reject(new Error(`Couldn't process this image (${_fileDiag(file)})`));
+      }
     };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Couldn't read this image (unsupported format?)")); };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error(`Couldn't read this image (${_fileDiag(file)})`));
+    };
     img.src = url;
   });
 }
