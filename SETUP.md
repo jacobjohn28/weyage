@@ -115,7 +115,6 @@ service cloud.firestore {
 
       // Allow share viewers to record themselves in shareViewers
       allow update: if request.auth != null
-        && request.auth.firebase.sign_in_provider != 'anonymous'
         && resource.data.shareToken != null
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['shareViewers']);
 
