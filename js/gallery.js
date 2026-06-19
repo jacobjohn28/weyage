@@ -78,7 +78,7 @@ async function _resizeImage(file, scale = 0.5, quality = 0.80) {
 /* ─────────────────────────────────────────────────────────────
    CLOUDINARY UPLOAD  (unsigned — no auth required)
    ───────────────────────────────────────────────────────────── */
-async function _uploadToCloudinary(blob, folder) {
+async function _uploadToCloudinary(blob, folder, timeoutMs = 45000) {
   const { cloudName, uploadPreset } = CLOUDINARY_CONFIG;
   if (!cloudName || !uploadPreset) throw new Error("Cloudinary not configured — add cloudName and uploadPreset to config.js.");
 
@@ -87,15 +87,23 @@ async function _uploadToCloudinary(blob, folder) {
   fd.append("upload_preset", uploadPreset);
   fd.append("folder", folder);
 
+  // Abort hung uploads so they throw (and get retried) instead of stalling
+  // forever — common on flaky mobile connections with large original files.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   let res;
   try {
     res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
       method: "POST",
       body: fd,
+      signal: controller.signal,
     });
   } catch (netErr) {
-    // fetch() rejects only on network failure (offline, DNS, CORS, connection drop)
+    // fetch() rejects on network failure (offline, DNS, CORS, drop) or abort/timeout
+    if (netErr?.name === "AbortError") throw new Error("Upload timed out — connection too slow.");
     throw new Error("Network error — check your connection and try again.");
+  } finally {
+    clearTimeout(timer);
   }
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
@@ -697,6 +705,10 @@ export function initUploadModal() {
       item.querySelector(".upload-item-error-msg")?.remove();
       statusEl2.innerHTML = `<div class="upload-spinner"></div>`;
     } else if (status === "done") {
+      // Clear the spinner immediately — otherwise it lingers in the DOM during
+      // the 420ms fade-out and fools refreshGlobalStatus into thinking an upload
+      // is still in flight, leaving the modal stuck on "Uploading…".
+      statusEl2.innerHTML = "";
       item.classList.add("upload-item-done");
       item.style.transition = "opacity 0.4s, max-height 0.4s, margin 0.4s, padding 0.4s";
       item.style.opacity = "0";
