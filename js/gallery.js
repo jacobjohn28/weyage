@@ -6,14 +6,13 @@ import { escapeHtml, localDateStr, btnLoading, btnReset } from "./utils.js";
 /* ─────────────────────────────────────────────────────────────
    IMAGE RESIZE
    ───────────────────────────────────────────────────────────── */
-function _resizeImage(file, maxPx = 2000, quality = 0.85) {
+function _resizeImage(file, scale = 0.5, quality = 0.80) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
     img.onload = () => {
-      const scale = Math.min(1, maxPx / Math.max(img.width, img.height));
-      const w = Math.round(img.width * scale);
-      const h = Math.round(img.height * scale);
+      const w = Math.max(1, Math.round(img.width * scale));
+      const h = Math.max(1, Math.round(img.height * scale));
       const canvas = document.createElement("canvas");
       canvas.width = w; canvas.height = h;
       canvas.getContext("2d").drawImage(img, 0, 0, w, h);
@@ -52,45 +51,55 @@ async function _uploadToCloudinary(blob, folder) {
 /* ─────────────────────────────────────────────────────────────
    PUBLIC: UPLOAD PHOTOS  (sequential — avoids memory / rate-limit issues)
    ───────────────────────────────────────────────────────────── */
+async function _uploadWithRetry(blob, folder, maxRetries = 2) {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await _uploadToCloudinary(blob, folder);
+    } catch (err) {
+      if (attempt === maxRetries) throw err;
+      await new Promise(r => setTimeout(r, 1500 * (attempt + 1)));
+    }
+  }
+}
+
 export async function uploadPhotosForCity(cityId, files, captions, statusCallback) {
   if (!files.length) return;
 
   const tripId = activeTripId;
   const folder = `weyage/${tripId}/${cityId}`;
   const today = new Date();
+  const failed = [];
 
-  // Step 1: resize sequentially (avoids memory spikes from parallel canvas ops)
-  statusCallback?.("Preparing photos…");
-  const resized = [];
   for (let i = 0; i < files.length; i++) {
-    statusCallback?.(`Preparing ${i + 1} of ${files.length}…`);
-    resized.push(await _resizeImage(files[i], 1200, 0.80));
+    const file = files[i];
+    statusCallback?.(`Photo ${i + 1} of ${files.length}: resizing…`);
+    try {
+      const { blob, w, h } = await _resizeImage(file);
+
+      statusCallback?.(`Photo ${i + 1} of ${files.length}: uploading…`);
+      const { publicId, secureUrl } = await _uploadWithRetry(blob, folder);
+
+      const modDate = new Date(file.lastModified);
+      const takenDate = (modDate.getFullYear() < today.getFullYear() ||
+        (modDate.getFullYear() === today.getFullYear() && modDate.getMonth() < today.getMonth()))
+        ? localDateStr(modDate) : null;
+
+      await addDoc(collection(db, "trips", tripId, "cityGallery"), {
+        cityId, publicId, secureUrl,
+        name: file.name,
+        caption: captions?.[i] || null,
+        takenDate, width: w, height: h,
+        uploadedBy: auth.currentUser?.uid || null,
+        uploadedAt: serverTimestamp(),
+      });
+      // Photo now live in Firestore — onSnapshot fires and shows it in gallery immediately
+    } catch (err) {
+      console.error(`Failed: ${file.name}`, err);
+      failed.push(file.name);
+    }
   }
 
-  // Step 2: upload all to Cloudinary in parallel (main speed win)
-  statusCallback?.(`Uploading ${files.length} photo${files.length !== 1 ? "s" : ""}…`);
-  const uploaded = await Promise.all(resized.map(({ blob }) => _uploadToCloudinary(blob, folder)));
-
-  // Step 3: write all Firestore docs in parallel
-  statusCallback?.("Saving…");
-  await Promise.all(files.map((file, i) => {
-    const modDate = new Date(file.lastModified);
-    const takenDate = (modDate.getFullYear() < today.getFullYear() ||
-      (modDate.getFullYear() === today.getFullYear() && modDate.getMonth() < today.getMonth()))
-      ? localDateStr(modDate) : null;
-    return addDoc(collection(db, "trips", tripId, "cityGallery"), {
-      cityId,
-      publicId: uploaded[i].publicId,
-      secureUrl: uploaded[i].secureUrl,
-      name: file.name,
-      caption: captions?.[i] || null,
-      takenDate,
-      width: resized[i].w,
-      height: resized[i].h,
-      uploadedBy: auth.currentUser?.uid || null,
-      uploadedAt: serverTimestamp(),
-    });
-  }));
+  if (failed.length) throw new Error(`${failed.length} photo${failed.length > 1 ? "s" : ""} failed: ${failed.join(", ")}`);
 }
 
 /* ─────────────────────────────────────────────────────────────
