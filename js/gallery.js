@@ -654,8 +654,8 @@ export function initUploadModal() {
       await runOne(i);
     }
 
-    // Check if any items remain (errors)
-    const remaining = preview.querySelectorAll(".upload-preview-item").length;
+    // Count items that are not done (done items are fading out but still in DOM briefly)
+    const remaining = preview.querySelectorAll(".upload-preview-item:not(.upload-item-done)").length;
     if (remaining === 0) {
       statusEl.textContent = "✓ All photos uploaded!";
       setTimeout(closeUploadModal, 1200);

@@ -4397,7 +4397,7 @@ body.share-mode .transit-entry-del { display: none !important; }
   #gallery-upload-modal.visible { display: flex; }
   /* Upload preview: vertical list, one photo per row */
   .upload-preview-item {
-    display: flex; align-items: flex-start; gap: 12px;
+    display: flex; align-items: center; gap: 12px;
     padding: 10px 0; border-bottom: 1px solid var(--border);
     width: 100%;
   }
