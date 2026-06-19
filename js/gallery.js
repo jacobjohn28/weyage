@@ -684,7 +684,7 @@ export function initUploadModal() {
         <div class="upload-preview-item-info">
           <div class="upload-preview-item-name">${escapeHtml(f.name)}</div>
           <input class="field-input upload-caption-input" type="text"
-            placeholder="Caption (optional)" data-idx="${i}"
+            placeholder="Caption (optional)" data-idx="${i}" autocomplete="off"
             style="margin-top:4px;font-size:0.8125rem" />
         </div>
         <div class="upload-item-status" data-idx="${i}"></div>
