@@ -13,7 +13,7 @@ import { renderGuides, generateAllGuides } from "./guides.js";
 import { renderBudget, renderExpenses, CURRENCY_LIST } from "./budget.js";
 import { renderDocuments } from "./documents.js";
 import { renderDisruption } from "./disruption.js";
-import { renderGallery, initGalleryLightbox, initUploadModal, openUploadModal, closeUploadModal } from "./gallery.js";
+import { renderGallery, initGalleryLightbox, initUploadModal, openUploadModal, closeUploadModal, enterSelectMode, exitSelectMode } from "./gallery.js";
 import { openTripSettings } from "./settings.js";
 import { contactNameForEmail, initContactsPanel, renderContactsPanel } from "./contacts.js";
 import { closePhotoPicker, startBackfillForTrip } from "./photos.js";
@@ -624,6 +624,11 @@ export function initUI() {
   // Gallery lightbox + upload modal
   try { initGalleryLightbox(); } catch (e) { console.error("Gallery lightbox init:", e); }
   try { initUploadModal(); } catch (e) { console.error("Gallery upload modal init:", e); }
+  document.getElementById("gallery-select-btn")?.addEventListener("click", () => {
+    const btn = document.getElementById("gallery-select-btn");
+    if (btn?.textContent === "Cancel") exitSelectMode();
+    else enterSelectMode();
+  });
   initContactsPanel();
   document.getElementById("upload-cancel-btn")?.addEventListener("click", closeUploadModal);
 

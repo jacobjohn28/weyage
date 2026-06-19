@@ -252,16 +252,20 @@ export function initGalleryLightbox() {
 let _selectMode = false;
 let _selectedIds = new Set();
 
-function _enterSelectMode(photoId) {
+export function enterSelectMode() {
   _selectMode = true;
-  _selectedIds = new Set([photoId]);
+  _selectedIds = new Set();
+  const btn = document.getElementById("gallery-select-btn");
+  if (btn) btn.textContent = "Cancel";
   _renderSelectBar();
   renderGallery();
 }
 
-function _exitSelectMode() {
+export function exitSelectMode() {
   _selectMode = false;
   _selectedIds.clear();
+  const btn = document.getElementById("gallery-select-btn");
+  if (btn) btn.textContent = "Select";
   document.getElementById("gallery-select-bar")?.remove();
   renderGallery();
 }
@@ -296,7 +300,7 @@ function _renderSelectBar() {
       <button class="gallery-select-bar-btn" id="gsc-move" ${n === 0 ? "disabled" : ""}>Move to…</button>
       <button class="gallery-select-bar-btn gallery-select-bar-delete" id="gsc-delete" ${n === 0 ? "disabled" : ""}>Delete</button>
     </div>`;
-  bar.querySelector("#gsc-cancel").addEventListener("click", _exitSelectMode);
+  bar.querySelector("#gsc-cancel").addEventListener("click", exitSelectMode);
   bar.querySelector("#gsc-delete").addEventListener("click", _deleteSelected);
   bar.querySelector("#gsc-move").addEventListener("click", _showMoveModal);
 }
@@ -311,7 +315,7 @@ async function _deleteSelected() {
       const photo = (state.cityGallery || []).find(p => p.publicId === publicId);
       return photo?.id ? deleteDoc(doc(db, "trips", tripId, "cityGallery", photo.id)) : Promise.resolve();
     }));
-    _exitSelectMode();
+    exitSelectMode();
   } catch (e) { alert("Delete failed: " + e.message); }
 }
 
@@ -346,7 +350,7 @@ async function _moveSelected(newCityId) {
       const photo = (state.cityGallery || []).find(p => p.publicId === publicId);
       return photo?.id ? updateDoc(doc(db, "trips", tripId, "cityGallery", photo.id), { cityId: newCityId }) : Promise.resolve();
     }));
-    _exitSelectMode();
+    exitSelectMode();
   } catch (e) { alert("Move failed: " + e.message); }
 }
 
@@ -399,30 +403,10 @@ export function renderGallery(filterCityId) {
     container.innerHTML = sortedCities.map(t => _buildCitySection(t, byCity[t.id], false)).join("");
   }
 
-  // Wire thumbnails — click or long-press
+  // Wire thumbnails
   container.querySelectorAll(".gallery-thumb").forEach(thumb => {
     const publicId = thumb.dataset.publicid;
     const cityId = thumb.dataset.cityid;
-
-    // Mark selected if in select mode
-    if (_selectMode && _selectedIds.has(publicId)) {
-      thumb.classList.add("gallery-thumb-selected");
-      const chk = thumb.querySelector(".gallery-thumb-check");
-      if (chk) chk.style.display = "";
-    }
-
-    let _pressTimer = null;
-
-    const onLongPress = () => {
-      if (!state.shareMode) _enterSelectMode(publicId);
-    };
-
-    thumb.addEventListener("pointerdown", () => {
-      _pressTimer = setTimeout(onLongPress, 500);
-    });
-    thumb.addEventListener("pointerup", () => clearTimeout(_pressTimer));
-    thumb.addEventListener("pointercancel", () => clearTimeout(_pressTimer));
-    thumb.addEventListener("pointermove", () => clearTimeout(_pressTimer));
 
     thumb.addEventListener("click", () => {
       if (_selectMode) {
