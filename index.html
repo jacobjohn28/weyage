@@ -1442,8 +1442,25 @@
 
 <script>
 if ("serviceWorker" in navigator) {
+  // Auto-reload exactly once when a newly-installed service worker takes
+  // control, so a deploy propagates without clearing caches or reloading twice.
+  // Guarded two ways: the _swRefreshing flag prevents reload loops, and we only
+  // attach the listener when a controller already exists — the very first
+  // install also fires controllerchange (via clients.claim) and must NOT reload.
+  let _swRefreshing = false;
+  if (navigator.serviceWorker.controller) {
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (_swRefreshing) return;
+      _swRefreshing = true;
+      window.location.reload();
+    });
+  }
+
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js", { scope: "./" })
+    // updateViaCache:"none" forces sw.js to be fetched from the network (not the
+    // browser's HTTP cache) on every update check. Without this, a phone can sit
+    // on a stale sw.js for up to 24h and never notice a new version.
+    navigator.serviceWorker.register("./sw.js", { scope: "./", updateViaCache: "none" })
       .then(reg => {
         // Poll for updates immediately, then every hour.
         // Also re-check whenever the user brings the PWA back to the foreground —
@@ -1453,38 +1470,11 @@ if ("serviceWorker" in navigator) {
         document.addEventListener("visibilitychange", () => {
           if (document.visibilityState === "visible") reg.update();
         });
-
-        // The reliable update signal: new SW found → wait for it to activate
-        // (skipWaiting in sw.js means activation happens immediately after install).
-        reg.addEventListener("updatefound", () => {
-          const newWorker = reg.installing;
-          if (!newWorker) return;
-          newWorker.addEventListener("statechange", () => {
-            // Only prompt when a new SW has actually taken over, and only if
-            // there was already a controller (i.e. not the very first install).
-            if (newWorker.state === "activated" && navigator.serviceWorker.controller) {
-              _showUpdateBanner();
-            }
-          });
-        });
+        // skipWaiting() in sw.js activates the new worker immediately, which then
+        // claims the page and fires the controllerchange handler above → reload.
       })
       .catch(err => console.warn("SW registration failed:", err));
   });
-
-  function _showUpdateBanner() {
-    const banner = document.getElementById("update-banner");
-    if (!banner || banner.classList.contains("visible")) return;
-    banner.classList.add("visible");
-    const autoDismiss = setTimeout(() => banner.classList.remove("visible"), 60_000);
-    document.getElementById("update-banner-refresh").onclick = () => {
-      clearTimeout(autoDismiss);
-      window.location.reload();
-    };
-    document.getElementById("update-banner-dismiss").onclick = () => {
-      clearTimeout(autoDismiss);
-      banner.classList.remove("visible");
-    };
-  }
 }
 </script>
 
@@ -1802,7 +1792,7 @@ if ("serviceWorker" in navigator) {
         <button class="modal-btn-secondary" id="site-settings-cancel-btn">Cancel</button>
         <button class="modal-btn-primary" id="site-settings-save-btn">Save</button>
       </div>
-      <div style="text-align:center;font-size:0.75rem;color:var(--text-3);letter-spacing:0.03em">v1.4.1.2</div>
+      <div style="text-align:center;font-size:0.75rem;color:var(--text-3);letter-spacing:0.03em">v1.4.1.3</div>
     </div>
   </div>
 </div>
