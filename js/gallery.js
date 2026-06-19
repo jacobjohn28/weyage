@@ -499,10 +499,37 @@ export function wireCityPhotoStrip(el, cityId) {
 }
 
 /* ─────────────────────────────────────────────────────────────
+   SINGLE-PHOTO UPLOAD  (used by modal and retry buttons)
+   ───────────────────────────────────────────────────────────── */
+async function _uploadSinglePhoto(cityId, file, caption) {
+  const tripId = activeTripId;
+  const folder = `weyage/${tripId}/${cityId}`;
+  const today  = new Date();
+
+  const { blob, w, h } = await _resizeImage(file);
+  const { publicId, secureUrl } = await _uploadWithRetry(blob, folder);
+
+  const modDate = new Date(file.lastModified);
+  const takenDate = (modDate.getFullYear() < today.getFullYear() ||
+    (modDate.getFullYear() === today.getFullYear() && modDate.getMonth() < today.getMonth()))
+    ? localDateStr(modDate) : null;
+
+  await addDoc(collection(db, "trips", tripId, "cityGallery"), {
+    cityId, publicId, secureUrl,
+    name: file.name,
+    caption: caption || null,
+    takenDate, width: w, height: h,
+    uploadedBy: auth.currentUser?.uid || null,
+    uploadedAt: serverTimestamp(),
+  });
+}
+
+/* ─────────────────────────────────────────────────────────────
    UPLOAD MODAL
    ───────────────────────────────────────────────────────────── */
 let _uploadCityId = null;
-let _onUploadFileChange = () => {};
+let _uploadFiles  = [];       // kept so retry buttons can reference the original File objects
+let _uploadObjectUrls = [];   // tracked for cleanup
 
 export function openUploadModal(cityId) {
   _uploadCityId = cityId;
@@ -511,11 +538,15 @@ export function openUploadModal(cityId) {
   const town = state.towns.find(t => t.id === cityId);
   modal.querySelector("#upload-modal-city").textContent = town?.name || "City";
 
-  // Fully reset file input by replacing the element
+  // Revoke old object URLs and reset state
+  _uploadObjectUrls.forEach(u => URL.revokeObjectURL(u));
+  _uploadObjectUrls = [];
+  _uploadFiles = [];
+
+  // Replace file input so it's fully reset
   const oldInput = modal.querySelector("#upload-file-input");
   const newInput = oldInput.cloneNode(true);
   oldInput.replaceWith(newInput);
-  newInput.addEventListener("change", _onUploadFileChange);
 
   modal.querySelector("#upload-preview-strip").innerHTML = "";
   modal.querySelector("#upload-status").textContent = "";
@@ -527,6 +558,9 @@ export function openUploadModal(cityId) {
 
 export function closeUploadModal() {
   document.getElementById("gallery-upload-modal")?.classList.remove("visible");
+  _uploadObjectUrls.forEach(u => URL.revokeObjectURL(u));
+  _uploadObjectUrls = [];
+  _uploadFiles = [];
   _uploadCityId = null;
 }
 
@@ -542,43 +576,95 @@ export function initUploadModal() {
   modal.addEventListener("click", e => { if (e.target === modal) closeUploadModal(); });
   modal.querySelector("#upload-modal-sheet")?.addEventListener("click", e => e.stopPropagation());
 
-  _onUploadFileChange = () => {
-    const fileInput = modal.querySelector("#upload-file-input");
-    const files = Array.from(fileInput.files);
-    if (!files.length) return;
+  // ── File picker ──────────────────────────────────────────────
+  modal.querySelector("#upload-file-input")?.addEventListener("change", function () {
+    _uploadFiles = Array.from(this.files);
+    if (!_uploadFiles.length) return;
 
-    // Build vertical list: thumbnail + caption input per photo
-    preview.innerHTML = files.map((f, i) => `
-      <div class="upload-preview-item">
-        <img src="${URL.createObjectURL(f)}" alt="" />
+    _uploadObjectUrls.forEach(u => URL.revokeObjectURL(u));
+    _uploadObjectUrls = _uploadFiles.map(f => URL.createObjectURL(f));
+
+    preview.innerHTML = _uploadFiles.map((f, i) => `
+      <div class="upload-preview-item" data-idx="${i}">
+        <img src="${_uploadObjectUrls[i]}" alt="" />
         <div class="upload-preview-item-info">
           <div class="upload-preview-item-name">${escapeHtml(f.name)}</div>
           <input class="field-input upload-caption-input" type="text"
             placeholder="Caption (optional)" data-idx="${i}"
             style="margin-top:4px;font-size:0.8125rem" />
         </div>
+        <div class="upload-item-status" data-idx="${i}"></div>
       </div>`).join("");
 
     submitBtn.disabled = false;
-    statusEl.textContent = `${files.length} photo${files.length !== 1 ? "s" : ""} selected`;
-  };
-
-  modal.querySelector("#upload-file-input")?.addEventListener("change", _onUploadFileChange);
-
-  submitBtn.addEventListener("click", async () => {
-    const fileInput = modal.querySelector("#upload-file-input");
-    const files = Array.from(fileInput.files);
-    if (!files.length || !_uploadCityId) return;
-    const captions = Array.from(preview.querySelectorAll(".upload-caption-input")).map(el => el.value.trim() || null);
-    btnLoading(submitBtn, "Uploading…");
     statusEl.textContent = "";
+  });
+
+  // ── Per-item status helpers ───────────────────────────────────
+  function setItemStatus(idx, status) {
+    const item = preview.querySelector(`.upload-preview-item[data-idx="${idx}"]`);
+    const statusEl2 = item?.querySelector(".upload-item-status");
+    if (!item || !statusEl2) return;
+
+    if (status === "uploading") {
+      item.classList.remove("upload-item-error");
+      statusEl2.innerHTML = `<div class="upload-spinner"></div>`;
+    } else if (status === "done") {
+      item.classList.add("upload-item-done");
+      item.style.transition = "opacity 0.4s, max-height 0.4s, margin 0.4s, padding 0.4s";
+      item.style.opacity = "0";
+      item.style.maxHeight = "0";
+      item.style.overflow = "hidden";
+      item.style.marginBottom = "0";
+      setTimeout(() => item.remove(), 420);
+    } else if (status === "error") {
+      item.classList.add("upload-item-error");
+      statusEl2.innerHTML = `
+        <button class="upload-retry-btn" title="Retry this photo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18">
+            <polyline points="1 4 1 10 7 10"/>
+            <path d="M3.51 15a9 9 0 1 0 .49-4.5"/>
+          </svg>
+        </button>`;
+      statusEl2.querySelector(".upload-retry-btn").addEventListener("click", () => runOne(idx));
+    }
+  }
+
+  // ── Upload a single item by index ────────────────────────────
+  async function runOne(idx) {
+    const file = _uploadFiles[idx];
+    if (!file || !_uploadCityId) return;
+    const caption = preview.querySelector(`.upload-caption-input[data-idx="${idx}"]`)?.value.trim() || null;
+    setItemStatus(idx, "uploading");
     try {
-      await uploadPhotosForCity(_uploadCityId, files, captions, msg => { statusEl.textContent = msg; });
-      statusEl.textContent = `✓ ${files.length} photo${files.length !== 1 ? "s" : ""} uploaded!`;
-      setTimeout(closeUploadModal, 1400);
-    } catch (err) {
-      statusEl.textContent = err.message;
-      btnReset(submitBtn);
+      await _uploadSinglePhoto(_uploadCityId, file, caption);
+      setItemStatus(idx, "done");
+    } catch {
+      setItemStatus(idx, "error");
+    }
+  }
+
+  // ── Upload all button ────────────────────────────────────────
+  submitBtn.addEventListener("click", async () => {
+    if (!_uploadFiles.length || !_uploadCityId) return;
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Uploading…";
+    statusEl.textContent = "";
+
+    for (let i = 0; i < _uploadFiles.length; i++) {
+      await runOne(i);
+    }
+
+    // Check if any items remain (errors)
+    const remaining = preview.querySelectorAll(".upload-preview-item").length;
+    if (remaining === 0) {
+      statusEl.textContent = "✓ All photos uploaded!";
+      setTimeout(closeUploadModal, 1200);
+    } else {
+      statusEl.textContent = `${remaining} photo${remaining > 1 ? "s" : ""} failed — tap ↺ to retry individually.`;
+      submitBtn.textContent = "Done";
+      submitBtn.disabled = false;
+      submitBtn.addEventListener("click", closeUploadModal, { once: true });
     }
   });
 }
