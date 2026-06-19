@@ -50,7 +50,7 @@ async function _uploadToCloudinary(blob, folder) {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   PUBLIC: UPLOAD PHOTOS
+   PUBLIC: UPLOAD PHOTOS  (sequential — avoids memory / rate-limit issues)
    ───────────────────────────────────────────────────────────── */
 export async function uploadPhotosForCity(cityId, files, captions, statusCallback) {
   if (!files.length) return;
@@ -58,35 +58,39 @@ export async function uploadPhotosForCity(cityId, files, captions, statusCallbac
   const tripId = activeTripId;
   const folder = `weyage/${tripId}/${cityId}`;
   const today = new Date();
+  let failed = 0;
 
-  statusCallback?.(`Uploading ${files.length} photo${files.length !== 1 ? "s" : ""}…`);
-
-  // Resize all locally first, then upload in parallel
-  const resized = await Promise.all(files.map(f => _resizeImage(f)));
-
-  await Promise.all(resized.map(async ({ blob, w, h }, i) => {
+  for (let i = 0; i < files.length; i++) {
     const file = files[i];
-    const { publicId, secureUrl } = await _uploadToCloudinary(blob, folder);
+    statusCallback?.(`Uploading ${i + 1} of ${files.length}…`);
+    try {
+      const { blob, w, h } = await _resizeImage(file);
+      const { publicId, secureUrl } = await _uploadToCloudinary(blob, folder);
 
-    const modDate = new Date(file.lastModified);
-    const takenDate = (modDate.getFullYear() < today.getFullYear() ||
-      (modDate.getFullYear() === today.getFullYear() && modDate.getMonth() < today.getMonth()))
-      ? localDateStr(modDate)
-      : null;
+      const modDate = new Date(file.lastModified);
+      const takenDate = (modDate.getFullYear() < today.getFullYear() ||
+        (modDate.getFullYear() === today.getFullYear() && modDate.getMonth() < today.getMonth()))
+        ? localDateStr(modDate) : null;
 
-    await addDoc(collection(db, "trips", tripId, "cityGallery"), {
-      cityId,
-      publicId,
-      secureUrl,
-      name: file.name,
-      caption: captions?.[i] || null,
-      takenDate,
-      width: w,
-      height: h,
-      uploadedBy: auth.currentUser?.uid || null,
-      uploadedAt: serverTimestamp(),
-    });
-  }));
+      await addDoc(collection(db, "trips", tripId, "cityGallery"), {
+        cityId,
+        publicId,
+        secureUrl,
+        name: file.name,
+        caption: captions?.[i] || null,
+        takenDate,
+        width: w,
+        height: h,
+        uploadedBy: auth.currentUser?.uid || null,
+        uploadedAt: serverTimestamp(),
+      });
+    } catch (err) {
+      console.error(`Upload failed for ${file.name}:`, err);
+      failed++;
+    }
+  }
+
+  if (failed > 0) throw new Error(`${failed} photo${failed > 1 ? "s" : ""} failed to upload. Please try again.`);
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -117,15 +121,19 @@ let _lbTouchStartX = 0;
 function _lbShow(photos, index) {
   _lbPhotos = photos;
   _lbIndex  = Math.max(0, Math.min(index, photos.length - 1));
-  _lbRender();
-  document.getElementById("gallery-lightbox").classList.add("visible");
+  // Open first, then render — ensures lightbox is visible even if render has an issue
+  const lb = document.getElementById("gallery-lightbox");
+  if (!lb) return;
+  lb.classList.add("visible");
   document.body.style.overflow = "hidden";
+  try { _lbRender(); } catch (e) { console.error("Lightbox render:", e); }
 }
 
 export function galleryLightboxClose() {
   document.getElementById("gallery-lightbox")?.classList.remove("visible");
   document.body.style.overflow = "";
   _lbPhotos = [];
+  _lbIndex = 0;
 }
 
 function _lbRender() {
@@ -134,28 +142,37 @@ function _lbRender() {
   const photo = _lbPhotos[_lbIndex];
   if (!photo) return;
 
-  const town = state.towns.find(t => t.id === photo.cityId);
+  const town = state.towns?.find(t => t.id === photo.cityId);
   const dateStr = photo.takenDate
     ? new Date(photo.takenDate + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
     : "";
 
-  lb.querySelector("#lb-img").src = photoFullUrl(photo);
-  lb.querySelector("#lb-img").alt = escapeHtml(photo.caption || photo.name || "");
-  lb.querySelector("#lb-caption-text").textContent = photo.caption || "";
-  lb.querySelector("#lb-caption-text").style.display = photo.caption ? "" : "none";
-  lb.querySelector("#lb-meta").textContent = [town?.name, dateStr].filter(Boolean).join(" · ");
-  lb.querySelector("#lb-counter").textContent = `${_lbIndex + 1} / ${_lbPhotos.length}`;
-  lb.querySelector("#lb-prev").style.visibility = _lbIndex > 0 ? "visible" : "hidden";
-  lb.querySelector("#lb-next").style.visibility = _lbIndex < _lbPhotos.length - 1 ? "visible" : "hidden";
+  const img = lb.querySelector("#lb-img");
+  if (img) { img.src = photoFullUrl(photo); img.alt = escapeHtml(photo.caption || photo.name || ""); }
 
-  // Caption edit — only for owner in non-share mode
-  const isOwner = !state.shareMode && photo.uploadedBy === (auth.currentUser?.uid || null);
-  const captionEditBtn = lb.querySelector("#lb-caption-edit-btn");
-  if (captionEditBtn) captionEditBtn.style.display = isOwner ? "" : "none";
-  // Hide edit form when navigating
-  lb.querySelector("#lb-caption-edit-wrap").style.display = "none";
+  const captionEl = lb.querySelector("#lb-caption-text");
+  if (captionEl) {
+    captionEl.textContent = photo.caption || "";
+    captionEl.style.display = photo.caption ? "" : "none";
+  }
 
-  // Delete button — only for owner
+  const metaEl = lb.querySelector("#lb-meta");
+  if (metaEl) metaEl.textContent = [town?.name, dateStr].filter(Boolean).join(" · ");
+
+  const counterEl = lb.querySelector("#lb-counter");
+  if (counterEl) counterEl.textContent = `${_lbIndex + 1} / ${_lbPhotos.length}`;
+
+  const prevBtn = lb.querySelector("#lb-prev");
+  if (prevBtn) prevBtn.style.visibility = _lbIndex > 0 ? "visible" : "hidden";
+  const nextBtn = lb.querySelector("#lb-next");
+  if (nextBtn) nextBtn.style.visibility = _lbIndex < _lbPhotos.length - 1 ? "visible" : "hidden";
+
+  // Caption edit & delete — only for owner in non-share mode
+  const isOwner = !state.shareMode && !!auth.currentUser && photo.uploadedBy === auth.currentUser.uid;
+  const editBtn = lb.querySelector("#lb-caption-edit-btn");
+  if (editBtn) editBtn.style.display = isOwner ? "" : "none";
+  const editWrap = lb.querySelector("#lb-caption-edit-wrap");
+  if (editWrap) editWrap.style.display = "none";
   const delBtn = lb.querySelector("#lb-delete-btn");
   if (delBtn) delBtn.style.display = isOwner ? "" : "none";
 }
@@ -176,7 +193,6 @@ export function initGalleryLightbox() {
     if (_lbIndex < _lbPhotos.length - 1) { _lbIndex++; _lbRender(); }
   });
 
-  // Keyboard
   document.addEventListener("keydown", e => {
     if (!lb.classList.contains("visible")) return;
     if (e.key === "ArrowLeft" && _lbIndex > 0) { _lbIndex--; _lbRender(); }
@@ -184,7 +200,6 @@ export function initGalleryLightbox() {
     if (e.key === "Escape") galleryLightboxClose();
   });
 
-  // Touch swipe
   lb.addEventListener("touchstart", e => { _lbTouchStartX = e.touches[0].clientX; }, { passive: true });
   lb.addEventListener("touchend", e => {
     const dx = e.changedTouches[0].clientX - _lbTouchStartX;
@@ -194,40 +209,145 @@ export function initGalleryLightbox() {
   }, { passive: true });
 
   // Caption editing
-  lb.querySelector("#lb-caption-edit-btn")?.addEventListener("click", () => {
+  lb.querySelector("#lb-caption-edit-btn")?.addEventListener("click", e => {
+    e.stopPropagation();
     const photo = _lbPhotos[_lbIndex];
-    lb.querySelector("#lb-caption-input").value = photo?.caption || "";
+    const inputEl = lb.querySelector("#lb-caption-input");
+    if (inputEl) inputEl.value = photo?.caption || "";
     lb.querySelector("#lb-caption-edit-wrap").style.display = "";
-    lb.querySelector("#lb-caption-input").focus();
+    inputEl?.focus();
   });
   lb.querySelector("#lb-caption-cancel-btn")?.addEventListener("click", () => {
     lb.querySelector("#lb-caption-edit-wrap").style.display = "none";
   });
   lb.querySelector("#lb-caption-save-btn")?.addEventListener("click", async () => {
     const photo = _lbPhotos[_lbIndex];
-    if (!photo) return;
-    const newCaption = lb.querySelector("#lb-caption-input").value.trim() || null;
+    if (!photo?.id) return;
+    const newCaption = (lb.querySelector("#lb-caption-input")?.value || "").trim() || null;
     try {
       await updateDoc(doc(db, "trips", activeTripId, "cityGallery", photo.id), { caption: newCaption });
       photo.caption = newCaption;
-    } catch (e) {
-      console.error("Caption save:", e);
-    }
+    } catch (e) { console.error("Caption save:", e); }
     _lbRender();
   });
 
   // Delete
   lb.querySelector("#lb-delete-btn")?.addEventListener("click", async () => {
     const photo = _lbPhotos[_lbIndex];
-    if (!photo) return;
+    if (!photo?.id) return;
     if (!confirm("Delete this photo? This cannot be undone.")) return;
-    await deleteDoc(doc(db, "trips", activeTripId, "cityGallery", photo.id));
-    // Remove from local array and advance/close
-    _lbPhotos.splice(_lbIndex, 1);
-    if (_lbPhotos.length === 0) { galleryLightboxClose(); return; }
-    _lbIndex = Math.min(_lbIndex, _lbPhotos.length - 1);
-    _lbRender();
+    try {
+      await deleteDoc(doc(db, "trips", activeTripId, "cityGallery", photo.id));
+      _lbPhotos.splice(_lbIndex, 1);
+      if (!_lbPhotos.length) { galleryLightboxClose(); return; }
+      _lbIndex = Math.min(_lbIndex, _lbPhotos.length - 1);
+      _lbRender();
+    } catch (e) { alert("Delete failed: " + e.message); }
   });
+}
+
+/* ─────────────────────────────────────────────────────────────
+   MULTI-SELECT STATE
+   ───────────────────────────────────────────────────────────── */
+let _selectMode = false;
+let _selectedIds = new Set();
+
+function _enterSelectMode(photoId) {
+  _selectMode = true;
+  _selectedIds = new Set([photoId]);
+  _renderSelectBar();
+  renderGallery();
+}
+
+function _exitSelectMode() {
+  _selectMode = false;
+  _selectedIds.clear();
+  document.getElementById("gallery-select-bar")?.remove();
+  renderGallery();
+}
+
+function _toggleSelect(photoId) {
+  if (_selectedIds.has(photoId)) _selectedIds.delete(photoId);
+  else _selectedIds.add(photoId);
+  _renderSelectBar();
+  // Update overlay checkmarks without full re-render
+  document.querySelectorAll(".gallery-thumb").forEach(btn => {
+    const selected = _selectedIds.has(btn.dataset.publicid);
+    btn.classList.toggle("gallery-thumb-selected", selected);
+    const chk = btn.querySelector(".gallery-thumb-check");
+    if (chk) chk.style.display = selected ? "" : "none";
+  });
+}
+
+function _renderSelectBar() {
+  let bar = document.getElementById("gallery-select-bar");
+  if (!bar) {
+    bar = document.createElement("div");
+    bar.id = "gallery-select-bar";
+    bar.className = "gallery-select-bar";
+    // Insert as fixed overlay — attach to body
+    document.body.appendChild(bar);
+  }
+  const n = _selectedIds.size;
+  bar.innerHTML = `
+    <button class="gallery-select-bar-cancel" id="gsc-cancel">Cancel</button>
+    <span class="gallery-select-bar-count">${n} selected</span>
+    <div style="display:flex;gap:8px">
+      <button class="gallery-select-bar-btn" id="gsc-move" ${n === 0 ? "disabled" : ""}>Move to…</button>
+      <button class="gallery-select-bar-btn gallery-select-bar-delete" id="gsc-delete" ${n === 0 ? "disabled" : ""}>Delete</button>
+    </div>`;
+  bar.querySelector("#gsc-cancel").addEventListener("click", _exitSelectMode);
+  bar.querySelector("#gsc-delete").addEventListener("click", _deleteSelected);
+  bar.querySelector("#gsc-move").addEventListener("click", _showMoveModal);
+}
+
+async function _deleteSelected() {
+  const ids = [..._selectedIds];
+  if (!ids.length) return;
+  if (!confirm(`Delete ${ids.length} photo${ids.length > 1 ? "s" : ""}? This cannot be undone.`)) return;
+  const tripId = activeTripId;
+  try {
+    await Promise.all(ids.map(publicId => {
+      const photo = (state.cityGallery || []).find(p => p.publicId === publicId);
+      return photo?.id ? deleteDoc(doc(db, "trips", tripId, "cityGallery", photo.id)) : Promise.resolve();
+    }));
+    _exitSelectMode();
+  } catch (e) { alert("Delete failed: " + e.message); }
+}
+
+function _showMoveModal() {
+  const towns = state.towns || [];
+  if (!towns.length) return;
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay";
+  overlay.style.cssText = "position:fixed;inset:0;z-index:8000;display:flex;align-items:flex-end;background:rgba(0,0,0,0.5)";
+  overlay.innerHTML = `
+    <div style="background:var(--surface);border-radius:var(--radius-lg) var(--radius-lg) 0 0;width:100%;max-height:60vh;overflow-y:auto;padding:20px">
+      <div style="font-size:0.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);margin-bottom:12px">Move to city</div>
+      ${towns.map(t => `<button class="nav-item" data-cityid="${escapeHtml(t.id)}" style="width:100%;text-align:left;padding:12px 8px;font-size:1rem">${escapeHtml(t.name)}</button>`).join("")}
+      <button class="nav-item" style="width:100%;text-align:left;padding:12px 8px;font-size:0.875rem;color:var(--text-3);margin-top:4px" id="gsc-move-cancel">Cancel</button>
+    </div>`;
+  overlay.querySelector("#gsc-move-cancel").addEventListener("click", () => overlay.remove());
+  overlay.querySelectorAll("[data-cityid]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const newCityId = btn.dataset.cityid;
+      overlay.remove();
+      await _moveSelected(newCityId);
+    });
+  });
+  document.body.appendChild(overlay);
+}
+
+async function _moveSelected(newCityId) {
+  const ids = [..._selectedIds];
+  const tripId = activeTripId;
+  try {
+    await Promise.all(ids.map(publicId => {
+      const photo = (state.cityGallery || []).find(p => p.publicId === publicId);
+      return photo?.id ? updateDoc(doc(db, "trips", tripId, "cityGallery", photo.id), { cityId: newCityId }) : Promise.resolve();
+    }));
+    _exitSelectMode();
+  } catch (e) { alert("Move failed: " + e.message); }
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -237,10 +357,10 @@ export function renderGallery(filterCityId) {
   const container = document.getElementById("gallery-content");
   if (!container) return;
 
-  const photos = (state.cityGallery || []);
+  const photos = state.cityGallery || [];
   const towns = state.towns || [];
 
-  if (photos.length === 0) {
+  if (!photos.length) {
     container.innerHTML = `
       <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:60px 24px;color:var(--text-3);text-align:center">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
@@ -252,7 +372,7 @@ export function renderGallery(filterCityId) {
     return;
   }
 
-  // Group by city, sorted by city order
+  // Group by city
   const byCity = {};
   for (const p of photos) {
     if (filterCityId && p.cityId !== filterCityId) continue;
@@ -266,7 +386,6 @@ export function renderGallery(filterCityId) {
       const da = a.takenDate || "";
       const db2 = b.takenDate || "";
       if (da !== db2) return da.localeCompare(db2);
-      // Tiebreak by upload time ascending
       const ta = a.uploadedAt?.seconds ?? 0;
       const tb = b.uploadedAt?.seconds ?? 0;
       return ta - tb;
@@ -275,22 +394,44 @@ export function renderGallery(filterCityId) {
 
   const sortedCities = towns.filter(t => byCity[t.id]);
   if (filterCityId) {
-    // Single city mode
-    const singleCityPhotos = byCity[filterCityId] || [];
-    const town = towns.find(t => t.id === filterCityId);
-    container.innerHTML = _buildCitySection(town, singleCityPhotos, true);
+    container.innerHTML = _buildCitySection(towns.find(t => t.id === filterCityId), byCity[filterCityId] || [], true);
   } else {
     container.innerHTML = sortedCities.map(t => _buildCitySection(t, byCity[t.id], false)).join("");
   }
 
-  // Wire click handlers
+  // Wire thumbnails — click or long-press
   container.querySelectorAll(".gallery-thumb").forEach(thumb => {
+    const publicId = thumb.dataset.publicid;
+    const cityId = thumb.dataset.cityid;
+
+    // Mark selected if in select mode
+    if (_selectMode && _selectedIds.has(publicId)) {
+      thumb.classList.add("gallery-thumb-selected");
+      const chk = thumb.querySelector(".gallery-thumb-check");
+      if (chk) chk.style.display = "";
+    }
+
+    let _pressTimer = null;
+
+    const onLongPress = () => {
+      if (!state.shareMode) _enterSelectMode(publicId);
+    };
+
+    thumb.addEventListener("pointerdown", () => {
+      _pressTimer = setTimeout(onLongPress, 500);
+    });
+    thumb.addEventListener("pointerup", () => clearTimeout(_pressTimer));
+    thumb.addEventListener("pointercancel", () => clearTimeout(_pressTimer));
+    thumb.addEventListener("pointermove", () => clearTimeout(_pressTimer));
+
     thumb.addEventListener("click", () => {
-      const cityId = thumb.dataset.cityid;
-      const publicId = thumb.dataset.publicid;
+      if (_selectMode) {
+        _toggleSelect(publicId);
+        return;
+      }
       const cityPhotos = byCity[cityId] || [];
       const idx = cityPhotos.findIndex(p => p.publicId === publicId);
-      _lbShow(cityPhotos, idx);
+      _lbShow(cityPhotos, Math.max(0, idx));
     });
   });
 
@@ -304,27 +445,33 @@ export function renderGallery(filterCityId) {
 
 function _buildCitySection(town, photos, compact) {
   if (!town || !photos?.length) return "";
+  const inSelectMode = _selectMode;
   return `
     <div class="gallery-city-section" data-cityid="${escapeHtml(town.id)}">
       <div class="gallery-city-header">
         <span class="gallery-city-name">${escapeHtml(town.name)}</span>
         <span class="gallery-city-count">${photos.length} photo${photos.length !== 1 ? "s" : ""}</span>
-        ${!state.shareMode ? `<button class="btn-ghost gallery-upload-btn" data-cityid="${escapeHtml(town.id)}" style="font-size:0.8125rem;padding:5px 12px;margin-left:auto">
+        ${!state.shareMode && !inSelectMode ? `<button class="btn-ghost gallery-upload-btn" data-cityid="${escapeHtml(town.id)}" style="font-size:0.8125rem;padding:5px 12px;margin-left:auto">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13" style="margin-right:5px;vertical-align:-1px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add photos
         </button>` : ""}
       </div>
       <div class="gallery-grid">
         ${photos.map(p => `
-          <button class="gallery-thumb" data-publicid="${escapeHtml(p.publicId)}" data-cityid="${escapeHtml(p.cityId)}" title="${escapeHtml(p.caption || p.name || "")}">
+          <button class="gallery-thumb${inSelectMode && _selectedIds.has(p.publicId) ? " gallery-thumb-selected" : ""}"
+            data-publicid="${escapeHtml(p.publicId)}" data-cityid="${escapeHtml(p.cityId)}"
+            title="${escapeHtml(p.caption || p.name || "")}">
             <img src="${photoThumbUrl(p, 400)}" alt="${escapeHtml(p.name || "")}" loading="lazy" />
             ${p.takenDate ? `<span class="gallery-thumb-date">${new Date(p.takenDate + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</span>` : ""}
+            <span class="gallery-thumb-check" style="display:${inSelectMode && _selectedIds.has(p.publicId) ? "" : "none"}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>
+            </span>
           </button>`).join("")}
       </div>
     </div>`;
 }
 
 /* ─────────────────────────────────────────────────────────────
-   CITY PHOTO STRIP (for itinerary city cards)
+   CITY PHOTO STRIP (for itinerary city cards / share drawer)
    ───────────────────────────────────────────────────────────── */
 export function buildCityPhotoStrip(cityId) {
   const photos = (state.cityGallery || []).filter(p => p.cityId === cityId);
@@ -362,6 +509,7 @@ export function wireCityPhotoStrip(el, cityId) {
    UPLOAD MODAL
    ───────────────────────────────────────────────────────────── */
 let _uploadCityId = null;
+let _onUploadFileChange = () => {};
 
 export function openUploadModal(cityId) {
   _uploadCityId = cityId;
@@ -369,16 +517,18 @@ export function openUploadModal(cityId) {
   if (!modal) return;
   const town = state.towns.find(t => t.id === cityId);
   modal.querySelector("#upload-modal-city").textContent = town?.name || "City";
-  // Reliably reset file input by replacing it
+
+  // Fully reset file input by replacing the element
   const oldInput = modal.querySelector("#upload-file-input");
   const newInput = oldInput.cloneNode(true);
   oldInput.replaceWith(newInput);
   newInput.addEventListener("change", _onUploadFileChange);
+
   modal.querySelector("#upload-preview-strip").innerHTML = "";
   modal.querySelector("#upload-status").textContent = "";
-  const submitBtn = modal.querySelector("#upload-submit-btn");
-  submitBtn.disabled = true;
-  submitBtn.textContent = "Upload";
+  const btn = modal.querySelector("#upload-submit-btn");
+  btn.disabled = true;
+  btn.textContent = "Upload";
   modal.classList.add("visible");
 }
 
@@ -387,13 +537,11 @@ export function closeUploadModal() {
   _uploadCityId = null;
 }
 
-let _onUploadFileChange = () => {};
-
 export function initUploadModal() {
   const modal = document.getElementById("gallery-upload-modal");
   if (!modal) return;
 
-  const preview  = modal.querySelector("#upload-preview-strip");
+  const preview   = modal.querySelector("#upload-preview-strip");
   const submitBtn = modal.querySelector("#upload-submit-btn");
   const statusEl  = modal.querySelector("#upload-status");
 
@@ -405,12 +553,19 @@ export function initUploadModal() {
     const fileInput = modal.querySelector("#upload-file-input");
     const files = Array.from(fileInput.files);
     if (!files.length) return;
+
+    // Build vertical list: thumbnail + caption input per photo
     preview.innerHTML = files.map((f, i) => `
       <div class="upload-preview-item">
         <img src="${URL.createObjectURL(f)}" alt="" />
-        <input class="upload-caption-input field-input" type="text" placeholder="Caption…" data-idx="${i}" />
-      </div>`
-    ).join("");
+        <div class="upload-preview-item-info">
+          <div class="upload-preview-item-name">${escapeHtml(f.name)}</div>
+          <input class="field-input upload-caption-input" type="text"
+            placeholder="Caption (optional)" data-idx="${i}"
+            style="margin-top:4px;font-size:0.8125rem" />
+        </div>
+      </div>`).join("");
+
     submitBtn.disabled = false;
     statusEl.textContent = `${files.length} photo${files.length !== 1 ? "s" : ""} selected`;
   };
@@ -426,10 +581,10 @@ export function initUploadModal() {
     statusEl.textContent = "";
     try {
       await uploadPhotosForCity(_uploadCityId, files, captions, msg => { statusEl.textContent = msg; });
-      statusEl.textContent = `${files.length} photo${files.length !== 1 ? "s" : ""} uploaded!`;
-      setTimeout(closeUploadModal, 1200);
+      statusEl.textContent = `✓ ${files.length} photo${files.length !== 1 ? "s" : ""} uploaded!`;
+      setTimeout(closeUploadModal, 1400);
     } catch (err) {
-      statusEl.textContent = "Upload failed: " + err.message;
+      statusEl.textContent = err.message;
       btnReset(submitBtn);
     }
   });
