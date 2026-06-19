@@ -578,7 +578,20 @@ async function _uploadSinglePhoto(cityId, file, caption) {
   const folder = `weyage/${tripId}/${cityId}`;
   const today  = new Date();
 
-  const { blob, w, h } = await _resizeImage(file);
+  // Fast path: resize client-side to a small JPEG (keeps uploads quick).
+  // Fallback: some mobile browsers refuse to decode large camera JPEGs that
+  // desktop handles fine (memory/dimension limits). Rather than block the
+  // upload, send the original — Cloudinary resizes it server-side and the
+  // delivery URLs (photoThumbUrl/photoFullUrl) still serve small images.
+  let blob, w, h;
+  try {
+    ({ blob, w, h } = await _resizeImage(file));
+  } catch (err) {
+    console.warn(`Client-side resize failed for ${file.name}; uploading original. Reason:`, err?.message);
+    blob = file;
+    w = 0;
+    h = 0;
+  }
   const { publicId, secureUrl } = await _uploadWithRetry(blob, folder);
 
   const modDate = new Date(file.lastModified);
