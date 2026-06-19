@@ -4410,6 +4410,7 @@ body.share-mode .transit-entry-del { display: none !important; }
   .upload-preview-item-name { font-size: 0.75rem; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .upload-item-status { flex-shrink: 0; display: flex; align-items: center; justify-content: center; width: 36px; }
   .upload-item-error { background: rgba(184,83,66,0.05); border-radius: 8px; }
+  .upload-item-error-msg { font-size: 0.7rem; color: var(--danger); margin-top: 4px; }
   .upload-retry-btn { background: none; border: none; cursor: pointer; color: var(--accent); padding: 4px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
   .upload-retry-btn:hover { background: rgba(184,83,66,0.1); }
   .upload-spinner {

@@ -602,13 +602,14 @@ export function initUploadModal() {
   });
 
   // ── Per-item status helpers ───────────────────────────────────
-  function setItemStatus(idx, status) {
+  function setItemStatus(idx, status, errorMsg) {
     const item = preview.querySelector(`.upload-preview-item[data-idx="${idx}"]`);
     const statusEl2 = item?.querySelector(".upload-item-status");
     if (!item || !statusEl2) return;
 
     if (status === "uploading") {
       item.classList.remove("upload-item-error");
+      item.querySelector(".upload-item-error-msg")?.remove();
       statusEl2.innerHTML = `<div class="upload-spinner"></div>`;
     } else if (status === "done") {
       item.classList.add("upload-item-done");
@@ -628,6 +629,15 @@ export function initUploadModal() {
           </svg>
         </button>`;
       statusEl2.querySelector(".upload-retry-btn").addEventListener("click", () => runOne(idx));
+      // Show error reason below the filename, replacing any previous message
+      const info = item.querySelector(".upload-preview-item-info");
+      if (info && errorMsg) {
+        item.querySelector(".upload-item-error-msg")?.remove();
+        const msg = document.createElement("div");
+        msg.className = "upload-item-error-msg";
+        msg.textContent = errorMsg;
+        info.appendChild(msg);
+      }
     }
   }
 
@@ -640,8 +650,8 @@ export function initUploadModal() {
     try {
       await _uploadSinglePhoto(_uploadCityId, file, caption);
       setItemStatus(idx, "done");
-    } catch {
-      setItemStatus(idx, "error");
+    } catch (err) {
+      setItemStatus(idx, "error", err?.message || "Upload failed");
     }
   }
 
