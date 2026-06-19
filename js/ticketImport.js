@@ -2,6 +2,7 @@ import { GEMINI_CONFIG } from "./config.js";
 import { state, activeTripId } from "./state.js";
 import { db, doc, setDoc, serverTimestamp } from "./firebase.js";
 import { escapeHtml } from "./utils.js";
+import { icon } from "./icons.js";
 import { currentUserMemberId } from "./budget.js";
 
 const LAYOVER_MS = 6 * 60 * 60 * 1000; // 6 hours
@@ -205,7 +206,7 @@ function _renderLegCard(leg, idx, members, myMemberId) {
       <div class="ticket-leg-header">
         <span class="ticket-leg-icon">${_subtypeIcon(leg.subtype)}</span>
         <span class="ticket-leg-mode">${escapeHtml(_legTitle(leg))}</span>
-        <button class="icon-btn ticket-leg-remove" data-idx="${idx}" title="Remove leg" style="margin-left:auto;opacity:0.5;font-size:1rem">✕</button>
+        <button class="icon-btn ticket-leg-remove" data-idx="${idx}" title="Remove leg" style="margin-left:auto;opacity:0.5;display:inline-flex;align-items:center">${icon("close", { size: 15 })}</button>
       </div>
 
       <div class="ticket-fields-grid">
@@ -265,7 +266,7 @@ function _showDrawer(state_) {
       <div class="ticket-import-drawer">
         <div class="ticket-drawer-header">
           <span class="ticket-drawer-title">Import from ticket</span>
-          <button class="icon-btn" id="ticket-import-close">✕</button>
+          <button class="icon-btn" id="ticket-import-close">${icon("close", { size: 18 })}</button>
         </div>
         <div class="ticket-drawer-body" style="display:flex;align-items:center;justify-content:center;padding:48px 0;gap:10px;color:var(--text-2)">
           <span class="ticket-spinner"></span>
@@ -282,7 +283,7 @@ function _showDrawer(state_) {
       <div class="ticket-import-drawer">
         <div class="ticket-drawer-header">
           <span class="ticket-drawer-title">Import from ticket</span>
-          <button class="icon-btn" id="ticket-import-close">✕</button>
+          <button class="icon-btn" id="ticket-import-close">${icon("close", { size: 18 })}</button>
         </div>
         <div class="ticket-drawer-body" style="padding:32px 20px;color:var(--text-2);text-align:center;font-size:0.9375rem">
           ${escapeHtml(state_.error)}
@@ -357,7 +358,7 @@ function _showDrawer(state_) {
           <span class="ticket-drawer-title">Import from ticket</span>
           <span class="ticket-drawer-subtitle">${legsCount} leg${legsCount !== 1 ? "s" : ""} detected</span>
         </div>
-        <button class="icon-btn" id="ticket-import-close">✕</button>
+        <button class="icon-btn" id="ticket-import-close">${icon("close", { size: 18 })}</button>
       </div>
       <div class="ticket-drawer-body">
         <div class="ticket-drawer-legs">

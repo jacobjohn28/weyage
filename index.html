@@ -290,7 +290,7 @@
           <div id="sp-drawer-title" class="sp-drawer-hd-title"></div>
           <div id="sp-drawer-sub" class="sp-drawer-hd-sub" style="display:none"></div>
         </div>
-        <button class="sp-drawer-hd-close" onclick="spCloseDrawer()">✕</button>
+        <button class="sp-drawer-hd-close" onclick="spCloseDrawer()" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       </div>
       <div id="sp-drawer-body" class="sp-drawer-bd"></div>
     </div>
@@ -317,7 +317,7 @@
 
     <!-- Back to all trips (shown when inside a trip) -->
     <button class="nav-item" id="sidebar-back-btn" style="margin-bottom:8px;color:var(--accent);font-size:0.8125rem">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="14" height="14"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="15 18 9 12 15 6"/></svg>
       All Trips
     </button>
 
@@ -375,14 +375,39 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         </button>
       </div>
+      <div class="app-version" id="app-version-sidebar" style="text-align:center;font-size:0.6875rem;color:var(--text-3);letter-spacing:0.03em;margin-top:8px"></div>
     </div>
   </aside>
 
   <!-- Main content -->
   <main class="main">
     <header class="topbar">
-      <div class="topbar-title" id="topbar-title">Itinerary</div>
+      <div class="topbar-title-wrap" id="topbar-title-wrap">
+        <button class="topbar-title-btn" id="topbar-title-btn" type="button" aria-expanded="false" aria-haspopup="true">
+          <span class="topbar-title" id="topbar-title">Itinerary</span>
+          <svg class="trips-heading-chevron topbar-title-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <!-- #5 — in-trip meta drawer (mobile): mirrors the All Trips heading drawer -->
+        <div class="topbar-drawer trips-top-drawer" id="topbar-drawer" style="display:none">
+          <button class="ttd-item" id="td-all-trips" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+            All trips
+          </button>
+          <button class="ttd-item" id="td-share" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="18" height="18" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            Share itinerary
+          </button>
+          <button class="ttd-item" id="td-help" type="button">
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;border:1.75px solid currentColor;font-size:0.6875rem;font-weight:700;line-height:1;flex-shrink:0">?</span>
+            Help
+          </button>
+        </div>
+      </div>
       <div class="topbar-actions">
+        <button class="btn-primary topbar-action" id="topbar-action" style="display:none;padding:7px 14px;font-size:0.875rem" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span id="topbar-action-label"></span>
+        </button>
         <div id="status-indicator-mobile" class="status-dot status-dot-mobile">Synced</div>
         <button class="icon-btn" id="theme-toggle" title="Toggle theme" aria-label="Toggle theme">
           <svg id="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
@@ -468,8 +493,7 @@
       </section>
 
       <section class="view" id="view-expenses">
-        <div class="section-header" style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px">
-          <h1 class="section-title">Expenses</h1>
+        <div class="section-header" style="margin-bottom:16px;display:flex;align-items:center;justify-content:flex-end;gap:12px">
           <button class="btn-primary" id="expenses-add-btn" style="padding:8px 16px;font-size:0.875rem;flex-shrink:0">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add expense
@@ -485,9 +509,6 @@
       </section>
 
       <section class="view" id="view-documents">
-        <div class="section-header" style="margin-bottom:20px">
-          <h1 class="section-title">Documents</h1>
-        </div>
         <div class="docs-search-wrap">
           <div class="docs-search-field">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="16" height="16"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -502,16 +523,12 @@
 
       <!-- DISRUPTION RECOVERY HUB -->
       <section class="view" id="view-disruption">
-        <div class="section-header" style="margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:12px">
-          <h1 class="section-title" style="font-family:var(--font-display)">Disruption Hub</h1>
-        </div>
         <div id="disruption-content"></div>
       </section>
 
       <section class="view" id="view-gallery">
-        <div class="section-header" style="margin-bottom:20px;display:flex;align-items:center;gap:12px">
-          <h1 class="section-title" style="font-family:var(--font-display)">Gallery</h1>
-          <button class="btn-ghost" id="gallery-select-btn" style="margin-left:auto;font-size:0.8125rem;padding:5px 12px">Select</button>
+        <div class="section-header" style="margin-bottom:20px;display:flex;align-items:center;justify-content:flex-end;gap:12px">
+          <button class="btn-ghost" id="gallery-select-btn" style="font-size:0.8125rem;padding:5px 12px">Select</button>
         </div>
         <div id="gallery-content"></div>
       </section>
@@ -520,7 +537,10 @@
 
 
 
-    <!-- Mobile bottom nav: Overview | Food | Itinerary (center) | Budget | ☰ -->
+    <!-- Mobile bottom nav: Overview | Guides | Itinerary (center) | Budget | More(☰)
+         #5 — bottom nav = work within the trip; the More sheet holds trip content
+         only (Expenses, Documents, Disruptions, Gallery). Meta actions (All trips,
+         Share, Help) live in the topbar title drawer. -->
     <nav class="bottom-nav">
       <button class="bottom-nav-item" data-view="dashboard">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
@@ -557,10 +577,6 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
           Documents
         </button>
-        <button class="bottom-nav-item share-link-btn" id="sheet-share-btn" style="width:100%;flex-direction:row;gap:14px;padding:14px 24px;justify-content:flex-start;font-size:1rem">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-          Share Itinerary
-        </button>
         <button class="bottom-nav-item" data-view="disruption" style="width:100%;flex-direction:row;gap:14px;padding:14px 24px;justify-content:flex-start;font-size:1rem" id="sheet-disruption-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
           Disruptions
@@ -569,15 +585,8 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
           Gallery
         </button>
-        <button class="bottom-nav-item" id="sheet-help-btn" style="width:100%;flex-direction:row;gap:14px;padding:14px 24px;justify-content:flex-start;font-size:1rem">
-          <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;border:1.75px solid currentColor;font-size:0.8125rem;font-weight:700;line-height:1;flex-shrink:0">?</span>
-          Help
-        </button>
         <div style="margin:6px 24px 0;border-top:1px solid var(--border)"></div>
-        <button class="bottom-nav-item" id="sheet-all-trips-btn" style="width:100%;flex-direction:row;gap:14px;padding:14px 24px;justify-content:flex-start;font-size:1rem;color:var(--accent)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-          All Trips
-        </button>
+        <div class="app-version" id="app-version-sheet" style="text-align:center;font-size:0.6875rem;color:var(--text-3);letter-spacing:0.03em;padding:14px 24px 6px"></div>
       </div>
     </div>
   </main>
@@ -1437,7 +1446,7 @@
   <span id="update-banner-icon">✨</span>
   <span>New version ready</span>
   <button id="update-banner-refresh">Refresh</button>
-  <button id="update-banner-dismiss" aria-label="Dismiss">✕</button>
+  <button id="update-banner-dismiss" aria-label="Dismiss"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
 </div>
 
 <script>
@@ -1455,6 +1464,21 @@ if ("serviceWorker" in navigator) {
       window.location.reload();
     });
   }
+
+  // #4 — manual refresh backup. sw.js posts APP_UPDATED once a newer app shell
+  // has been fetched in the background; show the banner so the user can reload
+  // on demand (belt-and-braces alongside the auto-reload above).
+  const _updateBanner = document.getElementById("update-banner");
+  navigator.serviceWorker.addEventListener("message", (e) => {
+    if (e.data && e.data.type === "APP_UPDATED") _updateBanner?.classList.add("visible");
+  });
+  document.getElementById("update-banner-refresh")?.addEventListener("click", () => {
+    _swRefreshing = true; // suppress the auto controllerchange double-reload
+    window.location.reload();
+  });
+  document.getElementById("update-banner-dismiss")?.addEventListener("click", () => {
+    _updateBanner?.classList.remove("visible");
+  });
 
   window.addEventListener("load", () => {
     // updateViaCache:"none" forces sw.js to be fetched from the network (not the
@@ -1792,7 +1816,7 @@ if ("serviceWorker" in navigator) {
         <button class="modal-btn-secondary" id="site-settings-cancel-btn">Cancel</button>
         <button class="modal-btn-primary" id="site-settings-save-btn">Save</button>
       </div>
-      <div style="text-align:center;font-size:0.75rem;color:var(--text-3);letter-spacing:0.03em">v1.4.1.6</div>
+      <div class="app-version" id="app-version-settings" style="text-align:center;font-size:0.75rem;color:var(--text-3);letter-spacing:0.03em">v1.4.1.7</div>
     </div>
   </div>
 </div>
@@ -1838,8 +1862,8 @@ if ("serviceWorker" in navigator) {
   <div id="lb-info">
     <div id="lb-counter"></div>
     <div id="lb-meta"></div>
-    <div id="lb-caption-row" style="display:flex;align-items:flex-start;gap:6px;margin-top:4px">
-      <span id="lb-caption-text" style="font-size:0.875rem;color:var(--text-2);flex:1;line-height:1.4"></span>
+    <div id="lb-caption-row" style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:4px">
+      <span id="lb-caption-text" style="font-size:0.875rem;color:var(--text-2);line-height:1.4;text-align:center"></span>
       <button id="lb-caption-edit-btn" title="Edit caption" style="display:none;flex-shrink:0;opacity:0.6;padding:2px 4px;background:none;border:none;cursor:pointer;color:inherit">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
       </button>

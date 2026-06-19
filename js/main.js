@@ -1,5 +1,5 @@
 // Firebase SDK is loaded via dynamic import inside initFirebase().
-import { FIREBASE_CONFIG, GEMINI_CONFIG, PEXELS_CONFIG } from "./config.js";
+import { FIREBASE_CONFIG, GEMINI_CONFIG, PEXELS_CONFIG, APP_VERSION } from "./config.js";
 import { db, auth, initFirebase, isConfigured, doc, getDoc, setDoc, updateDoc, deleteDoc,
          collection, getDocs, onSnapshot, writeBatch, serverTimestamp, arrayUnion, addDoc,
          query, where, arrayRemove, deleteField,
@@ -436,6 +436,8 @@ initUI();
 
 async function init() {
   initTheme();
+  // #3 — render the app version from the single source into every slot.
+  document.querySelectorAll(".app-version").forEach(el => { el.textContent = "v" + APP_VERSION; });
   _setStatusOnline();
 
   // Share link: skip auth, show read-only itinerary

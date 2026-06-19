@@ -2,6 +2,7 @@ import { db, doc, collection, addDoc, deleteDoc, updateDoc, serverTimestamp, aut
 import { CLOUDINARY_CONFIG } from "./config.js";
 import { state, activeTripId } from "./state.js";
 import { escapeHtml, localDateStr, btnLoading, btnReset } from "./utils.js";
+import { icon } from "./icons.js";
 
 /* ─────────────────────────────────────────────────────────────
    IMAGE RESIZE
@@ -524,9 +525,6 @@ function _buildCitySection(town, photos, compact) {
       <div class="gallery-city-header">
         <span class="gallery-city-name">${escapeHtml(town.name)}</span>
         <span class="gallery-city-count">${photos.length} photo${photos.length !== 1 ? "s" : ""}</span>
-        ${!state.shareMode && !inSelectMode ? `<button class="btn-ghost gallery-upload-btn" data-cityid="${escapeHtml(town.id)}" style="font-size:0.8125rem;padding:5px 12px;margin-left:auto">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13" style="margin-right:5px;vertical-align:-1px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add photos
-        </button>` : ""}
       </div>
       <div class="gallery-grid">
         ${photos.map(p => `
@@ -539,6 +537,9 @@ function _buildCitySection(town, photos, compact) {
               <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>
             </span>
           </button>`).join("")}
+        ${!state.shareMode && !inSelectMode ? `<button class="gallery-add-tile gallery-upload-btn" data-cityid="${escapeHtml(town.id)}" title="Add photos" aria-label="Add photos">
+          ${icon("add", { size: 26 })}
+        </button>` : ""}
       </div>
     </div>`;
 }
@@ -548,7 +549,10 @@ function _buildCitySection(town, photos, compact) {
    ───────────────────────────────────────────────────────────── */
 export function buildCityPhotoStrip(cityId) {
   const photos = (state.cityGallery || []).filter(p => p.cityId === cityId);
-  if (!photos.length) return "";
+  const canAdd = !state.shareMode;
+  // Share mode with no photos → render nothing. Otherwise always render the strip
+  // so the "+" add tile gives an upload affordance even before any photos exist.
+  if (!photos.length && !canAdd) return "";
   const visible = photos.slice(0, 5);
   const extra = photos.length - visible.length;
   return `
@@ -558,6 +562,7 @@ export function buildCityPhotoStrip(cityId) {
           <img src="${photoThumbUrl(p, 200)}" alt="" loading="lazy" />
         </button>`).join("")}
       ${extra > 0 ? `<button class="city-strip-more" data-stripcityid="${escapeHtml(cityId)}">+${extra}</button>` : ""}
+      ${canAdd ? `<button class="city-strip-add" data-stripaddcityid="${escapeHtml(cityId)}" title="Add photos" aria-label="Add photos">${icon("add", { size: 22 })}</button>` : ""}
     </div>`;
 }
 
@@ -574,6 +579,12 @@ export function wireCityPhotoStrip(el, cityId) {
     btn.addEventListener("click", e => {
       e.stopPropagation();
       openGalleryForCity(cityId);
+    });
+  });
+  el.querySelectorAll(".city-strip-add").forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      openUploadModal(btn.dataset.stripaddcityid);
     });
   });
 }

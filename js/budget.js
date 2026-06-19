@@ -4,6 +4,7 @@ import { db, doc, setDoc, updateDoc, deleteDoc, addDoc, collection,
 import { escapeHtml, localDateStr, btnLoading, btnReset } from "./utils.js";
 import { PEXELS_CONFIG } from "./config.js";
 import { extractTripDestination } from "./photos.js";
+import { icon } from "./icons.js";
 
 /* ─────────────────────────────────────────────────────────────
    CALLBACK REGISTRATION
@@ -2481,8 +2482,8 @@ function _renderBudgetDrawer() {
         const isManualEntry = e.source === "expense";
         const expenseActions = isManualEntry ? `
           <div class="bd-expense-actions">
-            <button class="bd-expense-btn" data-expense-edit="${escapeHtml(e.id)}" title="Edit expense">✏</button>
-            <button class="bd-expense-btn del" data-expense-del="${escapeHtml(e.id)}" title="Delete">✕</button>
+            <button class="bd-expense-btn" data-expense-edit="${escapeHtml(e.id)}" title="Edit expense">${icon("edit", { size: 14 })}</button>
+            <button class="bd-expense-btn del" data-expense-del="${escapeHtml(e.id)}" title="Delete">${icon("delete", { size: 14 })}</button>
           </div>`
           : (_bdMode === "date" ? `
           <div class="bd-expense-actions">
@@ -2490,7 +2491,7 @@ function _renderBudgetDrawer() {
               data-bd-open-source="${escapeHtml(e.source)}"
               data-bd-open-id="${escapeHtml(e.id)}"
               data-bd-open-townid="${escapeHtml(e.townId || "")}"
-              title="Open">✏</button>
+              title="Open">${icon("edit", { size: 14 })}</button>
           </div>` : "");
         return `
           <div style="padding:10px 0;border-bottom:1px solid var(--border)">

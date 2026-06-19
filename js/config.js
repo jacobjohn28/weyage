@@ -37,3 +37,10 @@ export const CLOUDINARY_CONFIG = {
    ───────────────────────────────────────────────────────────── */
 export const FIREBASE_VERSION = "10.13.2";
 export const FIREBASE_BASE = `https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}`;
+
+/* ─────────────────────────────────────────────────────────────
+   APP VERSION — single source of truth, rendered in the sidebar,
+   the mobile "more" sheet, and Site Settings. Keep CACHE_NAME in
+   sw.js in sync on each release (documented bump step).
+   ───────────────────────────────────────────────────────────── */
+export const APP_VERSION = "1.4.1.7";

@@ -1,4 +1,5 @@
 import { state, activeTripId } from "./state.js";
+import { icon } from "./icons.js";
 import { db, doc, updateDoc, setDoc, deleteDoc, serverTimestamp, writeBatch } from "./firebase.js";
 import { GEMINI_CONFIG } from "./config.js";
 import {
@@ -22,7 +23,7 @@ import {
 import { renderDisruption, updateDisruptionBadge } from "./disruption.js";
 import { triggerTicketImport } from "./ticketImport.js";
 import { addAttachment, deleteAttachment, toggleAttachmentPin, openLightbox } from "./documents.js";
-import { buildCityPhotoStrip, wireCityPhotoStrip, openUploadModal, openGalleryForCity } from "./gallery.js";
+import { buildCityPhotoStrip, wireCityPhotoStrip, openGalleryForCity } from "./gallery.js";
 
 /* ─────────────────────────────────────────────────────────────
    CALLBACK REGISTRATION
@@ -233,11 +234,6 @@ function _buildTownHTML(town) {
         </div>
         ${renderAccomCard(town)}
         ${buildCityPhotoStrip(town.id)}
-        ${!state.shareMode ? `<div class="city-photo-actions" data-photocity="${escapeHtml(town.id)}">
-          <button class="btn-ghost city-add-photos-btn" data-cityid="${escapeHtml(town.id)}" style="font-size:0.75rem;padding:4px 10px;opacity:0.7">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" style="margin-right:4px;vertical-align:-1px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add photos
-          </button>
-        </div>` : ""}
         ${(() => {
           const todayKey = localDateStr(new Date());
           return days.map(dk => {
@@ -329,9 +325,6 @@ function _wireTownElement(el) {
   // Photo strip
   el.querySelectorAll(".city-photo-strip").forEach(strip => {
     wireCityPhotoStrip(strip, strip.dataset.stripfor);
-  });
-  el.querySelectorAll(".city-add-photos-btn").forEach(btn => {
-    btn.addEventListener("click", e => { e.stopPropagation(); openUploadModal(btn.dataset.cityid); });
   });
 
   el.querySelectorAll(".day-ai-btn").forEach(btn => {
@@ -700,7 +693,7 @@ export function renderItinerary() {
               <option value="">Assign to city…</option>
               ${state.towns.map(t => `<option value="${t.id}">${escapeHtml(t.name)}${t.arrivalDate ? " (" + t.arrivalDate + ")" : ""}</option>`).join("")}
             </select>
-            <button class="btn-ghost pending-discard-btn" data-spotid="${s.id}" style="font-size:0.75rem;padding:4px 8px;color:var(--text-2)" title="Discard">✕</button>
+            <button class="btn-ghost pending-discard-btn" data-spotid="${s.id}" style="font-size:0.75rem;padding:4px 8px;color:var(--text-2);display:inline-flex;align-items:center" title="Discard">${icon("close", { size: 14 })}</button>
           </div>
         `).join("")}
       </div>`;
@@ -1021,7 +1014,7 @@ export function openDrawer(spot) {
     return `<div class="attach-thumb-row" data-attach-id="${att.id}">
       ${thumb}
       <span class="attach-name">${escapeHtml(att.name)}</span>
-      <button class="attach-delete-btn" data-delete-attach="${att.id}" title="Remove">✕</button>
+      <button class="attach-delete-btn" data-delete-attach="${att.id}" title="Remove">${icon("close", { size: 14 })}</button>
     </div>`;
   }).join("");
 

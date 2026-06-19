@@ -1,5 +1,6 @@
 import { state, setState, activeTripId, setActiveTripId } from "./state.js";
 import { escapeHtml, fmtDateRange, localDateStr, btnLoading, btnReset } from "./utils.js";
+import { icon } from "./icons.js";
 import {
   db, doc, getDoc, setDoc, auth,
   isConfigured, GoogleAuthProvider, signInWithPopup, signOut, serverTimestamp,
@@ -52,6 +53,20 @@ export function _setStatusSyncing() { updateStatusIndicator("syncing", "Saving�
 /* ─────────────────────────────────────────────────────────────
    VIEW ROUTING
    ───────────────────────────────────────────────────────────── */
+// #2 — keep --topbar-h in sync so sticky in-view toolbars pin just below the
+// topbar at any width (desktop/mobile padding + iOS safe-area differ).
+export function syncTopbarHeight() {
+  const tb = document.querySelector(".topbar");
+  if (tb) document.documentElement.style.setProperty("--topbar-h", tb.offsetHeight + "px");
+}
+if (typeof window !== "undefined") window.addEventListener("resize", syncTopbarHeight);
+
+// #6 — views whose primary action is surfaced in the topbar (desktop only).
+const TOPBAR_ACTIONS = {
+  budget:   { label: "Add expense", target: "budget-add-expense-btn" },
+  expenses: { label: "Add expense", target: "expenses-add-btn" },
+};
+
 export function setView(viewName) {
   if (viewName === "more") return;
   state.currentView = viewName;
@@ -63,6 +78,22 @@ export function setView(viewName) {
   });
   const titles = { dashboard: "Overview", itinerary: "Itinerary", guides: "Guides", budget: "Budget", expenses: "Expenses", documents: "Documents", disruption: "Disruptions", gallery: "Gallery" };
   document.getElementById("topbar-title").textContent = titles[viewName] || "Dashboard";
+
+  // #6 — configure the contextual topbar action (proxies the in-view button).
+  const tact = TOPBAR_ACTIONS[viewName];
+  const tactBtn = document.getElementById("topbar-action");
+  if (tactBtn) {
+    if (tact) {
+      document.getElementById("topbar-action-label").textContent = tact.label;
+      tactBtn.dataset.target = tact.target;
+      tactBtn.style.display = "inline-flex";
+    } else {
+      tactBtn.style.display = "none";
+      tactBtn.dataset.target = "";
+    }
+  }
+  syncTopbarHeight();
+
   if (viewName === "itinerary") {
     if (!pendingScrollTownId) {
       const todayIso = localDateStr(new Date());
@@ -296,7 +327,7 @@ export function renderTripCards() {
       : `<div class="trip-card-img-placeholder">${escapeHtml((t.name || "T").charAt(0))}</div>`;
     const actionEl = t._role === "shared"
       ? `<span class="trip-card-shared-badge">Shared</span>`
-      : `<button class="trip-card-menu-btn" data-trip-id="${escapeHtml(t.id)}" title="Trip settings" aria-label="Trip settings">⋯</button>`;
+      : `<button class="trip-card-menu-btn" data-trip-id="${escapeHtml(t.id)}" title="Trip settings" aria-label="Trip settings">${icon("more", { size: 18 })}</button>`;
     return `
     <div class="trip-card" data-trip-id="${escapeHtml(t.id)}" data-role="${escapeHtml(t._role || 'owner')}">
       <div class="trip-card-img">
@@ -418,7 +449,7 @@ export function renderMobileTripList() {
         <div class="trips-mobile-card-dates">${t.startDate ? fmtDateRange(t.startDate, t.endDate) : "Dates TBD"}</div>
         ${t.cityNames?.length ? `<div class="trips-mobile-card-cities">${t.cityNames.map(escapeHtml).join(" | ")}</div>` : ""}
       </div>
-      <button class="trips-mobile-card-menu-btn" data-trip-id="${escapeHtml(t.id)}" title="Trip settings" aria-label="Trip settings">⋯</button>
+      <button class="trips-mobile-card-menu-btn" data-trip-id="${escapeHtml(t.id)}" title="Trip settings" aria-label="Trip settings">${icon("more", { size: 18 })}</button>
     </div>`;
   };
 
@@ -621,6 +652,28 @@ export function initUI() {
     setView("gallery");
   });
 
+  // #5 — in-trip top drawer (mobile): meta actions, mirrors the All Trips drawer.
+  const _topbarDrawer = document.getElementById("topbar-drawer");
+  const _topbarTitleBtn = document.getElementById("topbar-title-btn");
+  function _closeTopbarDrawer() {
+    if (_topbarDrawer) _topbarDrawer.style.display = "none";
+    _topbarTitleBtn?.setAttribute("aria-expanded", "false");
+  }
+  _topbarTitleBtn?.addEventListener("click", (e) => {
+    // Acts as a drawer only on mobile; desktop uses the sidebar for these.
+    if (!window.matchMedia("(max-width: 768px)").matches) return;
+    e.stopPropagation();
+    const isOpen = _topbarDrawer.style.display !== "none";
+    _topbarDrawer.style.display = isOpen ? "none" : "";
+    _topbarTitleBtn.setAttribute("aria-expanded", String(!isOpen));
+  });
+  document.addEventListener("click", (e) => {
+    if (!document.getElementById("topbar-title-wrap")?.contains(e.target)) _closeTopbarDrawer();
+  });
+  document.getElementById("td-all-trips")?.addEventListener("click", () => { _closeTopbarDrawer(); openMobileTripOverlay(); });
+  document.getElementById("td-share")?.addEventListener("click", (e) => { _closeTopbarDrawer(); generateAndCopyShareLink(e.currentTarget); });
+  document.getElementById("td-help")?.addEventListener("click", () => { _closeTopbarDrawer(); openHelpOverlay(); });
+
   // Gallery lightbox + upload modal
   try { initGalleryLightbox(); } catch (e) { console.error("Gallery lightbox init:", e); }
   try { initUploadModal(); } catch (e) { console.error("Gallery upload modal init:", e); }
@@ -629,6 +682,13 @@ export function initUI() {
     if (btn?.textContent === "Cancel") exitSelectMode();
     else enterSelectMode();
   });
+
+  // #6 — topbar contextual action proxies the matching in-view button's handler.
+  document.getElementById("topbar-action")?.addEventListener("click", () => {
+    const target = document.getElementById("topbar-action")?.dataset.target;
+    if (target) document.getElementById(target)?.click();
+  });
+  syncTopbarHeight();
   initContactsPanel();
   document.getElementById("upload-cancel-btn")?.addEventListener("click", closeUploadModal);
 
@@ -700,12 +760,7 @@ export function initUI() {
 
   // Sidebar help button (desktop)
   document.getElementById("sidebar-help-btn")?.addEventListener("click", openHelpOverlay);
-
-  // Mobile hamburger help button
-  document.getElementById("sheet-help-btn")?.addEventListener("click", () => {
-    moreSheet.style.display = "none";
-    openHelpOverlay();
-  });
+  // (Mobile Help lives in the in-trip top drawer — see #td-help wiring above.)
 
   // Trip creation
   document.getElementById("create-trip-close")?.addEventListener("click", closeCreateTripModal);
@@ -732,8 +787,8 @@ export function initUI() {
     if (input) { input.value = ""; input.dispatchEvent(new Event("input")); input.focus(); }
   });
 
-  // Share buttons
-  ["sidebar-share-btn", "sheet-share-btn"].forEach(id => {
+  // Share buttons (desktop sidebar; mobile Share lives in the in-trip top drawer)
+  ["sidebar-share-btn"].forEach(id => {
     const btn = document.getElementById(id);
     if (btn) btn.addEventListener("click", () => generateAndCopyShareLink(btn));
   });
@@ -741,11 +796,7 @@ export function initUI() {
   // Sidebar back → trip list
   document.getElementById("sidebar-back-btn")?.addEventListener("click", exitToTripList);
 
-  // Mobile "All Trips" sheet button
-  document.getElementById("sheet-all-trips-btn")?.addEventListener("click", () => {
-    moreSheet.style.display = "none";
-    openMobileTripOverlay();
-  });
+  // (Mobile "All Trips" lives in the in-trip top drawer — see #td-all-trips above.)
 
   // Contacts page (desktop sidebar nav + mobile heading drawer)
   function _closeTopDrawer() {

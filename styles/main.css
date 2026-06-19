@@ -3,6 +3,7 @@
      ============================================================ */
   :root {
     /* Light mode — warm, restrained, editorial */
+    --topbar-h: 60px; /* measured at runtime by syncTopbarHeight() in ui.js */
     --bg: #FBFBFA;
     --surface: #FFFFFF;
     --surface-2: #F5F4F1;
@@ -765,7 +766,37 @@
     font-size: 1.5rem;
     letter-spacing: -0.02em;
   }
-  .topbar-actions { display: flex; align-items: center; gap: 4px; }
+  .topbar-actions { display: flex; align-items: center; gap: 8px; }
+
+  /* #6 — contextual primary action in the topbar (desktop). JS controls display. */
+  .topbar-action { align-items: center; gap: 6px; }
+
+  /* #5 — in-trip meta drawer trigger. Desktop: plain title (sidebar handles nav).
+     Mobile: title becomes a tappable heading with a chevron + drawer. */
+  .topbar-title-wrap { position: relative; }
+  .topbar-title-btn {
+    display: flex; align-items: center; gap: 6px;
+    background: none; border: none; padding: 0; cursor: default;
+    color: inherit; text-align: left;
+  }
+  .topbar-title-chevron { display: none; } /* desktop: no affordance */
+  .topbar-title-btn[aria-expanded="true"] .trips-heading-chevron { transform: rotate(180deg); }
+  .topbar-drawer { top: calc(100% + 10px); }
+  .topbar-drawer .ttd-item { justify-content: flex-start; gap: 12px; }
+  /* #6 — Add moved to topbar on desktop, so hide the in-view Add headers there. */
+  #view-budget > .section-header,
+  #view-expenses > .section-header { display: none !important; }
+
+  /* #2 — in-view toolbars stay reachable: pinned just under the sticky topbar. */
+  .docs-search-wrap,
+  .guides-search-wrap,
+  #view-gallery > .section-header,
+  #view-budget > .section-header,
+  .exp-controls {
+    position: sticky; top: var(--topbar-h, 60px);
+    z-index: 5; background: var(--bg);
+  }
+
   .icon-btn {
     width: 36px; height: 36px;
     display: inline-flex; align-items: center; justify-content: center;
@@ -1058,6 +1089,15 @@
     .topbar-title { font-size: 1.25rem; }
 
     .content { padding: 20px; padding-bottom: 100px; }
+
+    /* #6 — on mobile the Add lives in-view (thumb reach); topbar action hidden. */
+    #view-budget > .section-header,
+    #view-expenses > .section-header { display: flex !important; }
+    .topbar-action { display: none !important; }
+
+    /* #5 — mobile: title is the in-trip meta-drawer trigger. */
+    .topbar-title-chevron { display: inline-flex; }
+    .topbar-title-btn { cursor: pointer; }
 
     .bottom-nav {
       display: grid;
@@ -2689,6 +2729,7 @@
     background: none; border: none; cursor: pointer; padding: 4px 6px;
     border-radius: var(--radius-sm); color: var(--text-3); font-size: 0.75rem;
     line-height: 1; transition: color 150ms, background 150ms;
+    display: inline-flex; align-items: center; justify-content: center;
   }
   .bd-expense-btn:hover { color: var(--text); background: var(--surface-2); }
   .bd-expense-btn.del:hover { color: var(--danger); }
@@ -2747,6 +2788,7 @@
     background: none; border: none; cursor: pointer; padding: 4px 6px;
     color: var(--text-3); border-radius: var(--radius-sm); font-size: 1rem;
     line-height: 1; transition: color 150ms;
+    display: inline-flex; align-items: center; justify-content: center;
   }
   .ts-member-remove:hover { color: var(--danger); }
 
@@ -4317,6 +4359,17 @@ body.share-mode .transit-entry-del { display: none !important; }
   }
   .gallery-thumb:active { opacity: 0.8; }
   .gallery-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .gallery-add-tile {
+    aspect-ratio: 1; border-radius: 8px;
+    border: 2px dashed var(--border-strong); background: transparent;
+    color: var(--text-3); cursor: pointer; padding: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: color 150ms, border-color 150ms, background 150ms;
+  }
+  .gallery-add-tile:hover {
+    color: var(--accent); border-color: var(--accent);
+    background: var(--accent-bg);
+  }
   .gallery-thumb-date {
     position: absolute; bottom: 4px; left: 4px;
     font-size: 0.625rem; color: #fff;
@@ -4347,8 +4400,16 @@ body.share-mode .transit-entry-del { display: none !important; }
     background: var(--surface-2); color: var(--text-2);
     font-size: 0.875rem; font-weight: 600; cursor: pointer;
   }
-  .city-photo-actions {
-    padding: 4px 16px 8px;
+  /* #7 — add-photos "+" tile in the itinerary city strip (mirrors the gallery). */
+  .city-strip-add {
+    flex-shrink: 0; width: 68px; height: 68px;
+    border-radius: 8px; border: 2px dashed var(--border-strong);
+    background: transparent; color: var(--text-3); cursor: pointer; padding: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: color 150ms, border-color 150ms, background 150ms;
+  }
+  .city-strip-add:hover {
+    color: var(--accent); border-color: var(--accent); background: var(--accent-bg);
   }
 
   /* ── Gallery lightbox ────────────────────────────────────────── */
@@ -4359,12 +4420,12 @@ body.share-mode .transit-entry-del { display: none !important; }
   }
   #gallery-lightbox.visible { display: flex; }
   #lb-image-wrap {
-    flex: 1; display: flex; align-items: center; justify-content: center;
-    width: 100%; overflow: hidden; padding: 48px 60px 0;
-    box-sizing: border-box;
+    flex: 0 1 auto; display: flex; align-items: center; justify-content: center;
+    width: 100%; max-height: calc(100% - 150px); overflow: hidden;
+    padding: 0 60px; box-sizing: border-box;
   }
   #lb-img {
-    max-width: 100%; max-height: 100%;
+    max-width: 100%; max-height: calc(100vh - 160px);
     object-fit: contain; border-radius: 6px;
     user-select: none; -webkit-user-drag: none;
   }
@@ -4385,7 +4446,8 @@ body.share-mode .transit-entry-del { display: none !important; }
   #lb-prev { left: 12px; }
   #lb-next { right: 12px; }
   #lb-info {
-    width: 100%; padding: 14px 20px 24px;
+    width: 100%; max-width: 720px; margin: 10px auto 0;
+    padding: 0 20px; flex: 0 0 auto;
     text-align: center; color: rgba(255,255,255,0.85);
   }
   #lb-counter { font-size: 0.75rem; color: rgba(255,255,255,0.5); margin-bottom: 4px; }

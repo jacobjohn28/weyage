@@ -2,6 +2,7 @@ import { state, activeTripId, _tripSettingsId, setTripSettingsId } from "./state
 import { db, doc, updateDoc, deleteDoc, arrayRemove, arrayUnion } from "./firebase.js";
 import { escapeHtml, emailToName } from "./utils.js";
 import { CURRENCY_LIST } from "./budget.js";
+import { icon } from "./icons.js";
 
 /* ─────────────────────────────────────────────────────────────
    CALLBACK REGISTRATION
@@ -55,7 +56,7 @@ function renderTripSettingsMembers() {
     <div class="ts-member-item">
       <div class="ts-member-avatar" style="background:${escapeHtml(m.color || "#888")}">${escapeHtml(m.name.charAt(0).toUpperCase())}</div>
       <span class="ts-member-name">${escapeHtml(m.name)}</span>
-      <button class="ts-member-remove" data-remove-id="${escapeHtml(m.id)}" title="Remove" type="button">×</button>
+      <button class="ts-member-remove" data-remove-id="${escapeHtml(m.id)}" title="Remove" type="button">${icon("close", { size: 14 })}</button>
     </div>`).join("");
   container.querySelectorAll(".ts-member-remove").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -72,7 +73,7 @@ function renderExtraCurrencyChips() {
     ? _tsExtraCurrencies.map(code => `
         <span class="currency-chip">
           ${escapeHtml(code)}
-          <button class="currency-chip-remove" data-code="${escapeHtml(code)}" aria-label="Remove ${escapeHtml(code)}" type="button">×</button>
+          <button class="currency-chip-remove" data-code="${escapeHtml(code)}" aria-label="Remove ${escapeHtml(code)}" type="button">${icon("close", { size: 13 })}</button>
         </span>`).join("")
     : `<span style="font-size:0.8125rem;color:var(--text-3);font-style:italic">None added yet</span>`;
   container.querySelectorAll(".currency-chip-remove").forEach(btn => {
