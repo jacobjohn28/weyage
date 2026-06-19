@@ -530,6 +530,7 @@ async function _uploadSinglePhoto(cityId, file, caption) {
 let _uploadCityId = null;
 let _uploadFiles  = [];       // kept so retry buttons can reference the original File objects
 let _uploadObjectUrls = [];   // tracked for cleanup
+let _uploadStarted = false;   // prevents the submit handler re-firing when "Done" is clicked
 
 export function openUploadModal(cityId) {
   _uploadCityId = cityId;
@@ -542,6 +543,7 @@ export function openUploadModal(cityId) {
   _uploadObjectUrls.forEach(u => URL.revokeObjectURL(u));
   _uploadObjectUrls = [];
   _uploadFiles = [];
+  _uploadStarted = false;
 
   // Reset file input value so the same files can be re-selected if needed
   const fileInput = modal.querySelector("#upload-file-input");
@@ -645,7 +647,8 @@ export function initUploadModal() {
 
   // ── Upload all button ────────────────────────────────────────
   submitBtn.addEventListener("click", async () => {
-    if (!_uploadFiles.length || !_uploadCityId) return;
+    if (_uploadStarted || !_uploadFiles.length || !_uploadCityId) return;
+    _uploadStarted = true;
     submitBtn.disabled = true;
     submitBtn.textContent = "Uploading…";
     statusEl.textContent = "";
