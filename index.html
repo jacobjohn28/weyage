@@ -1444,23 +1444,38 @@
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./sw.js", { scope: "./" })
+      .then(reg => {
+        // Poll for updates immediately, then every hour.
+        // Also re-check whenever the user brings the PWA back to the foreground —
+        // critical on mobile where the app can sit in the background for days.
+        reg.update();
+        setInterval(() => reg.update(), 60 * 60 * 1000);
+        document.addEventListener("visibilitychange", () => {
+          if (document.visibilityState === "visible") reg.update();
+        });
+
+        // The reliable update signal: new SW found → wait for it to activate
+        // (skipWaiting in sw.js means activation happens immediately after install).
+        reg.addEventListener("updatefound", () => {
+          const newWorker = reg.installing;
+          if (!newWorker) return;
+          newWorker.addEventListener("statechange", () => {
+            // Only prompt when a new SW has actually taken over, and only if
+            // there was already a controller (i.e. not the very first install).
+            if (newWorker.state === "activated" && navigator.serviceWorker.controller) {
+              _showUpdateBanner();
+            }
+          });
+        });
+      })
       .catch(err => console.warn("SW registration failed:", err));
   });
 
-  // Show a refresh prompt when the SW has cached a fresh version in the background.
-  // Ignore messages that arrive within 20 s of page load — that's just the SW
-  // confirming the version we already loaded (happens on every fresh load/refresh).
-  const _pageLoadTime = Date.now();
-  navigator.serviceWorker.addEventListener("message", event => {
-    if (event.data?.type !== "APP_UPDATED") return;
-    if (Date.now() - _pageLoadTime < 20_000) return;   // grace period — suppress post-refresh noise
+  function _showUpdateBanner() {
     const banner = document.getElementById("update-banner");
-    if (!banner) return;
+    if (!banner || banner.classList.contains("visible")) return;
     banner.classList.add("visible");
-
-    // Auto-dismiss after 30 s if the user ignores it
-    const autoDismiss = setTimeout(() => banner.classList.remove("visible"), 30_000);
-
+    const autoDismiss = setTimeout(() => banner.classList.remove("visible"), 60_000);
     document.getElementById("update-banner-refresh").onclick = () => {
       clearTimeout(autoDismiss);
       window.location.reload();
@@ -1469,7 +1484,7 @@ if ("serviceWorker" in navigator) {
       clearTimeout(autoDismiss);
       banner.classList.remove("visible");
     };
-  });
+  }
 }
 </script>
 
@@ -1782,9 +1797,12 @@ if ("serviceWorker" in navigator) {
       <div id="site-settings-error" style="display:none;margin-top:12px;padding:8px 12px;background:rgba(184,83,66,0.08);border:1px solid rgba(184,83,66,0.2);color:var(--danger);border-radius:var(--radius-sm);font-size:0.8125rem"></div>
 
     </div>
-    <div class="modal-footer">
-      <button class="modal-btn-secondary" id="site-settings-cancel-btn">Cancel</button>
-      <button class="modal-btn-primary" id="site-settings-save-btn">Save</button>
+    <div class="modal-footer" style="flex-direction:column;gap:12px;align-items:stretch">
+      <div style="display:flex;gap:8px">
+        <button class="modal-btn-secondary" id="site-settings-cancel-btn">Cancel</button>
+        <button class="modal-btn-primary" id="site-settings-save-btn">Save</button>
+      </div>
+      <div style="text-align:center;font-size:0.75rem;color:var(--text-3);letter-spacing:0.03em">v1.4.0.0</div>
     </div>
   </div>
 </div>
