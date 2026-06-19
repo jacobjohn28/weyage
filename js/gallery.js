@@ -634,13 +634,17 @@ export function initUploadModal() {
   // ── Upload a single item by index ────────────────────────────
   async function runOne(idx) {
     const file = _uploadFiles[idx];
-    if (!file || !_uploadCityId) return;
+    if (!file || !_uploadCityId) {
+      console.warn(`runOne(${idx}) aborted — file:`, !!file, "cityId:", _uploadCityId);
+      return;
+    }
     const caption = preview.querySelector(`.upload-caption-input[data-idx="${idx}"]`)?.value.trim() || null;
     setItemStatus(idx, "uploading");
     try {
       await _uploadSinglePhoto(_uploadCityId, file, caption);
       setItemStatus(idx, "done");
-    } catch {
+    } catch (err) {
+      console.error(`Upload failed for item ${idx} (${file?.name}):`, err);
       setItemStatus(idx, "error");
     }
   }
