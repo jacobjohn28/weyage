@@ -4395,3 +4395,12 @@ body.share-mode .transit-entry-del { display: none !important; }
   /* ── Gallery upload modal ────────────────────────────────────── */
   #gallery-upload-modal { display: none; }
   #gallery-upload-modal.visible { display: flex; }
+  .upload-preview-item {
+    display: flex; flex-direction: column; gap: 5px;
+    width: calc(50% - 4px);
+  }
+  .upload-preview-item img {
+    width: 100%; aspect-ratio: 1; object-fit: cover;
+    border-radius: 8px; display: block;
+  }
+  .upload-caption-input { font-size: 0.75rem; padding: 5px 8px; }

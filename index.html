@@ -1829,7 +1829,19 @@ if ("serviceWorker" in navigator) {
   <div id="lb-info">
     <div id="lb-counter"></div>
     <div id="lb-meta"></div>
-    <div id="lb-caption"></div>
+    <div id="lb-caption-row" style="display:flex;align-items:flex-start;gap:6px;margin-top:4px">
+      <span id="lb-caption-text" style="font-size:0.875rem;color:var(--text-2);flex:1;line-height:1.4"></span>
+      <button id="lb-caption-edit-btn" title="Edit caption" style="display:none;flex-shrink:0;opacity:0.6;padding:2px 4px;background:none;border:none;cursor:pointer;color:inherit">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      </button>
+    </div>
+    <div id="lb-caption-edit-wrap" style="display:none;margin-top:8px">
+      <input id="lb-caption-input" type="text" placeholder="Add a caption…" style="width:100%;box-sizing:border-box;padding:7px 10px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.25);border-radius:6px;color:inherit;font-size:0.875rem;outline:none" />
+      <div style="display:flex;gap:8px;margin-top:6px">
+        <button id="lb-caption-save-btn" style="flex:1;padding:6px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:0.8125rem;cursor:pointer;font-weight:500">Save</button>
+        <button id="lb-caption-cancel-btn" style="flex:1;padding:6px;background:rgba(255,255,255,0.1);color:inherit;border:none;border-radius:6px;font-size:0.8125rem;cursor:pointer">Cancel</button>
+      </div>
+    </div>
     <button id="lb-delete-btn" style="display:none;margin-top:8px;font-size:0.8125rem;color:var(--danger,#c0392b);background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:6px">Delete photo</button>
   </div>
 </div>
@@ -1850,7 +1862,7 @@ if ("serviceWorker" in navigator) {
         Choose photos
         <input type="file" id="upload-file-input" accept="image/*" multiple style="display:none" />
       </label>
-      <div id="upload-preview-strip" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;min-height:0"></div>
+      <div id="upload-preview-strip" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;min-height:0;max-height:340px;overflow-y:auto"></div>
       <div id="upload-status" style="font-size:0.8125rem;color:var(--text-2);margin-top:8px;min-height:1.2em"></div>
     </div>
     <div class="modal-footer">
