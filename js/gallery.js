@@ -543,10 +543,9 @@ export function openUploadModal(cityId) {
   _uploadObjectUrls = [];
   _uploadFiles = [];
 
-  // Replace file input so it's fully reset
-  const oldInput = modal.querySelector("#upload-file-input");
-  const newInput = oldInput.cloneNode(true);
-  oldInput.replaceWith(newInput);
+  // Reset file input value so the same files can be re-selected if needed
+  const fileInput = modal.querySelector("#upload-file-input");
+  if (fileInput) fileInput.value = "";
 
   modal.querySelector("#upload-preview-strip").innerHTML = "";
   modal.querySelector("#upload-status").textContent = "";
