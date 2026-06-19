@@ -96,7 +96,7 @@ export async function initSharedView(token) {
     if (!tripAllowedUsers.includes(email)) {
       try {
         await updateDoc(doc(db, "trips", activeTripId), { shareViewers: arrayUnion(email) });
-      } catch (_) { /* non-fatal — rules may not allow this yet */ }
+      } catch (err) { console.error("shareViewers write failed:", err.code, err.message); }
       // Show welcome banner only on the first visit
       const seenKey = `sp-seen-${tripDocId}`;
       _showWelcomeBanner = !localStorage.getItem(seenKey);
