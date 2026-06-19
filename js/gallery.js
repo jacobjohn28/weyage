@@ -58,39 +58,39 @@ export async function uploadPhotosForCity(cityId, files, captions, statusCallbac
   const tripId = activeTripId;
   const folder = `weyage/${tripId}/${cityId}`;
   const today = new Date();
-  let failed = 0;
 
+  // Step 1: resize sequentially (avoids memory spikes from parallel canvas ops)
+  statusCallback?.("Preparing photos…");
+  const resized = [];
   for (let i = 0; i < files.length; i++) {
-    const file = files[i];
-    statusCallback?.(`Uploading ${i + 1} of ${files.length}…`);
-    try {
-      const { blob, w, h } = await _resizeImage(file);
-      const { publicId, secureUrl } = await _uploadToCloudinary(blob, folder);
-
-      const modDate = new Date(file.lastModified);
-      const takenDate = (modDate.getFullYear() < today.getFullYear() ||
-        (modDate.getFullYear() === today.getFullYear() && modDate.getMonth() < today.getMonth()))
-        ? localDateStr(modDate) : null;
-
-      await addDoc(collection(db, "trips", tripId, "cityGallery"), {
-        cityId,
-        publicId,
-        secureUrl,
-        name: file.name,
-        caption: captions?.[i] || null,
-        takenDate,
-        width: w,
-        height: h,
-        uploadedBy: auth.currentUser?.uid || null,
-        uploadedAt: serverTimestamp(),
-      });
-    } catch (err) {
-      console.error(`Upload failed for ${file.name}:`, err);
-      failed++;
-    }
+    statusCallback?.(`Preparing ${i + 1} of ${files.length}…`);
+    resized.push(await _resizeImage(files[i], 1200, 0.80));
   }
 
-  if (failed > 0) throw new Error(`${failed} photo${failed > 1 ? "s" : ""} failed to upload. Please try again.`);
+  // Step 2: upload all to Cloudinary in parallel (main speed win)
+  statusCallback?.(`Uploading ${files.length} photo${files.length !== 1 ? "s" : ""}…`);
+  const uploaded = await Promise.all(resized.map(({ blob }) => _uploadToCloudinary(blob, folder)));
+
+  // Step 3: write all Firestore docs in parallel
+  statusCallback?.("Saving…");
+  await Promise.all(files.map((file, i) => {
+    const modDate = new Date(file.lastModified);
+    const takenDate = (modDate.getFullYear() < today.getFullYear() ||
+      (modDate.getFullYear() === today.getFullYear() && modDate.getMonth() < today.getMonth()))
+      ? localDateStr(modDate) : null;
+    return addDoc(collection(db, "trips", tripId, "cityGallery"), {
+      cityId,
+      publicId: uploaded[i].publicId,
+      secureUrl: uploaded[i].secureUrl,
+      name: file.name,
+      caption: captions?.[i] || null,
+      takenDate,
+      width: resized[i].w,
+      height: resized[i].h,
+      uploadedBy: auth.currentUser?.uid || null,
+      uploadedAt: serverTimestamp(),
+    });
+  }));
 }
 
 /* ─────────────────────────────────────────────────────────────
