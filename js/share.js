@@ -4,7 +4,7 @@ import {
   auth, onAuthStateChanged, signInAnonymously, initFirebase,
 } from "./firebase.js";
 import { escapeHtml, fmtTime12, fmtDateRange, nightsBetween, mapsLink, mapsSearchBtn } from "./utils.js";
-import { buildCityPhotoStrip, wireCityPhotoStrip } from "./gallery.js";
+import { buildCityPhotoStrip, wireCityPhotoStrip, renderGallery } from "./gallery.js";
 
 /* ─────────────────────────────────────────────────────────────
    CALLBACK REGISTRATION
@@ -51,6 +51,8 @@ export function showInvalidShareLink() {
 
 export async function initSharedView(token) {
   await initFirebase();
+  // Read-only viewer mode: gates out all edit/upload/select controls across modules.
+  state.shareMode = true;
 
   // Wait for Firebase to determine auth state (handles persistence restoration)
   const existingUser = await new Promise(resolve => {
@@ -398,8 +400,13 @@ function spSwitchView(view) {
   document.querySelectorAll(".sp-view-tab").forEach(t => t.classList.toggle("active", t.dataset.view === view));
   const lv = document.getElementById("sp-list-view");
   const cv = document.getElementById("sp-cal-view");
+  const gv = document.getElementById("sp-gallery-view");
   if (lv) lv.style.display = view === "list" ? "" : "none";
   if (cv) cv.style.display = view === "calendar" ? "" : "none";
+  if (gv) gv.style.display = view === "gallery" ? "" : "none";
+  // Render the gallery on demand (read-only: shareMode gates out upload/select).
+  // Cities are grouped chronologically, identical to the owner gallery.
+  if (view === "gallery") renderGallery(null, "sp-gallery-view");
 }
 
 function _renderSpCalendar() {
@@ -606,9 +613,11 @@ export function renderSharePage(viewerUser, tripAllowedUsers, showWelcomeBanner 
     <div class="sp-view-toggle">
       <button class="sp-view-tab" data-view="list" data-action="switch-view">List</button>
       <button class="sp-view-tab active" data-view="calendar" data-action="switch-view">Calendar</button>
+      <button class="sp-view-tab" data-view="gallery" data-action="switch-view">Gallery</button>
     </div>
     <div id="sp-list-view" class="sp-city-cards" style="display:none">${listHTML}</div>
-    <div id="sp-cal-view" class="sp-calendar">${_renderSpCalendar()}</div>`;
+    <div id="sp-cal-view" class="sp-calendar">${_renderSpCalendar()}</div>
+    <div id="sp-gallery-view" style="display:none;padding:16px"></div>`;
 }
 
 /* ─────────────────────────────────────────────────────────────

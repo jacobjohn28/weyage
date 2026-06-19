@@ -19,7 +19,7 @@ function _resizeImage(file, scale = 0.5, quality = 0.80) {
       URL.revokeObjectURL(url);
       canvas.toBlob(blob => blob ? resolve({ blob, w, h }) : reject(new Error("Canvas toBlob failed")), "image/jpeg", quality);
     };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Image load failed")); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Couldn't read this image (unsupported format?)")); };
     img.src = url;
   });
 }
@@ -36,13 +36,28 @@ async function _uploadToCloudinary(blob, folder) {
   fd.append("upload_preset", uploadPreset);
   fd.append("folder", folder);
 
-  const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-    method: "POST",
-    body: fd,
-  });
+  let res;
+  try {
+    res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+      method: "POST",
+      body: fd,
+    });
+  } catch (netErr) {
+    // fetch() rejects only on network failure (offline, DNS, CORS, connection drop)
+    throw new Error("Network error — check your connection and try again.");
+  }
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
-    throw new Error(`Cloudinary upload failed (${res.status}): ${detail}`);
+    let reason = "";
+    try { reason = JSON.parse(detail)?.error?.message || ""; } catch { /* not JSON */ }
+    if (!reason) {
+      if (res.status === 401 || res.status === 400) reason = "upload rejected by server (check upload preset)";
+      else if (res.status === 413) reason = "image too large";
+      else if (res.status === 420 || res.status === 429) reason = "rate limited — wait a moment";
+      else if (res.status >= 500) reason = "Cloudinary server error — try again";
+      else reason = `HTTP ${res.status}`;
+    }
+    throw new Error(reason);
   }
   const data = await res.json();
   return { publicId: data.public_id, secureUrl: data.secure_url, width: data.width, height: data.height };
@@ -333,14 +348,18 @@ function _showMoveModal() {
   if (!towns.length) return;
   const overlay = document.createElement("div");
   overlay.className = "modal-overlay";
-  overlay.style.cssText = "position:fixed;inset:0;z-index:8000;display:flex;align-items:flex-end;background:rgba(0,0,0,0.5)";
+  // z-index must sit above the select bar (8500), otherwise the bottom-aligned
+  // sheet renders behind it and appears not to open at all.
+  overlay.style.cssText = "position:fixed;inset:0;z-index:9100;display:flex;align-items:flex-end;background:rgba(0,0,0,0.5)";
   overlay.innerHTML = `
-    <div style="background:var(--surface);border-radius:var(--radius-lg) var(--radius-lg) 0 0;width:100%;max-height:60vh;overflow-y:auto;padding:20px">
-      <div style="font-size:0.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);margin-bottom:12px">Move to city</div>
+    <div id="gsc-move-sheet" style="background:var(--surface);border-radius:var(--radius-lg) var(--radius-lg) 0 0;width:100%;max-height:60vh;overflow-y:auto;padding:20px">
+      <div style="font-size:0.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);margin-bottom:12px">Move ${_selectedIds.size} photo${_selectedIds.size > 1 ? "s" : ""} to…</div>
       ${towns.map(t => `<button class="nav-item" data-cityid="${escapeHtml(t.id)}" style="width:100%;text-align:left;padding:12px 8px;font-size:1rem">${escapeHtml(t.name)}</button>`).join("")}
       <button class="nav-item" style="width:100%;text-align:left;padding:12px 8px;font-size:0.875rem;color:var(--text-3);margin-top:4px" id="gsc-move-cancel">Cancel</button>
     </div>`;
   overlay.querySelector("#gsc-move-cancel").addEventListener("click", () => overlay.remove());
+  // Click-outside-to-close (taps on the dark backdrop, not the sheet)
+  overlay.addEventListener("click", e => { if (e.target === overlay) overlay.remove(); });
   overlay.querySelectorAll("[data-cityid]").forEach(btn => {
     btn.addEventListener("click", async () => {
       const newCityId = btn.dataset.cityid;
@@ -366,8 +385,8 @@ async function _moveSelected(newCityId) {
 /* ─────────────────────────────────────────────────────────────
    RENDER GALLERY VIEW
    ───────────────────────────────────────────────────────────── */
-export function renderGallery(filterCityId) {
-  const container = document.getElementById("gallery-content");
+export function renderGallery(filterCityId, containerId = "gallery-content") {
+  const container = document.getElementById(containerId);
   if (!container) return;
 
   const photos = state.cityGallery || [];
@@ -641,11 +660,38 @@ export function initUploadModal() {
     }
   }
 
+  // ── Recompute the footer status from the live DOM ─────────────
+  // Called after every upload attempt (batch run AND individual retries)
+  // so the message always reflects the current state, never stale counts.
+  function refreshGlobalStatus() {
+    // Mid-flight: at least one item still uploading
+    if (preview.querySelector(".upload-item-status .upload-spinner")) {
+      statusEl.textContent = "Uploading…";
+      return;
+    }
+    const pending = preview.querySelectorAll(".upload-preview-item:not(.upload-item-done)").length;
+    const failed  = preview.querySelectorAll(".upload-preview-item.upload-item-error").length;
+
+    if (pending === 0) {
+      // Every item uploaded and faded out
+      statusEl.textContent = "✓ All photos uploaded!";
+      submitBtn.disabled = true;
+      setTimeout(closeUploadModal, 1200);
+    } else if (failed > 0) {
+      statusEl.textContent = `${failed} photo${failed > 1 ? "s" : ""} failed — tap ↺ to retry.`;
+      submitBtn.textContent = "Done";
+      submitBtn.disabled = false;
+    } else {
+      statusEl.textContent = "";
+    }
+  }
+
   // ── Upload a single item by index ────────────────────────────
   async function runOne(idx) {
     const file = _uploadFiles[idx];
     if (!file || !_uploadCityId) return;
     const caption = preview.querySelector(`.upload-caption-input[data-idx="${idx}"]`)?.value.trim() || null;
+    statusEl.textContent = "Uploading…";
     setItemStatus(idx, "uploading");
     try {
       await _uploadSinglePhoto(_uploadCityId, file, caption);
@@ -653,6 +699,7 @@ export function initUploadModal() {
     } catch (err) {
       setItemStatus(idx, "error", err?.message || "Upload failed");
     }
+    refreshGlobalStatus();
   }
 
   // ── Upload all button ────────────────────────────────────────
@@ -666,18 +713,13 @@ export function initUploadModal() {
     for (let i = 0; i < _uploadFiles.length; i++) {
       await runOne(i);
     }
+    refreshGlobalStatus();
+  });
 
-    // Count items that are not done (done items are fading out but still in DOM briefly)
-    const remaining = preview.querySelectorAll(".upload-preview-item:not(.upload-item-done)").length;
-    if (remaining === 0) {
-      statusEl.textContent = "✓ All photos uploaded!";
-      setTimeout(closeUploadModal, 1200);
-    } else {
-      statusEl.textContent = `${remaining} photo${remaining > 1 ? "s" : ""} failed — tap ↺ to retry individually.`;
-      submitBtn.textContent = "Done";
-      submitBtn.disabled = false;
-      submitBtn.addEventListener("click", closeUploadModal, { once: true });
-    }
+  // "Done" closes the modal once uploads have settled with failures.
+  // Separate from the upload handler so it can't re-trigger a batch upload.
+  submitBtn.addEventListener("click", () => {
+    if (submitBtn.textContent === "Done") closeUploadModal();
   });
 }
 

@@ -178,8 +178,13 @@ function listenToTrip(tripId) {
       try {
         if (state.currentView === "gallery") renderGallery();
         if (state.currentView === "itinerary") renderItinerary();
-        // In share mode, refresh city drawer if it's open and showing a city with photos
-        if (state.shareMode) cityGallery.forEach(p => refreshShareCityDrawer(p.cityId));
+        // In share mode, refresh city drawer if it's open and showing a city with photos,
+        // and re-render the share gallery tab if it's currently visible.
+        if (state.shareMode) {
+          cityGallery.forEach(p => refreshShareCityDrawer(p.cityId));
+          const spGallery = document.getElementById("sp-gallery-view");
+          if (spGallery && spGallery.style.display !== "none") renderGallery(null, "sp-gallery-view");
+        }
       } catch (e) { console.error("Gallery render after update:", e); }
     },
     (err) => {
