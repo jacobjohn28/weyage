@@ -247,8 +247,7 @@ function listenToAllTrips(userEmail) {
       renderTripCards();
     }
   }, (err) => {
-    // Index may not exist yet — fail silently; owned trips still work
-    console.warn("shareViewers query:", err.code);
+    console.error("shareViewers query failed:", err.code, err.message);
   });
 }
 
