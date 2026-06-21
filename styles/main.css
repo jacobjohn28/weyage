@@ -4425,48 +4425,64 @@ body.share-mode .transit-entry-del { display: none !important; }
   }
   #gallery-lightbox.visible { display: flex; }
   #lb-image-wrap {
+    position: relative;
     flex: 0 1 auto; display: flex; align-items: center; justify-content: center;
-    width: 100%; max-height: calc(100% - 168px); overflow: hidden;
+    width: 100%; max-height: calc(100% - 84px); overflow: hidden;
     padding: 0 8px; box-sizing: border-box;
     touch-action: none; /* gestures (pinch/pan/swipe) handled in JS */
   }
-  #lb-img {
-    max-width: 100%; max-height: calc(100vh - 180px);
+  #gallery-lightbox #lb-img {
+    max-width: 100%; max-height: calc(100vh - 96px);
     object-fit: contain; border-radius: 6px;
     user-select: none; -webkit-user-drag: none;
     transform-origin: center center; will-change: transform;
     transition: filter 250ms var(--ease);
   }
-  #lb-img.lb-img-loading { filter: blur(12px); }
-  #lb-img.lb-img-anim { transition: transform 220ms var(--ease), filter 250ms var(--ease); }
-  #lb-close {
-    position: absolute; top: calc(var(--safe-top) + 14px); right: 16px; z-index: 1;
-    background: rgba(255,255,255,0.12); border: none;
+  #gallery-lightbox #lb-img.lb-img-loading { filter: blur(12px); }
+  #gallery-lightbox #lb-img.lb-img-anim { transition: transform 220ms var(--ease), filter 250ms var(--ease); }
+  #gallery-lightbox #lb-close {
+    position: absolute; top: calc(var(--safe-top) + 14px); right: 16px; z-index: 2;
+    background: rgba(0,0,0,0.4); border: none;
     color: #fff; width: 40px; height: 40px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    cursor: pointer;
+    cursor: pointer; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
   }
-  /* Nav row sits BELOW the image so the photo can use the full width. */
-  #lb-nav-row {
-    display: flex; align-items: center; justify-content: center; gap: 22px;
-    margin-bottom: 6px;
+  /* Counter + city/date overlaid subtly on the image (top-left). */
+  #lb-overlay-meta {
+    position: absolute; top: calc(var(--safe-top) + 12px); left: 14px; z-index: 1;
+    display: flex; flex-direction: column; max-width: 60%;
+    padding: 4px 9px; border-radius: 8px; pointer-events: none;
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
   }
-  #lb-prev, #lb-next {
+  #lb-overlay-meta #lb-counter { font-size: 0.6875rem; font-weight: 600; color: rgba(255,255,255,0.9); }
+  #lb-overlay-meta #lb-meta {
+    font-size: 0.6875rem; color: rgba(255,255,255,0.65);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  #lb-overlay-meta #lb-meta:empty { display: none; }
+  /* Compact single row below the image: prev · caption · next. */
+  #lb-info {
+    width: 100%; max-width: 760px; margin: 8px auto 0; flex: 0 0 auto;
+    padding: 0 12px calc(env(safe-area-inset-bottom, 0px) + 8px);
+    color: rgba(255,255,255,0.85);
+  }
+  #lb-caption-bar { display: flex; align-items: center; justify-content: center; gap: 12px; }
+  #lb-caption-mid {
+    flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  #lb-caption-text {
+    font-size: 0.875rem; color: rgba(255,255,255,0.92); line-height: 1.35; text-align: center;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  #gallery-lightbox #lb-prev, #gallery-lightbox #lb-next {
     background: rgba(255,255,255,0.12); border: none;
-    color: #fff; width: 44px; height: 44px; border-radius: 50%;
+    color: #fff; width: 42px; height: 42px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     cursor: pointer; flex-shrink: 0;
     transition: background 150ms var(--ease);
   }
-  #lb-prev:active, #lb-next:active { background: rgba(255,255,255,0.22); }
-  #lb-info {
-    width: 100%; max-width: 720px; margin: 12px auto 0;
-    padding: 0 20px; flex: 0 0 auto;
-    text-align: center; color: rgba(255,255,255,0.85);
-  }
-  #lb-counter { min-width: 56px; }
-  #lb-counter { font-size: 0.75rem; color: rgba(255,255,255,0.5); }
-  #lb-meta { font-size: 0.8125rem; color: rgba(255,255,255,0.6); }
+  #gallery-lightbox #lb-prev:active, #gallery-lightbox #lb-next:active { background: rgba(255,255,255,0.22); }
   #lb-caption { font-size: 0.9375rem; margin-top: 4px; }
 
   /* ── Gallery upload modal ────────────────────────────────────── */

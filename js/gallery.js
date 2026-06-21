@@ -329,14 +329,13 @@ function _lbRender() {
   const nextBtn = lb.querySelector("#lb-next");
   if (nextBtn) nextBtn.style.visibility = _lbIndex < _lbPhotos.length - 1 ? "visible" : "hidden";
 
-  // Caption edit & delete — only for owner in non-share mode
+  // Caption edit — only for owner in non-share mode. (Deleting a photo lives in
+  // the gallery's Select mode, not here.)
   const isOwner = !state.shareMode && !!auth.currentUser && photo.uploadedBy === auth.currentUser.uid;
   const editBtn = lb.querySelector("#lb-caption-edit-btn");
   if (editBtn) editBtn.style.display = isOwner ? "" : "none";
   const editWrap = lb.querySelector("#lb-caption-edit-wrap");
   if (editWrap) editWrap.style.display = "none";
-  const delBtn = lb.querySelector("#lb-delete-btn");
-  if (delBtn) delBtn.style.display = isOwner ? "" : "none";
 }
 
 export function initGalleryLightbox() {
@@ -445,20 +444,6 @@ export function initGalleryLightbox() {
       photo.caption = newCaption;
     } catch (e) { console.error("Caption save:", e); }
     _lbRender();
-  });
-
-  // Delete
-  lb.querySelector("#lb-delete-btn")?.addEventListener("click", async () => {
-    const photo = _lbPhotos[_lbIndex];
-    if (!photo?.id) return;
-    if (!confirm("Delete this photo? This cannot be undone.")) return;
-    try {
-      await deleteDoc(doc(db, "trips", activeTripId, "cityGallery", photo.id));
-      _lbPhotos.splice(_lbIndex, 1);
-      if (!_lbPhotos.length) { galleryLightboxClose(); return; }
-      _lbIndex = Math.min(_lbIndex, _lbPhotos.length - 1);
-      _lbRender();
-    } catch (e) { alert("Delete failed: " + e.message); }
   });
 }
 
