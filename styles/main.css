@@ -4,6 +4,7 @@
   :root {
     /* Light mode — warm, restrained, editorial */
     --topbar-h: 60px; /* measured at runtime by syncTopbarHeight() in ui.js */
+    --safe-top: env(safe-area-inset-top, 0px); /* iOS PWA notch/status-bar inset */
     --bg: #FBFBFA;
     --surface: #FFFFFF;
     --surface-2: #F5F4F1;
@@ -556,7 +557,7 @@
   .trips-mobile-signout-btn { display: none; }
   @media (max-width: 768px) {
     .trips-sidebar { display: none; }
-    .trips-main { padding: 24px 20px; }
+    .trips-main { padding: 24px 20px; padding-top: calc(var(--safe-top) + 24px); }
     .trips-header { margin-bottom: 20px; }
     .trips-heading { font-size: 1.5rem; }
     .trips-mobile-signout-btn { display: inline-flex; }
@@ -574,6 +575,7 @@
     .tcp-header {
       display: flex; align-items: center; justify-content: space-between;
       padding: 24px 20px 20px;
+      padding-top: calc(var(--safe-top) + 24px);
       flex-shrink: 0;
     }
     /* Show the mobile heading wrap inside tcp-header */
@@ -596,6 +598,7 @@
   #trips-mobile-overlay.visible { display: flex; }
   .trips-mobile-header {
     padding: 20px 20px 12px;
+    padding-top: calc(var(--safe-top) + 20px);
     display: flex; align-items: center; gap: 12px;
     border-bottom: 1px solid var(--border);
   }
@@ -1084,7 +1087,7 @@
 
     .topbar {
       padding: 14px 20px;
-      padding-top: max(14px, env(safe-area-inset-top));
+      padding-top: calc(var(--safe-top) + 14px);
     }
     .topbar-title { font-size: 1.25rem; }
 
@@ -1844,6 +1847,7 @@
     position: sticky; top: 0; z-index: 100;
     background: var(--accent); color: #fff;
     padding: 11px 20px;
+    padding-top: calc(var(--safe-top) + 11px);
     align-items: center; gap: 12px;
     font-size: 0.875rem; font-weight: 500;
     flex-shrink: 0;
@@ -1900,6 +1904,7 @@
   .sp-header {
     position: sticky; top: 0; z-index: 10; display: flex;
     align-items: center; gap: 12px; padding: 12px 20px;
+    padding-top: calc(var(--safe-top) + 12px);
     background: var(--surface); border-bottom: 1px solid var(--border);
   }
   .sp-header-back {
@@ -4430,7 +4435,7 @@ body.share-mode .transit-entry-del { display: none !important; }
     user-select: none; -webkit-user-drag: none;
   }
   #lb-close {
-    position: absolute; top: 14px; right: 16px; z-index: 1;
+    position: absolute; top: calc(var(--safe-top) + 14px); right: 16px; z-index: 1;
     background: rgba(255,255,255,0.12); border: none;
     color: #fff; width: 40px; height: 40px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
