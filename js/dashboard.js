@@ -9,8 +9,8 @@ import { resolveTownImage, openPhotoPicker } from "./photos.js";
    CALLBACK REGISTRATION
    ───────────────────────────────────────────────────────────── */
 const cb = {};
-export function registerDashboardCallbacks({ openTownEditModal, setView, setPendingScrollTownId, aggregateBudget, toggleSpotVisited }) {
-  Object.assign(cb, { openTownEditModal, setView, setPendingScrollTownId, aggregateBudget, toggleSpotVisited });
+export function registerDashboardCallbacks({ openTownEditModal, setView, setPendingScrollTownId, aggregateBudget, toggleSpotVisited, toHomeCurrency, tripHomeCurrency, currencySymbol, renderTripCalendar }) {
+  Object.assign(cb, { openTownEditModal, setView, setPendingScrollTownId, aggregateBudget, toggleSpotVisited, toHomeCurrency, tripHomeCurrency, currencySymbol, renderTripCalendar });
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -191,7 +191,7 @@ export function renderDashboardTowns() {
         </div>
         <div class="spread-img-col">
           <div class="spread-img-frame">
-            <div class="spread-img-fallback">${name}</div>
+            ${!cachedUrl ? `<div class="spread-img-fallback">${name}</div>` : ""}
             ${!cachedUrl && PEXELS_CONFIG.apiKey ? `<button class="choose-photo-btn" data-town-id="${escapeHtml(t.id)}" data-town-name="${escapeHtml(t.name)}" style="margin-top:12px;font-size:0.75rem;opacity:0.7;padding:5px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);color:var(--text-2);cursor:pointer">Choose photo</button>` : ""}
             ${imgTag}
             ${caption ? `<div class="spread-caption-overlay">${caption}</div>` : ""}
@@ -301,31 +301,50 @@ export function renderDashboardMeta() {
   if (spotsVisEl) spotsVisEl.textContent = visited;
   if (spotsSuffix) spotsSuffix.textContent = total > 0 ? ` / ${total}` : "";
 
+  // Ongoing total budget, converted to the trip's home currency.
   const entries = cb.aggregateBudget();
   const fmt = n => n.toLocaleString("en-GB", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-  const eurEntries = entries.filter(e => e.currency === "EUR");
-  const budgetTargets = { ...(state.trip?.budgetTargets || {}) };
-  if (state.trip?.totalBudget && !budgetTargets.EUR) budgetTargets.EUR = state.trip.totalBudget;
-  const eurBudget  = budgetTargets.EUR || 0;
-  const eurPlanned = eurEntries.reduce((s, e) => s + e.amount, 0);
-  const remaining  = eurBudget ? eurBudget - eurPlanned : null;
-  const budgetEl   = document.getElementById("stat-budget");
+  const home = cb.tripHomeCurrency ? cb.tripHomeCurrency() : "EUR";
+  const symbol = cb.currencySymbol ? cb.currencySymbol(home) : "";
+  let total = 0, allConverted = true;
+  entries.forEach(e => {
+    const h = cb.toHomeCurrency ? cb.toHomeCurrency(e.amount, e.currency) : (e.currency === home ? e.amount : null);
+    if (h === null || h === undefined) allConverted = false;
+    else total += h;
+  });
+  const budgetEl    = document.getElementById("stat-budget");
   const budgetLabel = document.getElementById("stat-budget-label");
   if (budgetEl) {
-    if (remaining !== null) {
-      budgetEl.textContent = `€${fmt(Math.abs(remaining))}`;
-      budgetEl.style.color = remaining < 0 ? "var(--danger)" : "";
-      if (budgetLabel) budgetLabel.textContent = remaining < 0 ? "Over budget" : "Budget left";
-    } else if (eurPlanned > 0) {
-      budgetEl.textContent = `€${fmt(eurPlanned)}`;
-      budgetEl.style.color = "";
-      if (budgetLabel) budgetLabel.textContent = "EUR planned";
+    budgetEl.style.color = "";
+    if (entries.length && total > 0) {
+      budgetEl.textContent = `${symbol}${fmt(total)}`;
+      // Flag when some currencies couldn't be converted (missing exchange rates).
+      if (budgetLabel) budgetLabel.textContent = allConverted ? "Total spend" : "Total (partial)";
     } else {
       budgetEl.textContent = "—";
-      budgetEl.style.color = "";
-      if (budgetLabel) budgetLabel.textContent = "Budget";
+      if (budgetLabel) budgetLabel.textContent = "Total spend";
     }
   }
+}
+
+// Trip calendar in the overview tab — reuses the shared-page calendar renderer;
+// tapping a city span jumps to that city in the itinerary.
+export function renderDashboardCalendar() {
+  const el = document.getElementById("dash-calendar");
+  if (!el) return;
+  const ready = cb.renderTripCalendar && state.towns.length && state.trip?.startDate && state.trip?.endDate;
+  if (!ready) { el.innerHTML = ""; return; }
+  el.innerHTML = `
+    <div class="dash-calendar-block">
+      <h3 class="dash-calendar-title">Trip calendar</h3>
+      <div class="sp-calendar">${cb.renderTripCalendar()}</div>
+    </div>`;
+  el.querySelectorAll(".sp-cal-span[data-id]").forEach(span => {
+    span.addEventListener("click", () => {
+      cb.setPendingScrollTownId(span.dataset.id);
+      cb.setView("itinerary");
+    });
+  });
 }
 
 export function renderDashboardToday() {

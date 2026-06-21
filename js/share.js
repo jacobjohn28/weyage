@@ -409,7 +409,7 @@ function spSwitchView(view) {
   if (view === "gallery") renderGallery(null, "sp-gallery-view");
 }
 
-function _renderSpCalendar() {
+export function renderTripCalendar() {
   const { trip, towns } = state;
   if (!towns.length || !trip?.startDate || !trip?.endDate) {
     return `<div style="padding:24px;text-align:center;font-size:.875rem;color:var(--text-3)">No dates set for this trip</div>`;
@@ -616,7 +616,7 @@ export function renderSharePage(viewerUser, tripAllowedUsers, showWelcomeBanner 
       <button class="sp-view-tab" data-view="gallery" data-action="switch-view">Gallery</button>
     </div>
     <div id="sp-list-view" class="sp-city-cards" style="display:none">${listHTML}</div>
-    <div id="sp-cal-view" class="sp-calendar">${_renderSpCalendar()}</div>
+    <div id="sp-cal-view" class="sp-calendar">${renderTripCalendar()}</div>
     <div id="sp-gallery-view" style="display:none;padding:16px"></div>`;
 }
 

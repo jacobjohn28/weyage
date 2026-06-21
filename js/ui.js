@@ -67,9 +67,32 @@ const TOPBAR_ACTIONS = {
   expenses: { label: "Add expense", target: "expenses-add-btn" },
 };
 
+// #4 — second bottom-nav slot is Guides during the trip, Gallery once it's over.
+// The "More" sheet shows whichever of the two is NOT currently in the bottom bar.
+const _slot2Icons = {
+  guides:  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`,
+  gallery: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`,
+};
+export function updateBottomNav() {
+  const slot = document.getElementById("bottom-nav-slot2");
+  if (!slot) return;
+  const tripOver = !!state.trip?.endDate && state.trip.endDate < localDateStr(new Date());
+  const view = tripOver ? "gallery" : "guides";
+  if (slot.dataset.view !== view) {
+    slot.dataset.view = view;
+    slot.innerHTML = `${_slot2Icons[view]}<span>${view === "gallery" ? "Gallery" : "Guides"}</span>`;
+  }
+  slot.classList.toggle("active", state.currentView === view);
+  const sheetGuides  = document.getElementById("sheet-guides-btn");
+  const sheetGallery = document.getElementById("sheet-gallery-btn");
+  if (sheetGuides)  sheetGuides.style.display  = tripOver ? "" : "none";
+  if (sheetGallery) sheetGallery.style.display = tripOver ? "none" : "";
+}
+
 export function setView(viewName) {
   if (viewName === "more") return;
   state.currentView = viewName;
+  updateBottomNav();
   document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
   const el = document.getElementById("view-" + viewName);
   if (el) el.classList.add("active");
@@ -650,6 +673,10 @@ export function initUI() {
   document.getElementById("sheet-gallery-btn")?.addEventListener("click", () => {
     moreSheet.style.display = "none";
     setView("gallery");
+  });
+  document.getElementById("sheet-guides-btn")?.addEventListener("click", () => {
+    moreSheet.style.display = "none";
+    setView("guides");
   });
 
   // #5 — in-trip top drawer (mobile): meta actions, mirrors the All Trips drawer.

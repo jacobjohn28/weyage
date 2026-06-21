@@ -10,7 +10,7 @@ import { localDateStr, fmtDateRange, fmtSpreadDates, nightsBetween, daysUntil, f
 import { registerPhotoCallbacks, getPendingBackfill, setPendingBackfill,
          extractTripDestination, resolveTownImage, fetchPexelsPhotos,
          closePhotoPicker, startBackfillForTrip, startPhotoBackfill, openPhotoPicker } from "./photos.js";
-import { registerDashboardCallbacks, renderDashboardTowns, renderDashboardMeta, renderDashboardToday, generateCityBriefing } from "./dashboard.js";
+import { registerDashboardCallbacks, renderDashboardTowns, renderDashboardMeta, renderDashboardToday, renderDashboardCalendar, generateCityBriefing } from "./dashboard.js";
 import { registerGuidesCallbacks, generateSpotGuide, generateAllGuides, renderGuides, TYPE_COLORS } from "./guides.js";
 import { registerDocumentCallbacks, addAttachment, toggleAttachmentPin, deleteAttachment, renderDocuments, openLightbox, lbClose, initLightbox } from "./documents.js";
 import { registerDisruptionCallbacks, updateDisruptionBadge, renderDisruption } from "./disruption.js";
@@ -18,6 +18,7 @@ import {
   registerBudgetCallbacks, refreshBudgetDrawer,
   aggregateBudget, renderBudget, renderExpenses,
   initBudget, openTownEditModal, CURRENCY_LIST,
+  toHomeCurrency, tripHomeCurrency, currencySymbol,
 } from "./budget.js";
 import {
   registerItineraryCallbacks, initItinerary,
@@ -32,6 +33,7 @@ import {
 import {
   registerShareCallbacks, initSharedView, generateAndCopyShareLink,
   renderSharePage, showInvalidShareLink, refreshShareCityDrawer,
+  renderTripCalendar,
 } from "./share.js";
 import { registerGalleryNavCallback, renderGallery, openGalleryForCity } from "./gallery.js";
 import { initContactsPanel, renderContactsPanel } from "./contacts.js";
@@ -46,7 +48,7 @@ import {
   initRecommendations,
 } from "./recommendations.js";
 import {
-  registerUiCallbacks, initUI, setView,
+  registerUiCallbacks, initUI, setView, updateBottomNav,
   showAuthScreen, showTripList, showShareSection, showApp,
   setupUserChip, exitToTripList, loadSiteConfig,
   openSiteSettings, closeSiteSettings, saveSiteSettings,
@@ -311,6 +313,8 @@ subscribe(() => {
   renderDashboardTowns();
   renderDashboardMeta();
   renderDashboardToday();
+  renderDashboardCalendar();
+  updateBottomNav();
   if (state.currentView === "itinerary") renderItinerary();
   if (state.currentView === "guides") renderGuides();
   if (state.currentView === "budget") renderBudget();
@@ -389,6 +393,10 @@ registerDashboardCallbacks({
   setPendingScrollTownId,
   aggregateBudget,
   toggleSpotVisited,
+  toHomeCurrency,
+  tripHomeCurrency,
+  currencySymbol,
+  renderTripCalendar,
 });
 registerGuidesCallbacks({
   spotDocRef,
