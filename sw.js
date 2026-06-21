@@ -2,7 +2,7 @@
    Weyage Service Worker
    Deployed at: /weyage/ subdirectory on GitHub Pages
    ============================================================ */
-const CACHE_NAME = "weyage-v1.4.1.8";
+const CACHE_NAME = "weyage-v1.4.1.9";
 
 // Static assets that rarely change — cache-first
 const STATIC_ASSETS = [
@@ -93,9 +93,20 @@ self.addEventListener("fetch", (event) => {
         // Always kick off a background refresh
         const networkFetch = fetch(request).then(async response => {
           if (response.ok) {
-            await cache.put(request, response.clone());
-            // If we served a cached version, tell the page a fresh one is now ready
+            // Only notify the page when the shell ACTUALLY changed — comparing
+            // the fresh body against the cached one. Without this we posted
+            // APP_UPDATED on every navigation (cached always exists), so the
+            // "update ready" banner showed constantly even with no new version.
+            let changed = false;
             if (cached) {
+              const [oldText, newText] = await Promise.all([
+                cached.clone().text(),
+                response.clone().text(),
+              ]);
+              changed = oldText !== newText;
+            }
+            await cache.put(request, response.clone());
+            if (changed) {
               const clients = await self.clients.matchAll({ type: "window" });
               clients.forEach(c => c.postMessage({ type: "APP_UPDATED" }));
             }
