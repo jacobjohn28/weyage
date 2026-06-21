@@ -4426,16 +4426,19 @@ body.share-mode .transit-entry-del { display: none !important; }
   #gallery-lightbox.visible { display: flex; }
   #lb-image-wrap {
     flex: 0 1 auto; display: flex; align-items: center; justify-content: center;
-    width: 100%; max-height: calc(100% - 150px); overflow: hidden;
-    padding: 0 60px; box-sizing: border-box;
+    width: 100%; max-height: calc(100% - 168px); overflow: hidden;
+    padding: 0 8px; box-sizing: border-box;
+    touch-action: none; /* gestures (pinch/pan/swipe) handled in JS */
   }
   #lb-img {
-    max-width: 100%; max-height: calc(100vh - 160px);
+    max-width: 100%; max-height: calc(100vh - 180px);
     object-fit: contain; border-radius: 6px;
     user-select: none; -webkit-user-drag: none;
+    transform-origin: center center; will-change: transform;
     transition: filter 250ms var(--ease);
   }
   #lb-img.lb-img-loading { filter: blur(12px); }
+  #lb-img.lb-img-anim { transition: transform 220ms var(--ease), filter 250ms var(--ease); }
   #lb-close {
     position: absolute; top: calc(var(--safe-top) + 14px); right: 16px; z-index: 1;
     background: rgba(255,255,255,0.12); border: none;
@@ -4443,21 +4446,26 @@ body.share-mode .transit-entry-del { display: none !important; }
     display: flex; align-items: center; justify-content: center;
     cursor: pointer;
   }
+  /* Nav row sits BELOW the image so the photo can use the full width. */
+  #lb-nav-row {
+    display: flex; align-items: center; justify-content: center; gap: 22px;
+    margin-bottom: 6px;
+  }
   #lb-prev, #lb-next {
-    position: absolute; top: 50%; transform: translateY(-50%);
     background: rgba(255,255,255,0.12); border: none;
     color: #fff; width: 44px; height: 44px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    cursor: pointer; z-index: 1;
+    cursor: pointer; flex-shrink: 0;
+    transition: background 150ms var(--ease);
   }
-  #lb-prev { left: 12px; }
-  #lb-next { right: 12px; }
+  #lb-prev:active, #lb-next:active { background: rgba(255,255,255,0.22); }
   #lb-info {
-    width: 100%; max-width: 720px; margin: 10px auto 0;
+    width: 100%; max-width: 720px; margin: 12px auto 0;
     padding: 0 20px; flex: 0 0 auto;
     text-align: center; color: rgba(255,255,255,0.85);
   }
-  #lb-counter { font-size: 0.75rem; color: rgba(255,255,255,0.5); margin-bottom: 4px; }
+  #lb-counter { min-width: 56px; }
+  #lb-counter { font-size: 0.75rem; color: rgba(255,255,255,0.5); }
   #lb-meta { font-size: 0.8125rem; color: rgba(255,255,255,0.6); }
   #lb-caption { font-size: 0.9375rem; margin-top: 4px; }
 

@@ -214,7 +214,44 @@ export function photoLqipUrl(photo) {
    ───────────────────────────────────────────────────────────── */
 let _lbPhotos = [];
 let _lbIndex  = 0;
-let _lbTouchStartX = 0;
+
+// Lightbox gesture state: pinch-zoom, double-tap zoom, pan, finger-follow swipe.
+let _lbScale = 1, _lbTx = 0, _lbTy = 0;
+let _lbGesture = null;            // null | "drag" | "pinch"
+let _lbStartX = 0, _lbStartY = 0, _lbStartTx = 0, _lbStartTy = 0;
+let _lbStartDist = 0, _lbStartScale = 1, _lbLastTap = 0;
+
+function _lbImgEl() {
+  return document.getElementById("gallery-lightbox")?.querySelector("#lb-img");
+}
+function _lbApplyTransform(animate) {
+  const img = _lbImgEl();
+  if (!img) return;
+  img.classList.toggle("lb-img-anim", !!animate); // class adds a transform transition
+  img.style.transform = `translate(${_lbTx}px, ${_lbTy}px) scale(${_lbScale})`;
+}
+function _lbZoomReset(animate) { _lbScale = 1; _lbTx = 0; _lbTy = 0; _lbApplyTransform(animate); }
+function _lbTouchDist(t) { return Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY); }
+function _lbClampPan(wrap) {
+  const img = _lbImgEl();
+  if (!img || !wrap) return;
+  const r = img.getBoundingClientRect();      // visual (already-scaled) box
+  const w = wrap.getBoundingClientRect();
+  const maxX = Math.max(0, (r.width  - w.width)  / 2);
+  const maxY = Math.max(0, (r.height - w.height) / 2);
+  _lbTx = Math.max(-maxX, Math.min(maxX, _lbTx));
+  _lbTy = Math.max(-maxY, Math.min(maxY, _lbTy));
+  _lbApplyTransform(true);
+}
+function _lbToggleZoom(touch, wrap) {
+  if (_lbScale > 1) { _lbZoomReset(true); return; }
+  _lbScale = 2.5;
+  const r = wrap.getBoundingClientRect();
+  _lbTx = -(touch.clientX - (r.left + r.width  / 2)) * (_lbScale - 1);
+  _lbTy = -(touch.clientY - (r.top  + r.height / 2)) * (_lbScale - 1);
+  _lbApplyTransform(true);
+  _lbClampPan(wrap);
+}
 
 function _lbShow(photos, index) {
   _lbPhotos = photos;
@@ -237,6 +274,7 @@ export function galleryLightboxClose() {
 function _lbRender() {
   const lb = document.getElementById("gallery-lightbox");
   if (!lb) return;
+  _lbZoomReset(false); // each photo starts un-zoomed / un-panned
   const photo = _lbPhotos[_lbIndex];
   if (!photo) return;
 
@@ -324,13 +362,67 @@ export function initGalleryLightbox() {
     if (e.key === "Escape") galleryLightboxClose();
   });
 
-  lb.addEventListener("touchstart", e => { _lbTouchStartX = e.touches[0].clientX; }, { passive: true });
-  lb.addEventListener("touchend", e => {
-    const dx = e.changedTouches[0].clientX - _lbTouchStartX;
-    if (Math.abs(dx) < 40) return;
-    if (dx < 0 && _lbIndex < _lbPhotos.length - 1) { _lbIndex++; _lbRender(); }
-    if (dx > 0 && _lbIndex > 0) { _lbIndex--; _lbRender(); }
-  }, { passive: true });
+  // Touch gestures: pinch-zoom, double-tap zoom, pan when zoomed, finger-follow
+  // swipe to change photo when not zoomed. (Verify/tune on a real device.)
+  const wrap = lb.querySelector("#lb-image-wrap");
+  if (wrap) {
+    wrap.addEventListener("touchstart", e => {
+      if (e.touches.length === 2) {
+        _lbGesture = "pinch";
+        _lbStartDist = _lbTouchDist(e.touches);
+        _lbStartScale = _lbScale;
+      } else if (e.touches.length === 1) {
+        const now = Date.now();
+        if (now - _lbLastTap < 300) {           // double-tap → toggle zoom
+          _lbLastTap = 0; _lbGesture = null;
+          _lbToggleZoom(e.touches[0], wrap);
+          return;
+        }
+        _lbLastTap = now;
+        _lbGesture = "drag";
+        _lbStartX = e.touches[0].clientX; _lbStartY = e.touches[0].clientY;
+        _lbStartTx = _lbTx; _lbStartTy = _lbTy;
+      }
+    }, { passive: true });
+
+    wrap.addEventListener("touchmove", e => {
+      if (_lbGesture === "pinch" && e.touches.length === 2) {
+        e.preventDefault();
+        const ratio = _lbTouchDist(e.touches) / (_lbStartDist || 1);
+        _lbScale = Math.max(1, Math.min(4, _lbStartScale * ratio));
+        _lbApplyTransform(false);
+      } else if (_lbGesture === "drag" && e.touches.length === 1) {
+        const dx = e.touches[0].clientX - _lbStartX;
+        const dy = e.touches[0].clientY - _lbStartY;
+        if (_lbScale > 1) {                      // pan the zoomed image
+          e.preventDefault();
+          _lbTx = _lbStartTx + dx; _lbTy = _lbStartTy + dy;
+          _lbApplyTransform(false);
+        } else if (Math.abs(dx) > Math.abs(dy)) { // finger-follow swipe
+          e.preventDefault();
+          _lbTx = dx * 0.9;
+          _lbApplyTransform(false);
+        }
+      }
+    }, { passive: false });
+
+    wrap.addEventListener("touchend", () => {
+      if (_lbGesture === "pinch") {
+        _lbGesture = null;
+        if (_lbScale <= 1.05) _lbZoomReset(true); else _lbClampPan(wrap);
+        return;
+      }
+      if (_lbGesture === "drag") {
+        _lbGesture = null;
+        if (_lbScale > 1) { _lbClampPan(wrap); return; }
+        const dx = _lbTx;
+        const threshold = Math.max(60, (window.innerWidth || 320) * 0.2);
+        if (dx <= -threshold && _lbIndex < _lbPhotos.length - 1) { _lbIndex++; _lbRender(); }
+        else if (dx >= threshold && _lbIndex > 0) { _lbIndex--; _lbRender(); }
+        else { _lbTx = 0; _lbApplyTransform(true); } // snap back
+      }
+    }, { passive: true });
+  }
 
   // Caption editing
   lb.querySelector("#lb-caption-edit-btn")?.addEventListener("click", e => {

@@ -1819,7 +1819,7 @@ if ("serviceWorker" in navigator) {
         <button class="modal-btn-secondary" id="site-settings-cancel-btn">Cancel</button>
         <button class="modal-btn-primary" id="site-settings-save-btn">Save</button>
       </div>
-      <div class="app-version" id="app-version-settings" style="text-align:center;font-size:0.75rem;color:var(--text-3);letter-spacing:0.03em">v1.4.1.11</div>
+      <div class="app-version" id="app-version-settings" style="text-align:center;font-size:0.75rem;color:var(--text-3);letter-spacing:0.03em">v1.4.1.12</div>
     </div>
   </div>
 </div>
@@ -1856,14 +1856,16 @@ if ("serviceWorker" in navigator) {
   <button id="lb-close" aria-label="Close">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="22" height="22"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
   </button>
-  <button id="lb-prev" aria-label="Previous">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="22" height="22"><polyline points="15 18 9 12 15 6"/></svg>
-  </button>
-  <button id="lb-next" aria-label="Next">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="22" height="22"><polyline points="9 6 15 12 9 18"/></svg>
-  </button>
   <div id="lb-info">
-    <div id="lb-counter"></div>
+    <div id="lb-nav-row">
+      <button id="lb-prev" aria-label="Previous">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="20" height="20"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div id="lb-counter"></div>
+      <button id="lb-next" aria-label="Next">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="20" height="20"><polyline points="9 6 15 12 9 18"/></svg>
+      </button>
+    </div>
     <div id="lb-meta"></div>
     <div id="lb-caption-row" style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:4px">
       <span id="lb-caption-text" style="font-size:0.875rem;color:var(--text-2);line-height:1.4;text-align:center"></span>

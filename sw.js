@@ -2,7 +2,7 @@
    Weyage Service Worker
    Deployed at: /weyage/ subdirectory on GitHub Pages
    ============================================================ */
-const CACHE_NAME = "weyage-v1.4.1.11";
+const CACHE_NAME = "weyage-v1.4.1.12";
 
 // Static assets that rarely change — cache-first
 const STATIC_ASSETS = [
@@ -43,8 +43,22 @@ const NETWORK_FIRST_PREFIXES = [
   "https://securetoken.googleapis.com",
   "https://generativelanguage.googleapis.com",
   "https://api.cloudinary.com/v1_1/",
-  "https://res.cloudinary.com/",
 ];
+
+// Cloudinary delivery images are immutable (keyed by public id + transform), so
+// cache them first for instant repeat views + offline. Kept in a dedicated cache
+// that survives version bumps, with a size cap so it can't grow forever.
+const IMAGE_CACHE = "weyage-images-v1";
+const MAX_IMAGE_ENTRIES = 400;
+
+async function trimImageCache() {
+  const cache = await caches.open(IMAGE_CACHE);
+  const keys = await cache.keys();
+  // keys() is in insertion order — drop the oldest entries past the cap.
+  for (let i = 0; i < keys.length - MAX_IMAGE_ENTRIES; i++) {
+    await cache.delete(keys[i]);
+  }
+}
 
 // CDN assets — cache on first fetch (versioned, never change)
 const CDN_ORIGINS = [
@@ -63,7 +77,9 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+      Promise.all(keys
+        .filter(k => k !== CACHE_NAME && k !== IMAGE_CACHE)
+        .map(k => caches.delete(k)))
     )
   );
   self.clients.claim();
@@ -78,6 +94,24 @@ self.addEventListener("fetch", (event) => {
   // Always network-first for Firebase and Gemini
   if (NETWORK_FIRST_PREFIXES.some(p => request.url.startsWith(p))) {
     event.respondWith(fetch(request).catch(() => caches.match(request)));
+    return;
+  }
+
+  // Cache-first for Cloudinary delivery images (immutable) — instant on repeat
+  // views and available offline. Size-capped via trimImageCache().
+  if (request.url.startsWith("https://res.cloudinary.com/")) {
+    event.respondWith(
+      caches.open(IMAGE_CACHE).then(async cache => {
+        const cached = await cache.match(request);
+        if (cached) return cached;
+        const response = await fetch(request);
+        if (response.ok) {
+          await cache.put(request, response.clone());
+          trimImageCache(); // fire-and-forget; don't delay the response
+        }
+        return response;
+      })
+    );
     return;
   }
 

@@ -43,4 +43,4 @@ export const FIREBASE_BASE = `https://www.gstatic.com/firebasejs/${FIREBASE_VERS
    the mobile "more" sheet, and Site Settings. Keep CACHE_NAME in
    sw.js in sync on each release (documented bump step).
    ───────────────────────────────────────────────────────────── */
-export const APP_VERSION = "1.4.1.11";
+export const APP_VERSION = "1.4.1.12";
