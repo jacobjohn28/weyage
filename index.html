@@ -1483,7 +1483,48 @@ if ("serviceWorker" in navigator) {
     _updateBanner?.classList.remove("visible");
   });
 
+  // Manual "Check for updates & refresh" (Settings) — a reliable one-tap hard
+  // refresh for installed PWAs. Forces a fresh sw.js check (updateViaCache:"none"),
+  // and if a new worker is deployed, waits for it to install + activate (its
+  // install fetches assets with cache:"reload", bypassing the HTTP cache) before
+  // reloading — so the user lands on the latest version in a single tap, without
+  // manually clearing cache. Auth/IndexedDB and the image cache are untouched.
+  async function weyageHardRefresh(btn, statusEl) {
+    if (btn) btn.disabled = true;
+    const setStatus = (t) => { if (statusEl) { statusEl.style.display = ""; statusEl.textContent = t; } };
+    setStatus("Checking for updates…");
+    _swRefreshing = true; // this function owns the single reload below
+    try {
+      const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
+      if (reg) {
+        await reg.update().catch(() => {});
+        const sw = reg.installing || reg.waiting;
+        if (sw) {
+          setStatus("Updating to the latest version…");
+          await new Promise(resolve => {
+            const finish = () => resolve();
+            const onState = () => {
+              if (sw.state === "installed" && reg.waiting) reg.waiting.postMessage({ type: "SKIP_WAITING" });
+              if (sw.state === "activated") finish();
+            };
+            sw.addEventListener("statechange", onState);
+            onState();
+            setTimeout(finish, 8000); // never hang
+          });
+        } else {
+          setStatus("You're on the latest version — refreshing…");
+        }
+      }
+    } catch (e) { /* a reload is still the best path even if the check fails */ }
+    window.location.reload();
+  }
+  window.weyageHardRefresh = weyageHardRefresh;
+
   window.addEventListener("load", () => {
+    const _updBtn = document.getElementById("site-settings-update-btn");
+    const _updStatus = document.getElementById("site-settings-update-status");
+    _updBtn?.addEventListener("click", () => weyageHardRefresh(_updBtn, _updStatus));
+
     // updateViaCache:"none" forces sw.js to be fetched from the network (not the
     // browser's HTTP cache) on every update check. Without this, a phone can sit
     // on a stale sw.js for up to 24h and never notice a new version.
@@ -1819,7 +1860,14 @@ if ("serviceWorker" in navigator) {
         <button class="modal-btn-secondary" id="site-settings-cancel-btn">Cancel</button>
         <button class="modal-btn-primary" id="site-settings-save-btn">Save</button>
       </div>
-      <div class="app-version" id="app-version-settings" style="text-align:center;font-size:0.75rem;color:var(--text-3);letter-spacing:0.03em">v1.4.1.15</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+        <button class="modal-btn-secondary" id="site-settings-update-btn" type="button" style="width:100%;display:inline-flex;align-items:center;justify-content:center;gap:8px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          Check for updates &amp; refresh
+        </button>
+        <div id="site-settings-update-status" style="font-size:0.75rem;color:var(--text-3);display:none"></div>
+        <div class="app-version" id="app-version-settings" style="text-align:center;font-size:0.75rem;color:var(--text-3);letter-spacing:0.03em">v1.4.1.16</div>
+      </div>
     </div>
   </div>
 </div>

@@ -2,7 +2,7 @@
    Weyage Service Worker
    Deployed at: /weyage/ subdirectory on GitHub Pages
    ============================================================ */
-const CACHE_NAME = "weyage-v1.4.1.15";
+const CACHE_NAME = "weyage-v1.4.1.16";
 
 // Static assets that rarely change — cache-first
 const STATIC_ASSETS = [
@@ -69,9 +69,25 @@ const CDN_ORIGINS = [
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS))
+    caches.open(CACHE_NAME).then(cache =>
+      // cache:"reload" bypasses the browser HTTP cache so a new worker always
+      // caches genuinely fresh files (GitHub Pages serves a 10-min max-age, so
+      // a plain fetch could otherwise re-cache stale JS/CSS). Per-asset catch so
+      // one failed file can't abort the whole install.
+      Promise.all(STATIC_ASSETS.map(url =>
+        fetch(url, { cache: "reload" })
+          .then(r => { if (r.ok) return cache.put(url, r); })
+          .catch(() => {})
+      ))
+    )
   );
   self.skipWaiting();
+});
+
+// Let the page force a waiting worker to activate (used by the manual
+// "Check for updates & refresh" button in Settings).
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
