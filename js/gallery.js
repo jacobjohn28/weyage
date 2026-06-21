@@ -190,7 +190,21 @@ export function photoThumbUrl(photo, size = 400) {
 export function photoFullUrl(photo) {
   const { cloudName } = CLOUDINARY_CONFIG;
   if (cloudName && photo.publicId) {
-    return `https://res.cloudinary.com/${cloudName}/image/upload/q_auto,f_auto/${photo.publicId}`;
+    // Size to the device instead of serving the full-res original. A phone-camera
+    // photo is often 4000px+; decoding that on a phone is what makes the lightbox
+    // feel slow. c_limit never upscales, so quality is unaffected for the screen.
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = Math.min(2048, Math.round((window.innerWidth || 1024) * dpr));
+    return `https://res.cloudinary.com/${cloudName}/image/upload/c_limit,w_${w},q_auto,f_auto/${photo.publicId}`;
+  }
+  return photo.secureUrl || "";
+}
+// Tiny low-quality placeholder (~1-2KB) for the lightbox blur-up while the
+// full image loads. Same c_limit aspect as the full image → no layout jump.
+export function photoLqipUrl(photo) {
+  const { cloudName } = CLOUDINARY_CONFIG;
+  if (cloudName && photo.publicId) {
+    return `https://res.cloudinary.com/${cloudName}/image/upload/c_limit,w_64,q_auto,f_auto/${photo.publicId}`;
   }
   return photo.secureUrl || "";
 }
@@ -232,7 +246,33 @@ function _lbRender() {
     : "";
 
   const img = lb.querySelector("#lb-img");
-  if (img) { img.src = photoFullUrl(photo); img.alt = escapeHtml(photo.caption || photo.name || ""); }
+  if (img) {
+    img.alt = escapeHtml(photo.caption || photo.name || "");
+    const fullUrl = photoFullUrl(photo);
+    const full = new Image();
+    full.decoding = "async";
+    full.src = fullUrl;
+    if (full.complete) {
+      // Already cached (e.g. a preloaded neighbour) — show sharp instantly.
+      img.src = fullUrl;
+      img.classList.remove("lb-img-loading");
+    } else {
+      // Blur-up: tiny placeholder now, swap to sharp once it decodes.
+      img.src = photoLqipUrl(photo);
+      img.classList.add("lb-img-loading");
+      full.onload = () => {
+        if (_lbPhotos[_lbIndex] === photo) { // ignore if user already moved on
+          img.src = fullUrl;
+          img.classList.remove("lb-img-loading");
+        }
+      };
+    }
+  }
+
+  // Preload the neighbours so prev/next swaps are instant (already in cache).
+  [_lbPhotos[_lbIndex - 1], _lbPhotos[_lbIndex + 1]].forEach(p => {
+    if (p) { const pre = new Image(); pre.src = photoFullUrl(p); }
+  });
 
   const captionEl = lb.querySelector("#lb-caption-text");
   if (captionEl) {
@@ -531,7 +571,7 @@ function _buildCitySection(town, photos, compact) {
           <button class="gallery-thumb${inSelectMode && _selectedIds.has(p.publicId) ? " gallery-thumb-selected" : ""}"
             data-publicid="${escapeHtml(p.publicId)}" data-cityid="${escapeHtml(p.cityId)}"
             title="${escapeHtml(p.caption || p.name || "")}">
-            <img src="${photoThumbUrl(p, 400)}" alt="${escapeHtml(p.name || "")}" loading="lazy" />
+            <img src="${photoThumbUrl(p, 400)}" alt="${escapeHtml(p.name || "")}" loading="lazy" decoding="async" />
             ${p.takenDate ? `<span class="gallery-thumb-date">${new Date(p.takenDate + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</span>` : ""}
             <span class="gallery-thumb-check" style="display:${inSelectMode && _selectedIds.has(p.publicId) ? "" : "none"}">
               <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>
@@ -559,7 +599,7 @@ export function buildCityPhotoStrip(cityId) {
     <div class="city-photo-strip" data-stripfor="${escapeHtml(cityId)}">
       ${visible.map((p, i) => `
         <button class="city-strip-thumb" data-strippublicid="${escapeHtml(p.publicId)}" data-stripcityid="${escapeHtml(cityId)}" data-stripidx="${i}">
-          <img src="${photoThumbUrl(p, 200)}" alt="" loading="lazy" />
+          <img src="${photoThumbUrl(p, 200)}" alt="" loading="lazy" decoding="async" />
         </button>`).join("")}
       ${extra > 0 ? `<button class="city-strip-more" data-stripcityid="${escapeHtml(cityId)}">+${extra}</button>` : ""}
       ${canAdd ? `<button class="city-strip-add" data-stripaddcityid="${escapeHtml(cityId)}" title="Add photos" aria-label="Add photos">${icon("add", { size: 22 })}</button>` : ""}

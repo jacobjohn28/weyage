@@ -4433,7 +4433,9 @@ body.share-mode .transit-entry-del { display: none !important; }
     max-width: 100%; max-height: calc(100vh - 160px);
     object-fit: contain; border-radius: 6px;
     user-select: none; -webkit-user-drag: none;
+    transition: filter 250ms var(--ease);
   }
+  #lb-img.lb-img-loading { filter: blur(12px); }
   #lb-close {
     position: absolute; top: calc(var(--safe-top) + 14px); right: 16px; z-index: 1;
     background: rgba(255,255,255,0.12); border: none;
