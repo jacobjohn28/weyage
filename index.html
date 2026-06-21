@@ -1490,8 +1490,14 @@ if ("serviceWorker" in navigator) {
   // reloading — so the user lands on the latest version in a single tap, without
   // manually clearing cache. Auth/IndexedDB and the image cache are untouched.
   async function weyageHardRefresh(btn, statusEl) {
-    if (btn) btn.disabled = true;
     const setStatus = (t) => { if (statusEl) { statusEl.style.display = ""; statusEl.textContent = t; } };
+    // Offline guard: there's nothing to fetch, and we must not reload into a
+    // state where the app can't load. Bail out and leave everything intact.
+    if (navigator.onLine === false) {
+      setStatus("You're offline — connect to the internet to check for updates.");
+      return;
+    }
+    if (btn) btn.disabled = true;
     setStatus("Checking for updates…");
     _swRefreshing = true; // this function owns the single reload below
     try {
@@ -1866,7 +1872,7 @@ if ("serviceWorker" in navigator) {
           Check for updates &amp; refresh
         </button>
         <div id="site-settings-update-status" style="font-size:0.75rem;color:var(--text-3);display:none"></div>
-        <div class="app-version" id="app-version-settings" style="text-align:center;font-size:0.75rem;color:var(--text-3);letter-spacing:0.03em">v1.4.1.16</div>
+        <div class="app-version" id="app-version-settings" style="text-align:center;font-size:0.75rem;color:var(--text-3);letter-spacing:0.03em">v1.4.1.17</div>
       </div>
     </div>
   </div>
