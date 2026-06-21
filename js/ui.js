@@ -859,6 +859,10 @@ export function initUI() {
     e.stopPropagation();
     const drawer = document.getElementById("trips-top-drawer");
     const isOpen = drawer.style.display !== "none";
+    if (!isOpen) {
+      const hd = document.querySelector(".trips-header");
+      if (hd) drawer.style.top = `${Math.round(hd.getBoundingClientRect().bottom)}px`;
+    }
     drawer.style.display = isOpen ? "none" : "";
     document.getElementById("trips-heading-dropdown-btn").setAttribute("aria-expanded", String(!isOpen));
   });
@@ -877,6 +881,10 @@ export function initUI() {
     e.stopPropagation();
     const drawer = document.getElementById("tcp-top-drawer");
     const isOpen = drawer.style.display !== "none";
+    if (!isOpen) {
+      const hd = document.querySelector(".tcp-header");
+      if (hd) drawer.style.top = `${Math.round(hd.getBoundingClientRect().bottom)}px`;
+    }
     drawer.style.display = isOpen ? "none" : "";
     document.getElementById("tcp-heading-dropdown-btn").setAttribute("aria-expanded", String(!isOpen));
   });

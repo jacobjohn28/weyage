@@ -784,7 +784,9 @@
   }
   .topbar-title-chevron { display: none; } /* desktop: no affordance */
   .topbar-title-btn[aria-expanded="true"] .trips-heading-chevron { transform: rotate(180deg); }
-  /* Full-width dropdown spanning the screen, dropping just below the top bar. */
+  /* Full-width dropdown spanning the screen, dropping just below the top bar.
+     The big-spread box-shadow dims the rest of the page (a tap outside closes
+     it via the existing outside-click handler). */
   .topbar-drawer {
     position: fixed;
     top: var(--topbar-h, 60px);
@@ -792,8 +794,21 @@
     min-width: 0;
     border-left: none; border-right: none; border-top: none;
     border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    box-shadow: 0 8px 22px rgba(0,0,0,0.18), 0 0 0 100vmax rgba(0,0,0,0.28);
   }
   .topbar-drawer .ttd-item { justify-content: flex-start; gap: 14px; padding: 15px 24px; }
+
+  /* All Trips / Contacts heading dropdowns — full-width, below the header, dimmed.
+     `top` is set in JS to the header's bottom edge when opened. */
+  #trips-top-drawer, #tcp-top-drawer {
+    position: fixed;
+    left: 0; right: 0;
+    min-width: 0;
+    border-left: none; border-right: none; border-top: none;
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    box-shadow: 0 8px 22px rgba(0,0,0,0.18), 0 0 0 100vmax rgba(0,0,0,0.28);
+  }
+  #trips-top-drawer .ttd-item, #tcp-top-drawer .ttd-item { padding: 15px 24px; }
   /* #6 — Add moved to topbar on desktop, so hide the in-view Add headers there. */
   #view-budget > .section-header,
   #view-expenses > .section-header { display: none !important; }
