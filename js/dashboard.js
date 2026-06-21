@@ -306,18 +306,18 @@ export function renderDashboardMeta() {
   const fmt = n => n.toLocaleString("en-GB", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
   const home = cb.tripHomeCurrency ? cb.tripHomeCurrency() : "EUR";
   const symbol = cb.currencySymbol ? cb.currencySymbol(home) : "";
-  let total = 0, allConverted = true;
+  let spendTotal = 0, allConverted = true;
   entries.forEach(e => {
     const h = cb.toHomeCurrency ? cb.toHomeCurrency(e.amount, e.currency) : (e.currency === home ? e.amount : null);
     if (h === null || h === undefined) allConverted = false;
-    else total += h;
+    else spendTotal += h;
   });
   const budgetEl    = document.getElementById("stat-budget");
   const budgetLabel = document.getElementById("stat-budget-label");
   if (budgetEl) {
     budgetEl.style.color = "";
-    if (entries.length && total > 0) {
-      budgetEl.textContent = `${symbol}${fmt(total)}`;
+    if (entries.length && spendTotal > 0) {
+      budgetEl.textContent = `${symbol}${fmt(spendTotal)}`;
       // Flag when some currencies couldn't be converted (missing exchange rates).
       if (budgetLabel) budgetLabel.textContent = allConverted ? "Total spend" : "Total (partial)";
     } else {
