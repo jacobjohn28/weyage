@@ -273,7 +273,10 @@ function _buildTownHTML(town) {
         ${state.shareMode ? "" : (() => {
           const wKey = `${town.id}:wishlist`;
           const wOverride = dayCollapseOverrides.get(wKey);
-          const wCollapsed = wOverride !== undefined ? wOverride : false;
+          // Past cities default to a collapsed wishlist; a user toggle (saved in
+          // dayCollapseOverrides) always wins and is retained across refreshes.
+          const cityPast = !!town.departureDate && town.departureDate < localDateStr(new Date());
+          const wCollapsed = wOverride !== undefined ? wOverride : cityPast;
           const wCount = unscheduled.length;
           return `<div class="day-group${wCollapsed ? " collapsed" : ""}" data-day-key="${wKey}">
             <div class="day-header">

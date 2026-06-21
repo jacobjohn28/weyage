@@ -218,17 +218,31 @@ let _lbIndex  = 0;
 // Lightbox gesture state: pinch-zoom, double-tap zoom, pan, finger-follow swipe.
 let _lbScale = 1, _lbTx = 0, _lbTy = 0;
 let _lbGesture = null;            // null | "drag" | "pinch"
+let _lbAxis = null;              // null | "x" | "y" — locked once per drag
 let _lbStartX = 0, _lbStartY = 0, _lbStartTx = 0, _lbStartTy = 0;
 let _lbStartDist = 0, _lbStartScale = 1, _lbLastTap = 0;
+let _lbImgCache = null;          // cached <img> so live moves skip DOM lookups
+let _lbRafPending = false;
 
 function _lbImgEl() {
-  return document.getElementById("gallery-lightbox")?.querySelector("#lb-img");
+  return _lbImgCache || document.getElementById("gallery-lightbox")?.querySelector("#lb-img");
 }
 function _lbApplyTransform(animate) {
   const img = _lbImgEl();
   if (!img) return;
   img.classList.toggle("lb-img-anim", !!animate); // class adds a transform transition
   img.style.transform = `translate(${_lbTx}px, ${_lbTy}px) scale(${_lbScale})`;
+}
+// Live (per-frame) transform write for smooth dragging — one rAF-batched style
+// write, no transition, no DOM lookup. Used during active gestures.
+function _lbLiveTransform() {
+  if (_lbRafPending) return;
+  _lbRafPending = true;
+  requestAnimationFrame(() => {
+    _lbRafPending = false;
+    const img = _lbImgEl();
+    if (img) img.style.transform = `translate(${_lbTx}px, ${_lbTy}px) scale(${_lbScale})`;
+  });
 }
 function _lbZoomReset(animate) { _lbScale = 1; _lbTx = 0; _lbTy = 0; _lbApplyTransform(animate); }
 function _lbTouchDist(t) { return Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY); }
@@ -274,6 +288,7 @@ export function galleryLightboxClose() {
 function _lbRender() {
   const lb = document.getElementById("gallery-lightbox");
   if (!lb) return;
+  _lbImgCache = lb.querySelector("#lb-img");
   _lbZoomReset(false); // each photo starts un-zoomed / un-panned
   const photo = _lbPhotos[_lbIndex];
   if (!photo) return;
@@ -366,6 +381,8 @@ export function initGalleryLightbox() {
   const wrap = lb.querySelector("#lb-image-wrap");
   if (wrap) {
     wrap.addEventListener("touchstart", e => {
+      _lbImgCache = wrap.querySelector("#lb-img");
+      _lbImgCache?.classList.remove("lb-img-anim"); // live moves must be instant
       if (e.touches.length === 2) {
         _lbGesture = "pinch";
         _lbStartDist = _lbTouchDist(e.touches);
@@ -379,6 +396,7 @@ export function initGalleryLightbox() {
         }
         _lbLastTap = now;
         _lbGesture = "drag";
+        _lbAxis = null;                          // decide direction on first move
         _lbStartX = e.touches[0].clientX; _lbStartY = e.touches[0].clientY;
         _lbStartTx = _lbTx; _lbStartTy = _lbTy;
       }
@@ -389,18 +407,24 @@ export function initGalleryLightbox() {
         e.preventDefault();
         const ratio = _lbTouchDist(e.touches) / (_lbStartDist || 1);
         _lbScale = Math.max(1, Math.min(4, _lbStartScale * ratio));
-        _lbApplyTransform(false);
+        _lbLiveTransform();
       } else if (_lbGesture === "drag" && e.touches.length === 1) {
         const dx = e.touches[0].clientX - _lbStartX;
         const dy = e.touches[0].clientY - _lbStartY;
         if (_lbScale > 1) {                      // pan the zoomed image
           e.preventDefault();
           _lbTx = _lbStartTx + dx; _lbTy = _lbStartTy + dy;
-          _lbApplyTransform(false);
-        } else if (Math.abs(dx) > Math.abs(dy)) { // finger-follow swipe
-          e.preventDefault();
-          _lbTx = dx * 0.9;
-          _lbApplyTransform(false);
+          _lbLiveTransform();
+        } else {
+          // Lock the axis once so jitter can't flip us mid-swipe (the jerk fix).
+          if (_lbAxis === null && Math.hypot(dx, dy) > 6) {
+            _lbAxis = Math.abs(dx) >= Math.abs(dy) ? "x" : "y";
+          }
+          if (_lbAxis === "x") {                 // finger-follow swipe, 1:1
+            e.preventDefault();
+            _lbTx = dx;
+            _lbLiveTransform();
+          }
         }
       }
     }, { passive: false });
