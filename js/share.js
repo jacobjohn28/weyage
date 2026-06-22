@@ -638,7 +638,7 @@ async function _renderPushOptIn(viewerUser) {
 
   const tripId = activeTripId;
   let st;
-  try { st = await getPushState(); } catch { st = "unavailable"; }
+  try { st = await getPushState(tripId); } catch { st = "unavailable"; }
 
   if (st === "unavailable" || st === "unsupported") { bar.innerHTML = ""; return; }
 

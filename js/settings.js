@@ -3,6 +3,7 @@ import { db, doc, updateDoc, deleteDoc, arrayRemove, arrayUnion } from "./fireba
 import { escapeHtml, emailToName } from "./utils.js";
 import { CURRENCY_LIST } from "./budget.js";
 import { icon } from "./icons.js";
+import { getPushState, enablePush, disablePush } from "./push.js";
 
 /* ─────────────────────────────────────────────────────────────
    CALLBACK REGISTRATION
@@ -162,8 +163,58 @@ export function openTripSettings(tripId) {
   const isCreator = trip.createdBy === state.user?.email?.toLowerCase();
   document.getElementById("ts-danger-section").style.display = isCreator ? "block" : "none";
 
+  renderTripSettingsNotify(tripId);
+
   document.getElementById("trip-settings-overlay").classList.add("visible");
   history.pushState({ weyageTripSettings: true }, "");
+}
+
+/* ─────────────────────────────────────────────────────────────
+   NOTIFICATIONS — per-device opt-in for this trip. Mirrors the share
+   page bar, but lives in Trip Settings so collaborators/owners can
+   enable it from the main app (not just the share link). Renders
+   nothing when push is off/unsupported/ineligible.
+   ───────────────────────────────────────────────────────────── */
+async function renderTripSettingsNotify(tripId) {
+  const section = document.getElementById("ts-notify-section");
+  const bar = document.getElementById("ts-notify-bar");
+  if (!section || !bar) return;
+  section.style.display = "none";
+
+  let st;
+  try { st = await getPushState(tripId); } catch { st = "unavailable"; }
+  if (st === "unavailable" || st === "unsupported") return;
+
+  section.style.display = "block";
+
+  const paint = (state) => {
+    if (state === "denied") {
+      bar.innerHTML = `<div style="font-size:0.8125rem;color:var(--text-3)">Notifications are blocked in your browser settings. Enable them for this site to get photo updates.</div>`;
+      return;
+    }
+    const on = state === "subscribed";
+    bar.innerHTML = `
+      <button id="ts-notify-toggle" class="${on ? "modal-btn-secondary" : "modal-btn-primary"}" style="width:100%">
+        ${on ? "Turn off photo notifications" : "🔔 Notify me about new photos"}
+      </button>`;
+    bar.querySelector("#ts-notify-toggle")?.addEventListener("click", async (e) => {
+      const btn = e.currentTarget;
+      btn.disabled = true;
+      const orig = btn.textContent;
+      btn.textContent = on ? "Turning off…" : "Enabling…";
+      try {
+        const next = on ? await disablePush(tripId) : await enablePush(tripId);
+        paint(next);
+      } catch (err) {
+        console.error("Push toggle failed:", err);
+        btn.disabled = false;
+        btn.textContent = orig;
+        paint(Notification.permission === "denied" ? "denied" : (on ? "subscribed" : "idle"));
+      }
+    });
+  };
+
+  paint(st);
 }
 
 export function closeTripSettings() {

@@ -1,5 +1,5 @@
 import { PUSH_CONFIG } from "./config.js";
-import { db, auth, doc, setDoc, deleteDoc, serverTimestamp } from "./firebase.js";
+import { db, auth, doc, getDoc, setDoc, deleteDoc, serverTimestamp } from "./firebase.js";
 
 /* ─────────────────────────────────────────────────────────────
    WEB PUSH — client opt-in (native VAPID, no FCM)
@@ -52,21 +52,26 @@ async function _subId(endpoint) {
 }
 
 /**
- * Current state for UI:
+ * Per-trip state for UI. Subscription state is per (trip × device): a
+ * browser has at most ONE push subscription, but we keep a subscriber doc
+ * per trip, so "subscribed" means a doc exists for THIS trip on THIS device.
  *   "unavailable" — flag off / endpoint not set / not eligible
  *   "unsupported" — browser/PWA can't do web push
  *   "denied"      — user blocked notifications at the OS/browser level
  *   "subscribed"  — this device is opted in for this trip
- *   "idle"        — eligible but not yet subscribed
+ *   "idle"        — eligible but not opted in to this trip
  */
-export async function getPushState() {
+export async function getPushState(tripId) {
   if (!_configured() || !pushEligible()) return "unavailable";
   if (!pushSupported()) return "unsupported";
   if (Notification.permission === "denied") return "denied";
   try {
     const reg = await navigator.serviceWorker.ready;
     const sub = await reg.pushManager.getSubscription();
-    return sub ? "subscribed" : "idle";
+    if (!sub || !tripId) return "idle";
+    const id = await _subId(sub.endpoint);
+    const snap = await getDoc(doc(db, "trips", tripId, "pushSubscribers", id));
+    return snap.exists() ? "subscribed" : "idle";
   } catch {
     return "idle";
   }
@@ -110,7 +115,10 @@ export async function disablePush(tripId) {
       const id = await _subId(sub.endpoint);
       await deleteDoc(doc(db, "trips", tripId, "pushSubscribers", id));
     } catch (e) { console.error("Failed removing push subscriber doc:", e); }
-    await sub.unsubscribe().catch(() => {});
+    // NOTE: we intentionally do NOT call sub.unsubscribe(). A browser has a
+    // single push subscription shared across all trips, so unsubscribing would
+    // silence every other trip too. Removing this trip's doc is enough — the
+    // sender only pushes to trips that still reference the device.
   }
   return "idle";
 }
