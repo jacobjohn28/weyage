@@ -707,7 +707,7 @@
             <label class="field-label">Invite collaborator</label>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
               <input class="field-input" type="text" id="ts-collab-name" placeholder="Their name" autocomplete="off" maxlength="60">
-              <input class="field-input" type="email" id="ts-email" placeholder="name@example.com">
+              <input class="field-input" type="email" id="ts-email" placeholder="name@example.com" autocomplete="off">
             </div>
             <button class="modal-btn-primary" id="ts-add-btn" style="width:100%">Add collaborator</button>
             <div id="ts-add-error" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(184,83,66,0.08);border:1px solid rgba(184,83,66,0.2);color:var(--danger);border-radius:var(--radius-sm);font-size:0.8125rem"></div>
@@ -1957,7 +1957,7 @@ if ("serviceWorker" in navigator) {
         <div style="font-size:0.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-3);margin-bottom:14px">AI Briefings</div>
         <div class="field-group">
           <label class="field-label">Gemini API key</label>
-          <input class="field-input" type="password" id="site-settings-gemini-key" placeholder="Paste your Gemini API key…" autocomplete="off" spellcheck="false">
+          <input class="field-input" type="text" id="site-settings-gemini-key" placeholder="Paste your Gemini API key…" autocomplete="off" spellcheck="false">
           <div style="font-size:0.75rem;color:var(--text-3);margin-top:5px">
             Set once here — applies to all trips. Get a free key at <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener" style="color:var(--accent)">Google AI Studio</a>.
           </div>
