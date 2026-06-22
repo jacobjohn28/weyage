@@ -45,9 +45,9 @@ export const CLOUDINARY_CONFIG = {
                        is live and verified end-to-end, then flip to true.
    ───────────────────────────────────────────────────────────── */
 export const PUSH_CONFIG = {
-  enabled: false,
+  enabled: true,
   vapidPublicKey: "BOzgKmhAH82w0D3KhBH44r8FrxE3knBUJ-Q2y7UOoWt7Iu514V-ghydXPAWLoXKR8OjCopjhAETGfrHXGUZvNak",
-  notifyEndpoint: "",
+  notifyEndpoint: "https://weyage.vercel.app/api/notify",
 };
 
 /* ─────────────────────────────────────────────────────────────
@@ -61,4 +61,4 @@ export const FIREBASE_BASE = `https://www.gstatic.com/firebasejs/${FIREBASE_VERS
    the mobile "more" sheet, and Site Settings. Keep CACHE_NAME in
    sw.js in sync on each release (documented bump step).
    ───────────────────────────────────────────────────────────── */
-export const APP_VERSION = "1.4.1.27";
+export const APP_VERSION = "1.4.1.28";
