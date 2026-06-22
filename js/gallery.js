@@ -961,31 +961,40 @@ export function initUploadModal() {
   // ── Upload a single item by index ────────────────────────────
   async function runOne(idx) {
     const file = _uploadFiles[idx];
-    if (!file || !_uploadCityId) return;
+    if (!file || !_uploadCityId) return false;
     const caption = preview.querySelector(`.upload-caption-input[data-idx="${idx}"]`)?.value.trim() || null;
     statusEl.textContent = "Uploading…";
     setItemStatus(idx, "uploading");
+    let ok = false;
     try {
       await _uploadSinglePhoto(_uploadCityId, file, caption);
       setItemStatus(idx, "done");
+      ok = true;
     } catch (err) {
       setItemStatus(idx, "error", err?.message || "Upload failed");
     }
     refreshGlobalStatus();
+    return ok;
   }
 
   // ── Upload all button ────────────────────────────────────────
   submitBtn.addEventListener("click", async () => {
     if (_uploadStarted || !_uploadFiles.length || !_uploadCityId) return;
     _uploadStarted = true;
+    const cityId = _uploadCityId;   // capture — closeUploadModal() nulls this on success
     submitBtn.disabled = true;
     submitBtn.textContent = "Uploading…";
     statusEl.textContent = "";
 
+    let added = 0;
     for (let i = 0; i < _uploadFiles.length; i++) {
-      await runOne(i);
+      if (await runOne(i)) added++;
     }
     refreshGlobalStatus();
+
+    // Notify shared viewers/collaborators about the newly added photos.
+    // Isolated: a notification failure must never affect the upload.
+    if (added > 0) { _notifyGalleryUpload(activeTripId, cityId, added).catch(() => {}); }
   });
 
   // "Done" closes the modal once uploads have settled with failures.
