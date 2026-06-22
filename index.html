@@ -1624,8 +1624,16 @@ if ("serviceWorker" in navigator) {
         <div class="help-tip-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
         </div>
-        <div class="help-tip-title">Budget &amp; Costs</div>
-        <div class="help-tip-desc">Attach a cost to any spot when adding it — or log standalone expenses in the Budget tab. See totals by category in your trip currency.</div>
+        <div class="help-tip-title">Budget &amp; Splitting</div>
+        <div class="help-tip-desc">Track planned vs actual spend with charts by city and category. Split costs across your group and see exactly who owes whom — across multiple currencies.</div>
+      </div>
+
+      <div class="help-tip">
+        <div class="help-tip-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1" ry="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
+        </div>
+        <div class="help-tip-title">Expenses</div>
+        <div class="help-tip-desc">Log spending on the go with a quick add button. Categorise, filter, bulk-edit, and split each expense among participants.</div>
       </div>
 
       <div class="help-tip">
@@ -1634,6 +1642,22 @@ if ("serviceWorker" in navigator) {
         </div>
         <div class="help-tip-title">Documents</div>
         <div class="help-tip-desc">Attach booking screenshots and tickets to any spot. Use images (JPEG, PNG, WebP) — screenshot PDFs before uploading to keep files small.</div>
+      </div>
+
+      <div class="help-tip">
+        <div class="help-tip-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <div class="help-tip-title">Disruptions</div>
+        <div class="help-tip-desc">Flight or train cancelled? Mark it cancelled and the Disruptions hub shows your passenger rights, compensation, and airline claim links.</div>
+      </div>
+
+      <div class="help-tip">
+        <div class="help-tip-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="20" height="20"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        </div>
+        <div class="help-tip-title">Gallery</div>
+        <div class="help-tip-desc">Upload trip photos organised by city, add captions, and browse them full-screen. Everyone with the share link can see these memories.</div>
       </div>
 
       <div class="help-tip">
@@ -1677,7 +1701,9 @@ if ("serviceWorker" in navigator) {
         <li>Add a city using <strong>+ Add a city</strong> at the top or the button at the end of the itinerary.</li>
         <li>Each city is broken into days. Tap a day to expand it and add spots.</li>
         <li>A spot can be a sight, restaurant, café, experience, or transport leg.</li>
-        <li>Tap any spot to open its detail drawer — view address, notes, cost, and attached documents.</li>
+        <li>Tap any spot to open its detail drawer — view address, notes, cost, a <strong>Find on Maps</strong> link, and attached documents.</li>
+        <li>Mark a spot <strong>Booked / paid</strong> so you know what's confirmed at a glance.</li>
+        <li>Set <strong>accommodation</strong> for each city — check-in/out dates and times, cost, and address.</li>
         <li>Drag spots up and down to reorder them within a day.</li>
         <li><strong>Wishlist:</strong> spots not yet assigned to a date live at the bottom of each city. Drag them onto a day when you're ready.</li>
         <li>Navigate between cities using the sidebar (only on desktop) or city cards in the Overview tab.</li>
@@ -1699,7 +1725,25 @@ if ("serviceWorker" in navigator) {
         <li>Use the text prompt at the bottom to refine: e.g. "budget-friendly lunch near the old town".</li>
       </ul>
       <div class="help-callout">
-        <strong>[Ignore for now]Requires a Gemini API key</strong> — set by the admin in Site Settings (from the All Trips page). Free keys are available at <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener" style="color:var(--accent)">Google AI Studio</a>.
+        <strong>Requires a Gemini API key</strong> — set once in Site Settings (from the All Trips page) and it applies to every trip. Free keys are available at <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener" style="color:var(--accent)">Google AI Studio</a>.
+      </div>
+    </div>
+
+    <!-- Import from ticket -->
+    <div class="help-guide-section">
+      <div class="help-guide-heading">
+        <div class="help-guide-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="15" height="15"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z"/><line x1="13" y1="5" x2="13" y2="19" stroke-dasharray="2 2"/></svg>
+        </div>
+        <div class="help-guide-title">Import from ticket ✨</div>
+      </div>
+      <ul class="help-feature-bullets">
+        <li>Tap <strong>Import from ticket</strong> at the end of the itinerary, then upload a photo or screenshot of a flight or train ticket.</li>
+        <li>AI reads the image and extracts every leg — carrier, reference, seat, departure/arrival times, and price.</li>
+        <li>Review and tweak the detected details, then add them straight into your itinerary as transport spots.</li>
+      </ul>
+      <div class="help-callout">
+        <strong>Requires a Gemini API key</strong> — the same key used for AI Recommendations.
       </div>
     </div>
 
@@ -1726,10 +1770,28 @@ if ("serviceWorker" in navigator) {
         <div class="help-guide-title">Budget &amp; Costs</div>
       </div>
       <ul class="help-feature-bullets">
-        <li>When adding or editing a spot, fill in the <strong>Price</strong> field to attach a cost directly — it shows up in the Budget tab automatically.</li>
-        <li>Expenses are categorised: Food, Transport, Accommodation, Activities, Shopping, Other.</li>
-        <li>All amounts are shown in your trip currency. Set the currency in Trip Settings.</li>
-        <li>The Budget tab shows a total spend and a breakdown by category.</li>
+        <li>Anything with a price — spots, accommodation, transit, and standalone expenses — flows into the Budget tab automatically.</li>
+        <li>Set a <strong>budget target</strong> and track <strong>planned vs actual</strong> spend against it. Costs marked <em>estimated</em> count as planned; everything else counts as actual.</li>
+        <li>Switch between the whole <strong>Group</strong> total and just <strong>your</strong> share.</li>
+        <li>See visual breakdowns: charts <strong>by city</strong> and <strong>by category</strong>, plus a spending <strong>timeline</strong> you can filter by category or city.</li>
+        <li><strong>Settle up:</strong> when expenses are split among participants, the budget shows a simplified "who owes whom" summary — record a payment and it logs a settlement automatically.</li>
+        <li><strong>Multi-currency:</strong> amounts show in each currency you spend in; set your home and destination currencies in Trip Settings.</li>
+      </ul>
+    </div>
+
+    <!-- Expenses tab -->
+    <div class="help-guide-section">
+      <div class="help-guide-heading">
+        <div class="help-guide-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="15" height="15"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1" ry="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
+        </div>
+        <div class="help-guide-title">Expenses tab</div>
+      </div>
+      <ul class="help-feature-bullets">
+        <li>Tap the <strong>+</strong> button (bottom-right) to log a standalone expense — description, amount, currency, category, date, city, and payment method.</li>
+        <li>Categorise each as Food, Transport, Accommodation, Activities, Shopping, or Other; mark it <em>estimated</em> if it's just a plan.</li>
+        <li><strong>Split it:</strong> choose who paid and how to divide it — equally, custom amounts, or solo.</li>
+        <li>Filter the list, then <strong>select multiple</strong> expenses to bulk-edit them at once.</li>
       </ul>
     </div>
 
@@ -1767,6 +1829,38 @@ if ("serviceWorker" in navigator) {
       </div>
     </div>
 
+    <!-- Disruptions -->
+    <div class="help-guide-section">
+      <div class="help-guide-heading">
+        <div class="help-guide-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="15" height="15"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <div class="help-guide-title">Disruptions — recovery hub</div>
+      </div>
+      <ul class="help-feature-bullets">
+        <li>When a flight or train is cancelled, open it in the Itinerary and tap <strong>Mark as Cancelled</strong>.</li>
+        <li>Every cancelled transport then appears in the <strong>Disruptions</strong> tab with a recovery card.</li>
+        <li>Each card surfaces your <strong>passenger rights and entitlements</strong> (e.g. EU261 / EU1371 refund and re-routing rules) and a direct link to the carrier's claims page.</li>
+        <li>Tap regenerate to get an AI-tailored summary of your rights for that specific journey (requires a Gemini API key).</li>
+      </ul>
+    </div>
+
+    <!-- Gallery -->
+    <div class="help-guide-section">
+      <div class="help-guide-heading">
+        <div class="help-guide-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="15" height="15"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        </div>
+        <div class="help-guide-title">Gallery</div>
+      </div>
+      <ul class="help-feature-bullets">
+        <li>Upload trip photos organised by city — your shared memories live alongside the plan.</li>
+        <li>Tap any photo to view it full-screen, swipe through with the arrows, and add or edit a <strong>caption</strong>.</li>
+        <li>Use <strong>Select</strong> to pick multiple photos, then <strong>move</strong> them to another city or <strong>delete</strong> them.</li>
+        <li>Anyone with the trip's share link can view photos.</li>
+      </ul>
+    </div>
+
     <!-- Sharing & Collaboration -->
     <div class="help-guide-section">
       <div class="help-guide-heading">
@@ -1777,9 +1871,25 @@ if ("serviceWorker" in navigator) {
       </div>
       <ul class="help-feature-bullets">
         <li><strong>Share Itinerary</strong> (sidebar/menu) generates a read-only link — anyone can view without logging in. Great for sharing with friends or family.</li>
-        <li>Shared viewers can see the Itinerary, Overview, Budget, and Guides but cannot make changes.</li>
-        <li>To let someone <strong>edit</strong> the trip, add them as a collaborator: open Trip Settings (⚙ gear icon) → Collaborators → enter their email.</li>
-        <li>All edits by collaborators sync in real-time.</li>
+        <li>Shared viewers get a clean, view-only page with three tabs — <strong>List</strong>, <strong>Calendar</strong>, and <strong>Gallery</strong> — and cannot make any changes.</li>
+        <li><strong>Collaborators</strong> — to let someone <em>edit</em> the trip, open Trip Settings (⚙ gear icon) → Collaborators → enter their name and email. All their edits sync in real time.</li>
+        <li><strong>Participants</strong> — add the people in your group under Trip Settings → Participants so you can split expenses between them. (A participant doesn't need to be a collaborator.)</li>
+      </ul>
+    </div>
+
+    <!-- Trips & Contacts -->
+    <div class="help-guide-section">
+      <div class="help-guide-heading">
+        <div class="help-guide-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="15" height="15"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <div class="help-guide-title">All Trips &amp; Contacts</div>
+      </div>
+      <ul class="help-feature-bullets">
+        <li>The <strong>All Trips</strong> page is your home base — create a new trip (name, dates, home currency) and open any existing one.</li>
+        <li>Trips others share with you appear here too.</li>
+        <li><strong>Contacts</strong> — save the people whose trips you receive (Family, Friends, Other) so you always know who shared a trip with you.</li>
+        <li><strong>Site Settings</strong> — set the Gemini API key once for all AI features, and backfill missing city cover photos.</li>
       </ul>
     </div>
 
@@ -1871,7 +1981,7 @@ if ("serviceWorker" in navigator) {
           Check for updates &amp; refresh
         </button>
         <div id="site-settings-update-status" style="font-size:0.75rem;color:var(--text-3);display:none"></div>
-        <div class="app-version" id="app-version-settings" style="text-align:center;font-size:0.75rem;color:var(--text-3);letter-spacing:0.03em">v1.4.1.23</div>
+        <div class="app-version" id="app-version-settings" style="text-align:center;font-size:0.75rem;color:var(--text-3);letter-spacing:0.03em">v1.4.1.24</div>
       </div>
     </div>
   </div>
