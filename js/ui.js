@@ -754,7 +754,6 @@ export function initUI() {
 
   // Help overlay
   document.getElementById("help-close-btn")?.addEventListener("click", closeHelpOverlay);
-  document.getElementById("help-done-btn")?.addEventListener("click", closeHelpOverlay);
   document.getElementById("help-overlay")?.addEventListener("click", (e) => {
     if (e.target === document.getElementById("help-overlay")) closeHelpOverlay();
   });
@@ -873,6 +872,8 @@ export function initUI() {
   document.getElementById("trips-contacts-nav-btn")?.addEventListener("click", openContactsPage);
   document.getElementById("ttd-trips")?.addEventListener("click", closeContactsPage);
   document.getElementById("ttd-contacts")?.addEventListener("click", openContactsPage);
+  document.getElementById("trips-help-btn")?.addEventListener("click", openHelpOverlay);
+  document.getElementById("ttd-help")?.addEventListener("click", () => { _closeTopDrawer(); openHelpOverlay(); });
 
   // Contacts page mobile header dropdown
   document.getElementById("tcp-heading-dropdown-btn")?.addEventListener("click", (e) => {
@@ -898,6 +899,12 @@ export function initUI() {
     const d = document.getElementById("tcp-top-drawer");
     if (d) d.style.display = "none";
     document.getElementById("tcp-heading-dropdown-btn")?.setAttribute("aria-expanded", "false");
+  });
+  document.getElementById("tcp-ttd-help")?.addEventListener("click", () => {
+    const d = document.getElementById("tcp-top-drawer");
+    if (d) d.style.display = "none";
+    document.getElementById("tcp-heading-dropdown-btn")?.setAttribute("aria-expanded", "false");
+    openHelpOverlay();
   });
   document.getElementById("tcp-settings-btn")?.addEventListener("click", openSiteSettings);
   document.getElementById("tcp-signout-btn")?.addEventListener("click", () => signOut(auth));

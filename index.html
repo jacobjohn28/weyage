@@ -153,6 +153,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="16" height="16"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         Site Settings
       </button>
+      <button class="nav-item" id="trips-help-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="16" height="16"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Help
+      </button>
       <div class="user-chip">
         <div class="user-avatar" id="trips-user-avatar">·</div>
         <div class="user-name" id="trips-user-name">…</div>
@@ -182,6 +186,9 @@
           <button class="ttd-item" id="ttd-contacts">
             Contacts
             <svg class="ttd-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+          <button class="ttd-item" id="ttd-help">
+            Help
           </button>
         </div>
       </div>
@@ -225,6 +232,9 @@
           <button class="ttd-item ttd-active" id="tcp-ttd-contacts">
             Contacts
             <svg class="ttd-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+          <button class="ttd-item" id="tcp-ttd-help">
+            Help
           </button>
         </div>
       </div>
@@ -1913,11 +1923,7 @@ if ("serviceWorker" in navigator) {
     </div>
 
     <div class="help-modal-footer">
-      <span class="help-modal-footer-note">Reopen anytime via <strong>?</strong> in the sidebar.</span>
-      <button class="btn-primary" id="help-done-btn" style="gap:8px">
-        Start planning
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-      </button>
+      <span class="help-modal-footer-note">Reopen anytime via <strong>?</strong> in the sidebar or the All Trips menu.</span>
     </div>
 
   </div>
@@ -1981,7 +1987,7 @@ if ("serviceWorker" in navigator) {
           Check for updates &amp; refresh
         </button>
         <div id="site-settings-update-status" style="font-size:0.75rem;color:var(--text-3);display:none"></div>
-        <div class="app-version" id="app-version-settings" style="text-align:center;font-size:0.75rem;color:var(--text-3);letter-spacing:0.03em">v1.4.1.24</div>
+        <div class="app-version" id="app-version-settings" style="text-align:center;font-size:0.75rem;color:var(--text-3);letter-spacing:0.03em">v1.4.1.25</div>
       </div>
     </div>
   </div>
