@@ -5,6 +5,7 @@ import {
 } from "./firebase.js";
 import { escapeHtml, fmtTime12, fmtDateRange, nightsBetween, mapsLink, mapsSearchBtn } from "./utils.js";
 import { buildCityPhotoStrip, wireCityPhotoStrip, renderGallery } from "./gallery.js";
+import { getPushState, enablePush, disablePush } from "./push.js";
 
 /* ─────────────────────────────────────────────────────────────
    CALLBACK REGISTRATION
@@ -609,6 +610,7 @@ export function renderSharePage(viewerUser, tripAllowedUsers, showWelcomeBanner 
   _initShareEventDelegation();
   container.innerHTML = `
     ${bannerHTML}
+    <div id="sp-notify-bar"></div>
     ${heroHTML}
     <div class="sp-view-toggle">
       <button class="sp-view-tab" data-view="list" data-action="switch-view">List</button>
@@ -618,6 +620,57 @@ export function renderSharePage(viewerUser, tripAllowedUsers, showWelcomeBanner 
     <div id="sp-list-view" class="sp-city-cards" style="display:none">${listHTML}</div>
     <div id="sp-cal-view" class="sp-calendar">${renderTripCalendar()}</div>
     <div id="sp-gallery-view" style="display:none;padding:16px"></div>`;
+
+  // Opt-in to push notifications — signed-in viewers/collaborators only.
+  _renderPushOptIn(viewerUser);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   PUSH OPT-IN BAR  (signed-in shared-trip viewers + collaborators)
+   Async because subscription state is read from the service worker.
+   Renders nothing when the feature is off/unsupported, so anonymous
+   viewers and unconfigured environments simply never see it.
+   ───────────────────────────────────────────────────────────── */
+async function _renderPushOptIn(viewerUser) {
+  const bar = document.getElementById("sp-notify-bar");
+  if (!bar) return;
+  if (!viewerUser) { bar.innerHTML = ""; return; }   // anonymous → no opt-in
+
+  const tripId = activeTripId;
+  let st;
+  try { st = await getPushState(); } catch { st = "unavailable"; }
+
+  if (st === "unavailable" || st === "unsupported") { bar.innerHTML = ""; return; }
+
+  const paint = (state) => {
+    if (state === "denied") {
+      bar.innerHTML = `<div class="sp-banner" style="font-size:0.8125rem">Notifications are blocked in your browser settings. Enable them for this site to get photo updates.</div>`;
+      return;
+    }
+    const on = state === "subscribed";
+    bar.innerHTML = `
+      <div class="sp-banner" style="display:flex;align-items:center;gap:10px">
+        <span style="flex:1">${on ? "You'll be notified when new photos are added." : "Get notified when new photos are added to this trip."}</span>
+        <button id="sp-notify-toggle" style="background:${on ? "var(--surface-2)" : "var(--accent)"};color:${on ? "var(--text-2)" : "#fff"};border:1px solid ${on ? "var(--border)" : "transparent"};border-radius:6px;padding:6px 14px;font-size:0.8125rem;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">${on ? "Turn off" : "🔔 Notify me"}</button>
+      </div>`;
+    bar.querySelector("#sp-notify-toggle")?.addEventListener("click", async (e) => {
+      const btn = e.currentTarget;
+      btn.disabled = true;
+      const orig = btn.textContent;
+      btn.textContent = on ? "Turning off…" : "Enabling…";
+      try {
+        const next = on ? await disablePush(tripId) : await enablePush(tripId);
+        paint(next);
+      } catch (err) {
+        console.error("Push toggle failed:", err);
+        btn.disabled = false;
+        btn.textContent = orig;
+        paint(Notification.permission === "denied" ? "denied" : (on ? "subscribed" : "idle"));
+      }
+    });
+  };
+
+  paint(st);
 }
 
 /* ─────────────────────────────────────────────────────────────

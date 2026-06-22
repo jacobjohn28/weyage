@@ -1,5 +1,5 @@
 import { db, doc, collection, addDoc, deleteDoc, updateDoc, serverTimestamp, auth } from "./firebase.js";
-import { CLOUDINARY_CONFIG } from "./config.js";
+import { CLOUDINARY_CONFIG, PUSH_CONFIG } from "./config.js";
 import { state, activeTripId } from "./state.js";
 import { escapeHtml, localDateStr, btnLoading, btnReset } from "./utils.js";
 import { icon } from "./icons.js";
@@ -174,7 +174,49 @@ export async function uploadPhotosForCity(cityId, files, captions, statusCallbac
     }
   }
 
+  // Notify shared viewers/collaborators about the newly added photos.
+  // Fully isolated: a notification failure must never affect the upload result.
+  const added = files.length - failed.length;
+  if (added > 0) { _notifyGalleryUpload(tripId, cityId, added).catch(() => {}); }
+
   if (failed.length) throw new Error(`${failed.length} photo${failed.length > 1 ? "s" : ""} failed: ${failed.join(", ")}`);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   PUSH NOTIFY — emit one grouped event per upload batch, then ask the
+   serverless sender (see /notify-service) to deliver it. Writing one
+   typed event (not one per photo) keeps notifications grouped and lays
+   the groundwork for future event types (itinerary changes, etc.).
+   No-ops cleanly when the feature is off, offline, or unauthenticated.
+   ───────────────────────────────────────────────────────────── */
+async function _notifyGalleryUpload(tripId, cityId, count) {
+  if (!PUSH_CONFIG.enabled || !PUSH_CONFIG.notifyEndpoint) return;
+  const u = auth.currentUser;
+  if (!u) return;
+
+  const cityName = state.towns.find(t => t.id === cityId)?.name || "";
+  const byName = u.displayName || u.email || "Someone";
+
+  // 1) Record a typed event (also a foundation for an in-app activity feed).
+  const evRef = await addDoc(collection(db, "trips", tripId, "events"), {
+    type: "gallery_add",
+    byUid: u.uid,
+    byName,
+    count,
+    cityId,
+    cityName,
+    at: serverTimestamp(),
+  });
+
+  // 2) Ask the sender to fan out the push. It re-reads the event + subscribers
+  //    server-side (with the Admin SDK) — we only pass identifiers + an ID token.
+  const token = await u.getIdToken();
+  await fetch(PUSH_CONFIG.notifyEndpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ tripId, eventId: evRef.id }),
+    keepalive: true,   // best-effort even if the tab is closing
+  });
 }
 
 /* ─────────────────────────────────────────────────────────────

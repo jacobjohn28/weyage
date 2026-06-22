@@ -1,0 +1,49 @@
+rules_version = '2';
+
+/* ============================================================
+   Weyage Firestore security rules
+
+   ⚠️  MERGE TEMPLATE — NOT YET COMPLETE.
+   Your live rules currently exist only in the Firebase console. Paste
+   them in where marked so we don't weaken any existing access, then the
+   two NEW match blocks below (pushSubscribers, events) add push support.
+   Deploy via: firebase deploy --only firestore:rules
+   ============================================================ */
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /trips/{tripId} {
+
+      /* ───────── EXISTING TRIP RULES GO HERE ─────────
+         Paste your current trips/{tripId} read/write rules and any other
+         existing subcollection match blocks (towns, spots, cityGallery,
+         expenses, …) exactly as they are in the console.
+         ──────────────────────────────────────────────── */
+
+      /* ───────── NEW: push subscribers ─────────
+         One doc per device. Only a signed-in (non-anonymous) user may
+         manage their OWN device docs. Tokens are sensitive, so clients
+         can't read them — only the server (Admin SDK) reads to send. */
+      match /pushSubscribers/{subId} {
+        allow read: if false;
+        allow create, update: if request.auth != null
+          && request.auth.token.firebase.sign_in_provider != 'anonymous'
+          && request.resource.data.uid == request.auth.uid;
+        allow delete: if request.auth != null
+          && resource.data.uid == request.auth.uid;
+      }
+
+      /* ───────── NEW: activity events ─────────
+         Typed events (e.g. gallery_add) that drive notifications and a
+         possible future activity feed. Created by an authenticated user
+         tagging themselves; the notify-service independently verifies the
+         caller is a trip editor before sending anything. */
+      match /events/{eventId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null
+          && request.resource.data.byUid == request.auth.uid;
+        allow update, delete: if false;
+      }
+    }
+  }
+}

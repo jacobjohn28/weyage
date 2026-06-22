@@ -2,7 +2,7 @@
    Weyage Service Worker
    Deployed at: /weyage/ subdirectory on GitHub Pages
    ============================================================ */
-const CACHE_NAME = "weyage-v1.4.1.26";
+const CACHE_NAME = "weyage-v1.4.1.27";
 
 // Static assets that rarely change — cache-first
 const STATIC_ASSETS = [
@@ -26,6 +26,7 @@ const STATIC_ASSETS = [
   "/weyage/js/recommendations.js",
   "/weyage/js/ticketImport.js",
   "/weyage/js/gallery.js",
+  "/weyage/js/push.js",
   "/weyage/js/contacts.js",
   "/weyage/js/ui.js",
   "/weyage/js/main.js",
@@ -196,4 +197,43 @@ self.addEventListener("fetch", (event) => {
       })
     );
   }
+});
+
+/* ============================================================
+   WEB PUSH  (native VAPID — no FCM)
+   Additive: these listeners are independent of the cache logic
+   above. A push payload is JSON: { title, body, url, tag }.
+   ============================================================ */
+self.addEventListener("push", (event) => {
+  let data = {};
+  try { data = event.data ? event.data.json() : {}; }
+  catch { data = { body: event.data && event.data.text ? event.data.text() : "" }; }
+
+  const title = data.title || "Weyage";
+  const options = {
+    body: data.body || "",
+    icon: "/weyage/icon-192.png",
+    badge: "/weyage/icon-192.png",
+    tag: data.tag || undefined,        // collapses repeats with the same tag
+    renotify: !!data.tag,
+    data: { url: data.url || "/weyage/" },
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const target = (event.notification.data && event.notification.data.url) || "/weyage/";
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(clients => {
+      // Focus an existing Weyage tab if one is open, otherwise open a new one.
+      for (const c of clients) {
+        if (c.url.includes("/weyage/") && "focus" in c) {
+          if ("navigate" in c) c.navigate(target);
+          return c.focus();
+        }
+      }
+      return self.clients.openWindow(target);
+    })
+  );
 });
