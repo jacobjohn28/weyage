@@ -1045,12 +1045,32 @@ export function buildAllTabHTML(entries, budgetTargets, fmt, myMemberId, myExpFi
         </div>` : noRates}
     </div>`;
 
+  const btCategories = [...new Set(entries.map(e => e.category).filter(Boolean))].sort();
+  const btCities = [...new Set(entries.map(e => state.towns.find(t => t.id === e.townId)?.name).filter(Boolean))];
+  const btFilterCount = _btCatFilter.size + _btCityFilter.size;
   return `
     <div class="budget-all-panel">
       ${myMemberId ? myColHTML : ""}
       ${grpColHTML}
       <div class="budget-timeline-section">
-        <div class="budget-timeline-label">Spending over time · ${home}</div>
+        <div class="budget-timeline-head">
+          <div class="budget-timeline-label">Spending over time · ${home}</div>
+          <button class="exp-filter-toggle${_btFiltersOpen || btFilterCount > 0 ? " active" : ""}" id="bt-filter-toggle-btn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="13" height="13"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+            Filters${btFilterCount > 0 ? ` <span class="exp-filter-badge">${btFilterCount}</span>` : ""}
+          </button>
+        </div>
+        ${_btFiltersOpen ? `
+        <div class="exp-filter-panel" style="margin-bottom:10px">
+          ${btCategories.length ? `<div class="exp-filter-section">
+            <div class="exp-filter-section-label">Category</div>
+            <div class="exp-filter-pills">${btCategories.map(c => `<button class="exp-filter-pill${_btCatFilter.has(c) ? " active" : ""}" data-btcat="${escapeHtml(c)}">${escapeHtml(c)}</button>`).join("")}</div>
+          </div>` : ""}
+          ${btCities.length ? `<div class="exp-filter-section">
+            <div class="exp-filter-section-label">City</div>
+            <div class="exp-filter-pills">${btCities.map(c => `<button class="exp-filter-pill${_btCityFilter.has(c) ? " active" : ""}" data-btcity="${escapeHtml(c)}">${escapeHtml(c)}</button>`).join("")}</div>
+          </div>` : ""}
+        </div>` : ""}
         <div class="budget-timeline-block" id="budget-timeline-block">
           <canvas id="budget-timeline-chart"></canvas>
         </div>
@@ -1354,6 +1374,21 @@ let _expTabCatFilter  = new Set();
 let _expTabCityFilter = new Set();
 let _expTabPersonFilter = null; // null | "paid" | "owe"
 let _expFiltersOpen    = false; // is filter panel expanded?
+// Budget "all" tab — day-by-day timeline graph filters
+let _btCatFilter    = new Set();
+let _btCityFilter   = new Set();
+let _btFiltersOpen  = false;
+function _btFilterEntries(entries) {
+  if (!_btCatFilter.size && !_btCityFilter.size) return entries;
+  return entries.filter(e => {
+    if (_btCatFilter.size && !_btCatFilter.has(e.category)) return false;
+    if (_btCityFilter.size) {
+      const town = state.towns.find(t => t.id === e.townId);
+      if (!town || !_btCityFilter.has(town.name)) return false;
+    }
+    return true;
+  });
+}
 let _expSelectionMode  = false; // are rows in multi-select mode?
 let _expSelectedIds    = new Set(); // ids of selected expense entries
 let _bulkStatusValue   = "keep"; // "keep" | "paid" | "estimated"
@@ -1916,6 +1951,22 @@ export function renderBudget() {
   // ── Wire: settle-up ─────────────────────────────────────────
   _wireSettleUp(content);
 
+  // ── Wire: budget timeline filters (day-by-day graph) ────────
+  content.querySelector("#bt-filter-toggle-btn")?.addEventListener("click", () => {
+    _btFiltersOpen = !_btFiltersOpen;
+    renderBudget();
+  });
+  content.querySelectorAll(".exp-filter-pill[data-btcat]").forEach(p => p.addEventListener("click", () => {
+    const c = p.dataset.btcat;
+    _btCatFilter.has(c) ? _btCatFilter.delete(c) : _btCatFilter.add(c);
+    renderBudget();
+  }));
+  content.querySelectorAll(".exp-filter-pill[data-btcity]").forEach(p => p.addEventListener("click", () => {
+    const c = p.dataset.btcity;
+    _btCityFilter.has(c) ? _btCityFilter.delete(c) : _btCityFilter.add(c);
+    renderBudget();
+  }));
+
   // ── Charts ──────────────────────────────────────────────────
   // Stamp a generation token on content so the rAF callback can detect stale renders.
   // If renderBudget() fires again before the rAF runs, the token changes and the old
@@ -1925,7 +1976,7 @@ export function renderBudget() {
   loadChartJs().then(() => requestAnimationFrame(() => {
     if (content._renderGen !== renderGen) return; // stale; a newer render already ran
     if (_budgetTab === "all") {
-      renderBudgetTimelineChart(entries, fmt);
+      renderBudgetTimelineChart(_btFilterEntries(entries), fmt);
     } else {
       renderBudgetCharts({ [_budgetTab]: byCurrency[_budgetTab] }, fmt, entries);
     }
@@ -2793,7 +2844,6 @@ export async function unlinkSpot(spotId) {
    INIT: wire DOM events for budget/expense modals
    ───────────────────────────────────────────────────────────── */
 export function initBudget() {
-  document.getElementById("budget-add-expense-btn")?.addEventListener("click", () => openExpenseModal());
   document.getElementById("expenses-add-btn")?.addEventListener("click", () => openExpenseModal());
   document.getElementById("expense-modal-close")?.addEventListener("click", closeExpenseModal);
   document.getElementById("exp-cancel-btn")?.addEventListener("click", closeExpenseModal);

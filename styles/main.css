@@ -809,15 +809,23 @@
     box-shadow: 0 8px 22px rgba(0,0,0,0.18), 0 0 0 100vmax rgba(0,0,0,0.28);
   }
   #trips-top-drawer .ttd-item, #tcp-top-drawer .ttd-item { padding: 15px 24px; }
-  /* #6 — Add moved to topbar on desktop, so hide the in-view Add headers there. */
-  #view-budget > .section-header,
-  #view-expenses > .section-header { display: none !important; }
+
+  /* Floating "Add expense" button on the Expenses tab (thumb reach). */
+  .expenses-fab {
+    position: fixed; right: 20px; bottom: 24px; z-index: 40;
+    width: 56px; height: 56px; border-radius: 50%;
+    background: var(--accent); color: #fff; border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: var(--shadow-lg);
+    transition: transform 120ms var(--ease), filter 120ms var(--ease);
+  }
+  .expenses-fab:active { transform: scale(0.94); }
+  .expenses-fab:hover { filter: brightness(1.05); }
 
   /* #2 — in-view toolbars stay reachable: pinned just under the sticky topbar. */
   .docs-search-wrap,
   .guides-search-wrap,
   #view-gallery > .section-header,
-  #view-budget > .section-header,
   .exp-controls {
     position: sticky; top: var(--topbar-h, 60px);
     z-index: 5; background: var(--bg);
@@ -1116,10 +1124,9 @@
 
     .content { padding: 20px; padding-bottom: 100px; }
 
-    /* #6 — on mobile the Add lives in-view (thumb reach); topbar action hidden. */
-    #view-budget > .section-header,
-    #view-expenses > .section-header { display: flex !important; }
     .topbar-action { display: none !important; }
+    /* FAB clears the mobile bottom nav + home indicator. */
+    .expenses-fab { bottom: calc(env(safe-area-inset-bottom, 0px) + 84px); right: 16px; }
 
     /* #5 — mobile: title is the in-trip meta-drawer trigger. */
     .topbar-title-chevron { display: inline-flex; }
@@ -1903,7 +1910,6 @@
   body.share-mode #drawer-delete-btn,
   body.share-mode #drawer-visited-btn { display: none !important; }
   body.share-mode .share-link-btn { display: none !important; }
-  body.share-mode #budget-add-expense-btn { display: none !important; }
   body.share-mode .bd-expense-actions { display: none !important; }
 
   /* ── Shared trip badge (trip list cards) ── */
@@ -4255,13 +4261,16 @@ body.share-mode .transit-entry-del { display: none !important; }
     padding-top: 16px;
     border-top: 1px solid var(--border);
   }
+  .budget-timeline-head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; margin-bottom: 10px;
+  }
   .budget-timeline-label {
     font-size: 0.6875rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.09em;
     color: var(--text-3);
-    margin-bottom: 10px;
     font-family: var(--font-display);
   }
   .budget-timeline-block {

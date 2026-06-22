@@ -489,23 +489,15 @@
       </section>
 
       <section class="view" id="view-budget">
-        <div class="section-header" style="margin-bottom:20px;display:flex;align-items:center;justify-content:flex-end;gap:12px">
-          <button class="btn-primary" id="budget-add-expense-btn" style="padding:8px 16px;font-size:0.875rem;flex-shrink:0">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Add expense
-          </button>
-        </div>
         <div id="budget-content"></div>
       </section>
 
       <section class="view" id="view-expenses">
-        <div class="section-header" style="margin-bottom:16px;display:flex;align-items:center;justify-content:flex-end;gap:12px">
-          <button class="btn-primary" id="expenses-add-btn" style="padding:8px 16px;font-size:0.875rem;flex-shrink:0">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Add expense
-          </button>
-        </div>
         <div id="expenses-content"></div>
+        <!-- Floating add-expense button (bottom-right, thumb reach) -->
+        <button class="expenses-fab" id="expenses-add-btn" type="button" aria-label="Add expense" title="Add expense">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" width="24" height="24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
         <div id="exp-selection-bar" style="display:none">
           <span class="exp-sel-count"><strong id="exp-sel-count-num">0</strong> selected</span>
           <div style="flex:1"></div>
@@ -1879,7 +1871,7 @@ if ("serviceWorker" in navigator) {
           Check for updates &amp; refresh
         </button>
         <div id="site-settings-update-status" style="font-size:0.75rem;color:var(--text-3);display:none"></div>
-        <div class="app-version" id="app-version-settings" style="text-align:center;font-size:0.75rem;color:var(--text-3);letter-spacing:0.03em">v1.4.1.21</div>
+        <div class="app-version" id="app-version-settings" style="text-align:center;font-size:0.75rem;color:var(--text-3);letter-spacing:0.03em">v1.4.1.22</div>
       </div>
     </div>
   </div>

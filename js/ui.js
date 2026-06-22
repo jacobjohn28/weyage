@@ -62,10 +62,8 @@ export function syncTopbarHeight() {
 if (typeof window !== "undefined") window.addEventListener("resize", syncTopbarHeight);
 
 // #6 — views whose primary action is surfaced in the topbar (desktop only).
-const TOPBAR_ACTIONS = {
-  budget:   { label: "Add expense", target: "budget-add-expense-btn" },
-  expenses: { label: "Add expense", target: "expenses-add-btn" },
-};
+// (Budget no longer has an add button; Expenses uses a floating button instead.)
+const TOPBAR_ACTIONS = {};
 
 // #4 — second bottom-nav slot is Guides during the trip, Gallery once it's over.
 // The "More" sheet shows whichever of the two is NOT currently in the bottom bar.

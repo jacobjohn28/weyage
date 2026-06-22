@@ -261,6 +261,7 @@ function listenToAllTrips(userEmail) {
 // ── Switch into a trip ──────────────────────────────────────────────────────
 function switchTrip(tripId) {
   detachTripListeners();
+  state.shareMode = false; // opening your own trip — fully editable
   setActiveTripId(tripId);
   setState({ trip: null, towns: [], spots: [] });
   localStorage.setItem("last-trip-id", tripId);
@@ -292,6 +293,7 @@ function _waitForShareData(prevTowns, prevSpots, callback) {
 
 function openSharedTrip(tripId) {
   detachTripListeners();
+  state.shareMode = true; // a trip shared with you — read-only (no add/edit/upload)
   setActiveTripId(tripId);
   setState({ trip: null, towns: [], spots: [] });
   document.getElementById("sp-page").innerHTML =
