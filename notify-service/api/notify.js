@@ -100,7 +100,7 @@ module.exports = async (req, res) => {
     // 5) Fan out — every subscriber except the uploader. Prune dead tokens.
     const subsSnap = await db.collection(`trips/${tripId}/pushSubscribers`).get();
     const shareUrl = `/weyage/?share=${trip.shareToken || ""}#gallery`;
-    const mainUrl  = `/weyage/#gallery`;
+    const mainUrl  = `/weyage/?notifyTrip=${tripId}&notifyView=gallery`;
     let sent = 0, removed = 0;
     await Promise.all(subsSnap.docs.map(async (d) => {
       const s = d.data();

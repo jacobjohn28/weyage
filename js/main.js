@@ -225,9 +225,17 @@ function listenToAllTrips(userEmail) {
 
     if (!_initialTripRouted) {
       _initialTripRouted = true;
+      const params = new URLSearchParams(location.search);
+      const notifyTripId = params.get("notifyTrip");
+      const notifyView   = params.get("notifyView");
       const lastId = localStorage.getItem("last-trip-id");
       const lastScreen = localStorage.getItem("last-screen");
-      if (lastScreen === "trips") {
+      if (notifyTripId && _myOwnedTrips.find(t => t.id === notifyTripId)) {
+        // Notification deep-link: open the specific trip + view, then clean the URL.
+        if (notifyView) state.currentView = notifyView;
+        switchTrip(notifyTripId);
+        history.replaceState({}, "", location.pathname);
+      } else if (lastScreen === "trips") {
         showTripList();
       } else if (lastId && _myOwnedTrips.find(t => t.id === lastId)) {
         switchTrip(lastId);
