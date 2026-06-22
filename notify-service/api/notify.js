@@ -99,12 +99,16 @@ module.exports = async (req, res) => {
 
     // 5) Fan out — every subscriber except the uploader. Prune dead tokens.
     const subsSnap = await db.collection(`trips/${tripId}/pushSubscribers`).get();
-    const payload = JSON.stringify(msg);
+    const shareUrl = `/weyage/?share=${trip.shareToken || ""}#gallery`;
+    const mainUrl  = `/weyage/#gallery`;
     let sent = 0, removed = 0;
     await Promise.all(subsSnap.docs.map(async (d) => {
       const s = d.data();
       if (s.uid && ev.byUid && s.uid === ev.byUid) return; // skip uploader's own devices
       if (!s.subscription) return;
+      // Share-page viewers get the share URL; main-app editors/owners get the main app URL.
+      const url = s.shareView ? shareUrl : mainUrl;
+      const payload = JSON.stringify({ ...msg, url });
       try {
         await webpush.sendNotification(s.subscription, payload);
         sent++;

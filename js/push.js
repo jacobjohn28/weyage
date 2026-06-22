@@ -77,7 +77,7 @@ export async function getPushState(tripId) {
   }
 }
 
-export async function enablePush(tripId) {
+export async function enablePush(tripId, { shareView = false } = {}) {
   if (!pushEligible()) throw new Error("Notifications aren't available here.");
   const reg = await navigator.serviceWorker.ready;
 
@@ -102,6 +102,7 @@ export async function enablePush(tripId) {
     subscription: json,        // { endpoint, keys:{p256dh,auth} } — used by the sender
     endpoint: sub.endpoint,
     userAgent: navigator.userAgent || "",
+    shareView,                 // true = share-page viewer, false = main-app editor/owner
     createdAt: serverTimestamp(),
   });
   return "subscribed";

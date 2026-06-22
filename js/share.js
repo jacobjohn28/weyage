@@ -659,7 +659,7 @@ async function _renderPushOptIn(viewerUser) {
       const orig = btn.textContent;
       btn.textContent = on ? "Turning off…" : "Enabling…";
       try {
-        const next = on ? await disablePush(tripId) : await enablePush(tripId);
+        const next = on ? await disablePush(tripId) : await enablePush(tripId, { shareView: true });
         paint(next);
       } catch (err) {
         console.error("Push toggle failed:", err);
