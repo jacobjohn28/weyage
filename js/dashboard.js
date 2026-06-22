@@ -138,6 +138,54 @@ export async function generateCityBriefing(townId, town) {
 }
 
 /* ─────────────────────────────────────────────────────────────
+   CITY CAPTION (Gemini) — short one-line description shown over the
+   Overview cover image. Auto-generated for any city that lacks one so
+   every city is consistent, including those added dynamically.
+   ───────────────────────────────────────────────────────────── */
+const _captionAttempted = new Set(); // townIds tried this session — avoids re-trigger loops
+
+async function callGeminiCaption(town) {
+  const townLocation = [town.name, town.country].filter(Boolean).join(", ");
+  const prompt = `Write a single short, evocative description of ${townLocation} for a traveller — its character or signature draw in 4 to 8 words. No quotation marks, no trailing punctuation, do not start with the city name. Respond with ONLY the description text.`;
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_CONFIG.model}:generateContent?key=${GEMINI_CONFIG.apiKey}`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generation_config: { temperature: 0.7 },
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `Gemini error ${res.status}`);
+  }
+  const data = await res.json();
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error("No caption returned.");
+  // Strip wrapping quotes / trailing period and collapse to a single line.
+  return text.trim().split("\n")[0].trim().replace(/^["'“”]+|["'“”]+$/g, "").replace(/\.$/, "").trim();
+}
+
+async function ensureCityCaption(town) {
+  if (state.shareMode) return;            // viewers can't write
+  if (!GEMINI_CONFIG.apiKey) return;      // needs a key
+  if (town.caption) return;               // already has one (seed or generated)
+  if (_captionAttempted.has(town.id)) return;
+  _captionAttempted.add(town.id);
+  try {
+    const caption = await callGeminiCaption(town);
+    if (caption) {
+      await updateDoc(doc(db, "trips", activeTripId, "towns", town.id), { caption });
+    }
+  } catch (err) {
+    console.error("Caption generation error:", err);
+    // Left in _captionAttempted so we don't spam retries; a reload will retry.
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
    DASHBOARD RENDERERS
    ───────────────────────────────────────────────────────────── */
 export function renderDashboardTowns() {
@@ -206,6 +254,11 @@ export function renderDashboardTowns() {
       </article>
     `;
   }).join("");
+
+  // Backfill a short cover caption for any city missing one (incl. dynamically
+  // added cities) so the Overview is consistent. Each write re-renders via the
+  // towns snapshot listener, surfacing the caption in its usual overlay.
+  state.towns.forEach(t => { if (!t.caption) ensureCityCaption(t); });
 
   container.querySelectorAll(".spread[data-town-id]").forEach(card => {
     card.addEventListener("click", (e) => {
