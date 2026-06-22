@@ -45,6 +45,8 @@ service cloud.firestore {
       // viewers can't see others' tokens; the notify-service uses the Admin SDK
       // (which bypasses rules) to read them when sending.
       match /pushSubscribers/{subId} {
+        allow get: if request.auth != null
+          && resource.data.uid == request.auth.uid;
         allow create, update: if request.auth != null
           && request.auth.token.firebase.sign_in_provider != 'anonymous'
           && request.resource.data.uid == request.auth.uid;
