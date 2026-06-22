@@ -689,6 +689,7 @@ export function initUI() {
     if (!window.matchMedia("(max-width: 768px)").matches) return;
     e.stopPropagation();
     const isOpen = _topbarDrawer.style.display !== "none";
+    if (!isOpen) syncTopbarHeight(); // re-measure while topbar is visible (may be stale from init)
     _topbarDrawer.style.display = isOpen ? "none" : "";
     _topbarTitleBtn.setAttribute("aria-expanded", String(!isOpen));
   });

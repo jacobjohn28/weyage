@@ -268,6 +268,7 @@ function switchTrip(tripId) {
   localStorage.removeItem("last-screen");
   listenToTrip(tripId);
   showApp();
+  setView(state.currentView || "itinerary"); // measure topbar height now that #app is visible
 }
 
 // Waits for the trip document AND towns AND spots snapshots to all fire at least once
