@@ -1365,6 +1365,25 @@ export function loadChartJs() {
   return _chartJsPromise;
 }
 
+// Resilient Sortable loader. The classic <script> tag in index.html is a single
+// point of failure (one-shot, no retry) — if it ever fails to load, window.Sortable
+// stays undefined and all drag-reordering (currency tabs, itinerary spots) silently
+// breaks for the whole session. This re-attempts on demand and clears the cached
+// promise on error so a later render can retry.
+let _sortablePromise = null;
+export function loadSortable() {
+  if (window.Sortable) return Promise.resolve(window.Sortable);
+  if (_sortablePromise) return _sortablePromise;
+  _sortablePromise = new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js";
+    s.onload = () => resolve(window.Sortable);
+    s.onerror = () => { _sortablePromise = null; reject(new Error("Sortable failed to load")); };
+    document.head.appendChild(s);
+  });
+  return _sortablePromise;
+}
+
 /* ─────────────────────────────────────────────────────────────
    EXPENSES TAB
    ───────────────────────────────────────────────────────────── */
@@ -1885,20 +1904,25 @@ export function renderBudget() {
 
   // ── Wire: currency tab drag-to-reorder (Sortable.js) ────────
   const tabBar = content.querySelector(".budget-tab-bar");
-  if (tabBar && window.Sortable) {
-    window.Sortable.create(tabBar, {
-      animation: 150,
-      handle: ".tab-drag-handle",
-      filter: '[data-budgettab="all"]',
-      preventOnFilter: false,
-      onEnd: () => {
-        const order = [...tabBar.querySelectorAll(".budget-tab[data-dragcur]")]
-          .map(el => el.dataset.dragcur);
-        _currencyOrder      = order;
-        _currencyOrderTripId = state.trip?.id || null;
-        _saveCurrencyOrder(_currencyOrderTripId, _currencyOrder);
-      },
-    });
+  if (tabBar) {
+    loadSortable().then(S => {
+      // Guard against a stale tab bar if the budget re-rendered while loading.
+      if (!S || !document.body.contains(tabBar)) return;
+      S.create(tabBar, {
+        animation: 150,
+        handle: ".tab-drag-handle",
+        draggable: ".budget-tab[data-dragcur]", // only currency tabs reorder
+        filter: '[data-budgettab="all"]',
+        preventOnFilter: false,
+        onEnd: () => {
+          const order = [...tabBar.querySelectorAll(".budget-tab[data-dragcur]")]
+            .map(el => el.dataset.dragcur);
+          _currencyOrder      = order;
+          _currencyOrderTripId = state.trip?.id || null;
+          _saveCurrencyOrder(_currencyOrderTripId, _currencyOrder);
+        },
+      });
+    }).catch(() => {});
   }
 
   // ── Wire: My Portion filter pills ──────────────────────────
@@ -2844,6 +2868,9 @@ export async function unlinkSpot(spotId) {
    INIT: wire DOM events for budget/expense modals
    ───────────────────────────────────────────────────────────── */
 export function initBudget() {
+  // Ensure Sortable is available (drag-reorder of currency tabs + itinerary spots),
+  // even if the classic <script> tag failed to load at page start.
+  loadSortable().catch(() => {});
   document.getElementById("expenses-add-btn")?.addEventListener("click", () => openExpenseModal());
   document.getElementById("expense-modal-close")?.addEventListener("click", closeExpenseModal);
   document.getElementById("exp-cancel-btn")?.addEventListener("click", closeExpenseModal);
